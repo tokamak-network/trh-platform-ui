@@ -159,6 +159,27 @@ export default function DesignSystemPage() {
                 <Input type="password" placeholder="Enter your password..." />
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Input with Error
+                </label>
+                <Input
+                  placeholder="Enter your email..."
+                  error="Please enter a valid email address"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Input with Error (Focused)
+                </label>
+                <Input
+                  placeholder="Enter your name..."
+                  error="Name is required"
+                  autoFocus
+                />
+              </div>
+            </div>
           </div>
         </section>
 
