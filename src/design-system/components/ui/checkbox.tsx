@@ -6,11 +6,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const checkboxVariants = cva(
-  "peer h-4 w-4 shrink-0 rounded-sm border border-neutral-300 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary-500 data-[state=checked]:text-primary-50 data-[state=indeterminate]:bg-primary-500 data-[state=indeterminate]:text-primary-50",
+  "peer flex h-[18px] w-[18px] flex-col items-center justify-center rounded-[4px] border border-[#E7EBF2] bg-white flex-shrink-0 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[#2A72E5] data-[state=checked]:border-[#2A72E5] data-[state=checked]:text-white data-[state=indeterminate]:bg-[#2A72E5] data-[state=indeterminate]:border-[#2A72E5] data-[state=indeterminate]:text-white",
   {
     variants: {
       variant: {
-        default: "border-neutral-300",
+        default: "border-[#E7EBF2]",
         error:
           "border-error-500 focus-visible:ring-error-500 data-[state=checked]:bg-error-500 data-[state=indeterminate]:bg-error-500",
       },
@@ -42,7 +42,6 @@ const Checkbox = React.forwardRef<
     <CheckboxPrimitive.Root
       ref={ref}
       className={cn(checkboxVariants({ variant, className }))}
-      data-state={isIndeterminate ? "indeterminate" : undefined}
       {...props}
     >
       <CheckboxPrimitive.Indicator

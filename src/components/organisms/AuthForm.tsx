@@ -52,7 +52,12 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
     };
 
     return (
-      <Card className={cn("w-full max-w-md mx-auto", className)}>
+      <Card
+        className={cn(
+          "w-full max-w-md mx-auto shadow-[0_0_20px_rgba(0,0,0,0.1)] border-0",
+          className
+        )}
+      >
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
             {title}
@@ -62,10 +67,10 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
         <CardContent>
           <form ref={ref} onSubmit={handleSubmit} className="space-y-4">
             {/* Email/Username Input */}
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <label
                 htmlFor="email"
-                className="text-sm font-medium text-neutral-700"
+                className="text-sm font-bold text-neutral-700"
               >
                 Username or Email
               </label>
@@ -81,7 +86,7 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
             </div>
 
             {/* Password Input */}
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <label
                 htmlFor="password"
                 className="text-sm font-medium text-neutral-700"

@@ -40,6 +40,7 @@
   --neutral-700: #404040;
   --neutral-800: #262626;
   --neutral-900: #171717;
+  --neutral-1000: #000000;
   
   /* Semantic Colors */
   --success-50: #f0fdf4;
@@ -179,11 +180,14 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --font-family: var(--font-geist-sans), Inter, Arial, Helvetica, sans-serif;
+    --font-size: 14px;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Inter, Arial, Helvetica, sans-serif;
+  font-family: var(--font-family);
+  font-size: var(--font-size);
 }
