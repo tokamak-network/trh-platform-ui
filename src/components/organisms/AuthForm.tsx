@@ -1,9 +1,22 @@
 import * as React from "react";
+import * as z from "zod";
 import { Input, Checkbox } from "@/design-system";
 import { Button } from "@/design-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@/design-system";
 import { PasswordInput } from "@/components/molecules";
 import { cn } from "@/lib/utils";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const authFormSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters" }),
+  rememberMe: z.boolean(),
+});
+
+type AuthFormData = z.infer<typeof authFormSchema>;
 
 export interface AuthFormProps {
   title?: string;
@@ -11,12 +24,6 @@ export interface AuthFormProps {
   onSubmit?: (data: AuthFormData) => void;
   isLoading?: boolean;
   className?: string;
-}
-
-export interface AuthFormData {
-  email: string;
-  password: string;
-  rememberMe: boolean;
 }
 
 const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
@@ -30,26 +37,18 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
     },
     ref
   ) => {
-    const [formData, setFormData] = React.useState<AuthFormData>({
-      email: "",
-      password: "",
-      rememberMe: false,
+    const form = useForm<AuthFormData>({
+      resolver: zodResolver(authFormSchema),
+      defaultValues: {
+        email: "",
+        password: "",
+        rememberMe: false,
+      },
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      onSubmit?.(formData);
-    };
-
-    const handleInputChange = (
-      field: keyof AuthFormData,
-      value: string | boolean
-    ) => {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    };
+    const handleSubmit = form.handleSubmit((data) => {
+      onSubmit?.(data);
+    });
 
     return (
       <Card
@@ -78,11 +77,15 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
                 id="email"
                 type="email"
                 placeholder="Enter your email or username"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                required
+                {...form.register("email")}
                 disabled={isLoading}
+                error={form.formState.errors.email?.message}
               />
+              {form.formState.errors.email && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
             </div>
 
             {/* Password Input */}
@@ -96,11 +99,15 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
               <PasswordInput
                 id="password"
                 placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                required
+                {...form.register("password")}
                 disabled={isLoading}
+                error={form.formState.errors.password?.message}
               />
+              {form.formState.errors.password && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
             </div>
 
             {/* Remember Me & Forgot Password Row */}
@@ -108,10 +115,7 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="remember-me"
-                  checked={formData.rememberMe}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("rememberMe", checked as boolean)
-                  }
+                  {...form.register("rememberMe")}
                   disabled={isLoading}
                 />
                 <label
@@ -131,8 +135,14 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
             </div>
 
             {/* Sign In Button */}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || form.formState.isSubmitting}
+            >
+              {isLoading || form.formState.isSubmitting
+                ? "Signing in..."
+                : "Sign In"}
             </Button>
           </form>
         </CardContent>

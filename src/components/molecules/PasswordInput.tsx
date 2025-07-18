@@ -9,6 +9,7 @@ export interface PasswordInputProps
   showToggle?: boolean;
   toggleButtonClassName?: string;
   containerClassName?: string;
+  error?: string;
 }
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
@@ -18,6 +19,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
       showToggle = true,
       toggleButtonClassName,
       containerClassName,
+      error,
       ...props
     },
     ref
@@ -38,6 +40,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           )}
           ref={ref}
           {...props}
+          error={error}
         />
         {showToggle && (
           <Button
