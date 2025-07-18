@@ -81,11 +81,6 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
                 disabled={isLoading}
                 error={form.formState.errors.email?.message}
               />
-              {form.formState.errors.email && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.email.message}
-                </p>
-              )}
             </div>
 
             {/* Password Input */}
@@ -103,11 +98,6 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
                 disabled={isLoading}
                 error={form.formState.errors.password?.message}
               />
-              {form.formState.errors.password && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.password.message}
-                </p>
-              )}
             </div>
 
             {/* Remember Me & Forgot Password Row */}
