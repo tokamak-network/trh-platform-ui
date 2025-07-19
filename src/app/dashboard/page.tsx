@@ -1,11 +1,11 @@
 "use client";
-
 import { Button } from "@/design-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@/design-system";
 import { LogoutButton } from "@/components/molecules";
+import { withAuth } from "@/components/auth";
 import { useAuthContext } from "@/providers";
 
-export default function DashboardPage() {
+function DashboardPage() {
   const { user } = useAuthContext();
 
   return (
@@ -33,6 +33,20 @@ export default function DashboardPage() {
             </Button>
             <Button variant="outline" size="lg">
               View Profile
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => (window.location.href = "/settings")}
+            >
+              Settings
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => (window.location.href = "/admin")}
+            >
+              Admin
             </Button>
           </div>
         </div>
@@ -72,3 +86,5 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+export default withAuth(DashboardPage);

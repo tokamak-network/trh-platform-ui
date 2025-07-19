@@ -1,3 +1,6 @@
+"use client";
+
+import { Suspense } from "react";
 import { Button } from "@/design-system";
 import { Input } from "@/design-system";
 import {
@@ -11,7 +14,7 @@ import {
 import { Badge } from "@/design-system";
 import { Avatar, AvatarFallback, AvatarImage } from "@/design-system";
 
-export default function DesignSystemPage() {
+function DesignSystemContent() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto space-y-12">
@@ -311,5 +314,13 @@ export default function DesignSystemPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function DesignSystemPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DesignSystemContent />
+    </Suspense>
   );
 }

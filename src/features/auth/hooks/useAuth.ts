@@ -3,10 +3,11 @@ import { useMutation } from "@tanstack/react-query";
 import { authService } from "../services/authService";
 import { LoginRequest, AuthState } from "../schemas";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export const useAuth = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     token: null,
@@ -43,7 +44,9 @@ export const useAuth = () => {
         isLoading: false,
       });
 
-      router.push("/dashboard");
+      // Redirect to the intended page or dashboard
+      const redirectTo = searchParams.get("redirect") || "/dashboard";
+      router.push(redirectTo);
 
       toast.success("Login successful!");
     },
@@ -63,7 +66,7 @@ export const useAuth = () => {
     });
     router.push("/auth");
     toast.success("Logged out successfully");
-  }, []);
+  }, [router]);
 
   // Login function
   const login = useCallback(
