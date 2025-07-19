@@ -1,21 +1,15 @@
 "use client";
 import { Button } from "@/design-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@/design-system";
-import { LogoutButton } from "@/components/molecules";
-import { withAuth } from "@/components/auth";
+import { AuthenticatedLayout } from "@/components/layout";
 import { useAuthContext } from "@/providers";
 
 function DashboardPage() {
   const { user } = useAuthContext();
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-16">
-        <div className="flex justify-between items-start mb-8">
-          <div></div>
-          <LogoutButton />
-        </div>
-
+    <AuthenticatedLayout>
+      <div className="p-8">
         <div className="text-center space-y-8">
           <h1 className="text-6xl font-bold">TRH Platform</h1>
           <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
@@ -83,8 +77,8 @@ function DashboardPage() {
           </Card>
         </div>
       </div>
-    </main>
+    </AuthenticatedLayout>
   );
 }
 
-export default withAuth(DashboardPage);
+export default DashboardPage;

@@ -1,20 +1,39 @@
+import React from "react";
 import { Button } from "@/design-system";
 import { useAuthContext } from "@/providers";
+import { LogOut } from "lucide-react";
 
 interface LogoutButtonProps {
   className?: string;
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
-export const LogoutButton: React.FC<LogoutButtonProps> = ({ className }) => {
-  const { logout, isAuthenticated } = useAuthContext();
+export const LogoutButton: React.FC<LogoutButtonProps> = ({
+  className,
+  variant = "ghost",
+  size = "default",
+}) => {
+  const { logout } = useAuthContext();
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
-    <Button variant="outline" onClick={logout} className={className}>
-      Logout
+    <Button
+      onClick={handleLogout}
+      variant={variant}
+      size={size}
+      className={className}
+    >
+      <LogOut className="h-4 w-4" />
     </Button>
   );
 };
