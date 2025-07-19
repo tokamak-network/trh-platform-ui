@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardLogoIcon } from "@/components/icon";
-import { AuthForm } from "@/components/organisms";
+import { AuthForm } from "@/features/auth/components/AuthForm";
 import Link from "next/link";
 
 export default function AuthPage() {
