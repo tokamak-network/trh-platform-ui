@@ -7,12 +7,11 @@ import { PasswordInput } from "@/components/molecules";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuthContext } from "@/providers";
 
 const authFormSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters" }),
+  email: z.email({ message: "Invalid email address" }),
+  password: z.string(),
   rememberMe: z.boolean(),
 });
 
@@ -37,6 +36,8 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
     },
     ref
   ) => {
+    const { login, isLoggingIn } = useAuthContext();
+
     const form = useForm<AuthFormData>({
       resolver: zodResolver(authFormSchema),
       defaultValues: {
@@ -47,7 +48,14 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
     });
 
     const handleSubmit = form.handleSubmit((data) => {
-      onSubmit?.(data);
+      if (onSubmit) {
+        onSubmit(data);
+      } else {
+        login({
+          email: data.email,
+          password: data.password,
+        });
+      }
     });
 
     return (
@@ -128,9 +136,9 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || form.formState.isSubmitting}
+              disabled={isLoading || isLoggingIn || form.formState.isSubmitting}
             >
-              {isLoading || form.formState.isSubmitting
+              {isLoading || isLoggingIn || form.formState.isSubmitting
                 ? "Signing in..."
                 : "Sign In"}
             </Button>

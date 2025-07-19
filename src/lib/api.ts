@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, {
   AxiosInstance,
   AxiosRequestConfig,
@@ -47,7 +48,6 @@ apiClient.interceptors.response.use(
       // Unauthorized - redirect to login or refresh token
       if (typeof window !== "undefined") {
         localStorage.removeItem("accessToken");
-        window.location.href = "/auth";
       }
     }
 

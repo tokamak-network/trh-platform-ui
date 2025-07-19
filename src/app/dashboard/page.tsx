@@ -2,15 +2,29 @@
 
 import { Button } from "@/design-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@/design-system";
+import { LogoutButton } from "@/components/molecules";
+import { useAuthContext } from "@/providers";
 
 export default function DashboardPage() {
+  const { user } = useAuthContext();
+
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-16">
+        <div className="flex justify-between items-start mb-8">
+          <div></div>
+          <LogoutButton />
+        </div>
+
         <div className="text-center space-y-8">
           <h1 className="text-6xl font-bold">TRH Platform</h1>
           <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
             Welcome to your dashboard! You have successfully signed in.
+            {user && (
+              <span className="block mt-2 text-sm">
+                Logged in as: {user.email} ({user.role})
+              </span>
+            )}
           </p>
 
           <div className="flex gap-4 justify-center">

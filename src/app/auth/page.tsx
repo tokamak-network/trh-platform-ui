@@ -11,16 +11,7 @@ export default function AuthPage() {
         <div className="flex flex-col items-center gap-2">
           <DashboardLogoIcon />
         </div>
-        <AuthForm
-          onSubmit={(data) => {
-            console.log("Auth form submitted:", data);
-            // Here you would typically handle authentication
-            // For now, we'll redirect to dashboard after a brief delay
-            setTimeout(() => {
-              window.location.href = "/dashboard";
-            }, 1000);
-          }}
-        />
+        <AuthForm />
         <div className="flex flex-col items-center gap-2">
           <p className="text-neutral-600">
             Need Help?{" "}
