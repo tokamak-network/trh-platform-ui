@@ -7,8 +7,9 @@ import axios, {
 } from "axios";
 
 // API base configuration
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1/";
+const API_BASE_URL = `${
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+}/api/v1/`;
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
