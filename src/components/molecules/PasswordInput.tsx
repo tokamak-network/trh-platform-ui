@@ -1,6 +1,6 @@
-import * as React from "react";
+import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { Button } from "@/design-system";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface PasswordInputProps
@@ -23,7 +23,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
     },
     ref
   ) => {
-    const [showPassword, setShowPassword] = React.useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const togglePasswordVisibility = () => {
       setShowPassword(!showPassword);

@@ -1,8 +1,9 @@
-import * as React from "react";
+import React, { useState } from "react";
 import * as z from "zod";
-import { Input, Checkbox } from "@/design-system";
-import { Button } from "@/design-system";
-import { Card, CardContent, CardHeader, CardTitle } from "@/design-system";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PasswordInput } from "@/components/molecules";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
@@ -87,8 +88,15 @@ const AuthForm = React.forwardRef<HTMLFormElement, AuthFormProps>(
                 placeholder="Enter your email or username"
                 {...form.register("email")}
                 disabled={isLoading}
-                error={form.formState.errors.email?.message}
+                className={
+                  form.formState.errors.email ? "border-destructive" : ""
+                }
               />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
             </div>
 
             {/* Password Input */}

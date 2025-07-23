@@ -1,6 +1,6 @@
 "use client";
-import { Button } from "@/design-system";
-import { Card, CardContent, CardHeader, CardTitle } from "@/design-system";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthenticatedLayout } from "@/components/layout";
 import { useAuthContext } from "@/providers";
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense } from "react";
-import { Button } from "@/design-system";
-import { Input } from "@/design-system";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -10,9 +10,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/design-system";
-import { Badge } from "@/design-system";
-import { Avatar, AvatarFallback, AvatarImage } from "@/design-system";
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function DesignSystemContent() {
   return (
@@ -23,7 +24,7 @@ function DesignSystemContent() {
             TRH Platform Design System
           </h1>
           <p className="text-xl text-neutral-600">
-            Custom design system with brand colors
+            Built with shadcn/ui components and custom brand colors
           </p>
         </div>
 
@@ -169,8 +170,11 @@ function DesignSystemContent() {
                 </label>
                 <Input
                   placeholder="Enter your email..."
-                  error="Please enter a valid email address"
+                  className="border-destructive"
                 />
+                <p className="text-sm text-destructive mt-1">
+                  Please enter a valid email address
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -178,9 +182,12 @@ function DesignSystemContent() {
                 </label>
                 <Input
                   placeholder="Enter your name..."
-                  error="Name is required"
+                  className="border-destructive"
                   autoFocus
                 />
+                <p className="text-sm text-destructive mt-1">
+                  Name is required
+                </p>
               </div>
             </div>
           </div>
@@ -256,6 +263,40 @@ function DesignSystemContent() {
               <AvatarImage src="https://github.com/vercel.png" alt="@vercel" />
               <AvatarFallback>VR</AvatarFallback>
             </Avatar>
+          </div>
+        </section>
+
+        {/* Checkboxes Section */}
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">Checkboxes</h2>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="terms" />
+              <label
+                htmlFor="terms"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Accept terms and conditions
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="marketing" defaultChecked />
+              <label
+                htmlFor="marketing"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Send me marketing emails
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="disabled" disabled />
+              <label
+                htmlFor="disabled"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Disabled checkbox
+              </label>
+            </div>
           </div>
         </section>
 
