@@ -12,7 +12,7 @@ import { useAuthContext } from "@/providers";
 
 const authFormSchema = z.object({
   email: z.email({ message: "Invalid email address" }),
-  password: z.string(),
+  password: z.string().nonempty({ message: "Password is required" }),
   rememberMe: z.boolean(),
 });
 

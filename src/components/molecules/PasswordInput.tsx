@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export interface PasswordInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+  extends Omit<React.ComponentProps<typeof Input>, "type"> {
   showToggle?: boolean;
   toggleButtonClassName?: string;
   containerClassName?: string;
@@ -32,17 +33,16 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
     return (
       <div className={cn("w-full", containerClassName)}>
         <div className="relative">
-          <input
+          <Input
             type={showPassword ? "text" : "password"}
             className={cn(
-              "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-500 focus-visible:outline-none focus-visible:border-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-disabled",
               showToggle && "pr-10", // Add padding for the toggle button
-              error
-                ? "border-error-500 focus-visible:border-error-500"
-                : "border-neutral-200 focus-visible:border-primary-500",
+              error &&
+                "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
               className
             )}
             ref={ref}
+            aria-invalid={error ? "true" : "false"}
             {...props}
           />
           {showToggle && (
@@ -52,7 +52,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
               size="icon"
               className={cn(
                 "absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8",
-                "text-neutral-500 hover:text-neutral-700",
+                "text-muted-foreground hover:text-foreground",
                 toggleButtonClassName
               )}
               onClick={togglePasswordVisibility}
@@ -66,7 +66,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             </Button>
           )}
         </div>
-        {error && <p className="mt-1 text-sm text-error-500">{error}</p>}
+        {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
       </div>
     );
   }

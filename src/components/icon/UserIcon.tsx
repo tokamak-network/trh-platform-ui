@@ -15,14 +15,14 @@ export const UserIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
         <path
           d="M8.0013 8.00016C9.84225 8.00016 11.3346 6.50778 11.3346 4.66683C11.3346 2.82588 9.84225 1.3335 8.0013 1.3335C6.16035 1.3335 4.66797 2.82588 4.66797 4.66683C4.66797 6.50778 6.16035 8.00016 8.0013 8.00016Z"
           stroke="white"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
         <path
           d="M13.7268 14.6667C13.7268 12.0867 11.1601 10 8.0001 10C4.8401 10 2.27344 12.0867 2.27344 14.6667"
           stroke="white"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
     );
@@ -38,14 +38,14 @@ export const UserIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
       <path
         d="M8.0013 8.00016C9.84225 8.00016 11.3346 6.50778 11.3346 4.66683C11.3346 2.82588 9.84225 1.3335 8.0013 1.3335C6.16035 1.3335 4.66797 2.82588 4.66797 4.66683C4.66797 6.50778 6.16035 8.00016 8.0013 8.00016Z"
         stroke="#6D758F"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M13.7268 14.6667C13.7268 12.0867 11.1601 10 8.0001 10C4.8401 10 2.27344 12.0867 2.27344 14.6667"
         stroke="#6D758F"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
