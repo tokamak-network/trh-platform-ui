@@ -1,0 +1,89 @@
+"use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AWSCredentialsList } from "../aws-credentials";
+import { WalletManagement } from "../wallet-management";
+import { EncryptionSettings } from "../encryption";
+import { SecurityMonitoring } from "../monitoring";
+import { AWSCredential, AWSCredentialFormData, SecurityTab } from "../schemas";
+
+interface SecurityTabsProps {
+  awsCredentials: AWSCredential[];
+  onAddCredential: (data: AWSCredentialFormData) => void;
+  onUpdateCredential: (id: string, data: AWSCredentialFormData) => void;
+  onDeleteCredential: (id: string) => void;
+  isLoading?: boolean;
+  isAdding?: boolean;
+  isUpdating?: boolean;
+  isDeleting?: boolean;
+  deletingId?: string | null;
+  currentTab: SecurityTab;
+}
+
+export function SecurityTabs({
+  awsCredentials,
+  onAddCredential,
+  onUpdateCredential,
+  onDeleteCredential,
+  isLoading = false,
+  isAdding = false,
+  isUpdating = false,
+  isDeleting = false,
+  deletingId,
+  currentTab,
+}: SecurityTabsProps) {
+  const router = useRouter();
+
+  const handleTabChange = (value: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    router.push(url.pathname + url.search);
+  };
+
+  return (
+    <Tabs
+      value={currentTab}
+      onValueChange={handleTabChange}
+      className="space-y-6"
+    >
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="aws">AWS Credentials</TabsTrigger>
+        <TabsTrigger value="wallets">Wallet Management</TabsTrigger>
+        <TabsTrigger value="encryption">Encryption</TabsTrigger>
+        <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+      </TabsList>
+
+      {/* AWS Credentials Tab */}
+      <TabsContent value="aws" className="space-y-6">
+        <AWSCredentialsList
+          credentials={awsCredentials}
+          onAdd={onAddCredential}
+          onUpdate={onUpdateCredential}
+          onDelete={onDeleteCredential}
+          isLoading={isLoading}
+          isAdding={isAdding}
+          isUpdating={isUpdating}
+          isDeleting={isDeleting}
+          deletingId={deletingId}
+        />
+      </TabsContent>
+
+      {/* Wallet Management Tab */}
+      <TabsContent value="wallets" className="space-y-6">
+        <WalletManagement />
+      </TabsContent>
+
+      {/* Encryption Tab */}
+      <TabsContent value="encryption" className="space-y-6">
+        <EncryptionSettings />
+      </TabsContent>
+
+      {/* Monitoring Tab */}
+      <TabsContent value="monitoring" className="space-y-6">
+        <SecurityMonitoring />
+      </TabsContent>
+    </Tabs>
+  );
+}
