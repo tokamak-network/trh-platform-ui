@@ -117,7 +117,7 @@ export function AWSCredentialsList({
             </div>
             <h3 className="text-xl font-semibold mb-2">No AWS Credentials</h3>
             <p className="text-muted-foreground mb-6">
-              You haven't added any AWS credentials yet. Add credentials to
+              You haven&apos;t added any AWS credentials yet. Add credentials to
               deploy and manage your rollups on AWS infrastructure.
             </p>
             <Button
