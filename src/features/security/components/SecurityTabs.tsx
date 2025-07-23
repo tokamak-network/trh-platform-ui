@@ -3,37 +3,17 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AWSCredentialsList } from "../aws-credentials";
+import { AWSCredentialsTab } from "../aws-credentials";
 import { WalletManagement } from "../wallet-management";
 import { EncryptionSettings } from "../encryption";
 import { SecurityMonitoring } from "../monitoring";
-import { AWSCredential, AWSCredentialFormData, SecurityTab } from "../schemas";
+import { SecurityTab } from "../schemas";
 
 interface SecurityTabsProps {
-  awsCredentials: AWSCredential[];
-  onAddCredential: (data: AWSCredentialFormData) => void;
-  onUpdateCredential: (id: string, data: AWSCredentialFormData) => void;
-  onDeleteCredential: (id: string) => void;
-  isLoading?: boolean;
-  isAdding?: boolean;
-  isUpdating?: boolean;
-  isDeleting?: boolean;
-  deletingId?: string | null;
   currentTab: SecurityTab;
 }
 
-export function SecurityTabs({
-  awsCredentials,
-  onAddCredential,
-  onUpdateCredential,
-  onDeleteCredential,
-  isLoading = false,
-  isAdding = false,
-  isUpdating = false,
-  isDeleting = false,
-  deletingId,
-  currentTab,
-}: SecurityTabsProps) {
+export function SecurityTabs({ currentTab }: SecurityTabsProps) {
   const router = useRouter();
 
   const handleTabChange = (value: string) => {
@@ -57,17 +37,7 @@ export function SecurityTabs({
 
       {/* AWS Credentials Tab */}
       <TabsContent value="aws" className="space-y-6">
-        <AWSCredentialsList
-          credentials={awsCredentials}
-          onAdd={onAddCredential}
-          onUpdate={onUpdateCredential}
-          onDelete={onDeleteCredential}
-          isLoading={isLoading}
-          isAdding={isAdding}
-          isUpdating={isUpdating}
-          isDeleting={isDeleting}
-          deletingId={deletingId}
-        />
+        <AWSCredentialsTab />
       </TabsContent>
 
       {/* Wallet Management Tab */}

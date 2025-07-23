@@ -83,17 +83,12 @@ export function AWSCredentialCard({
             <div>
               <CardTitle className="text-lg">{credential.name}</CardTitle>
               <CardDescription>
-                Created: {credential.createdAt}
-                {credential.lastUsed && ` • Last used: ${credential.lastUsed}`}
+                Created: {new Date(credential.createdAt).toLocaleDateString()}
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge
-              variant={credential.status === "active" ? "default" : "secondary"}
-            >
-              {credential.status}
-            </Badge>
+            <Badge variant="default">Active</Badge>
             <Button
               variant="ghost"
               size="sm"
@@ -179,26 +174,6 @@ export function AWSCredentialCard({
             {displaySecretKey}
           </div>
         </div>
-
-        {credential.region && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Region</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  handleCopyToClipboard(credential.region!, "Region")
-                }
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="font-mono text-sm bg-muted p-2 rounded">
-              {credential.region}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

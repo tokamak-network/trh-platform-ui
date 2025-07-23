@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, CloudCog } from "lucide-react";
 import {
   AWSCredential,
   AWSCredentialFormData,
@@ -10,6 +10,7 @@ import {
 } from "../../schemas";
 import { AWSCredentialCard } from "./AWSCredentialCard";
 import { AWSCredentialForm } from "./AWSCredentialForm";
+import Image from "next/image";
 
 interface AWSCredentialsListProps {
   credentials: AWSCredential[];
@@ -92,17 +93,39 @@ export function AWSCredentialsList({
 
       {/* Credentials List */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-muted-foreground">Loading credentials...</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center text-center">
+            <div className="animate-spin mb-4">
+              <CloudCog className="h-12 w-12 text-primary/70" />
+            </div>
+            <div className="text-lg font-medium">Loading credentials...</div>
+            <p className="text-muted-foreground mt-1">
+              Please wait while we fetch your AWS credentials
+            </p>
+          </div>
         </div>
       ) : credentials.length === 0 ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <div className="text-muted-foreground mb-2">
-              No AWS credentials found
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center max-w-md">
+            <div className="mx-auto w-24 h-24 mb-6 relative">
+              <Image
+                src="/globe.svg"
+                alt="AWS Cloud"
+                fill
+                className="opacity-80"
+              />
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+            <h3 className="text-xl font-semibold mb-2">No AWS Credentials</h3>
+            <p className="text-muted-foreground mb-6">
+              You haven't added any AWS credentials yet. Add credentials to
+              deploy and manage your rollups on AWS infrastructure.
+            </p>
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              size="lg"
+              className="px-6"
+            >
+              <Plus className="w-5 h-5 mr-2" />
               Add your first credential
             </Button>
           </div>

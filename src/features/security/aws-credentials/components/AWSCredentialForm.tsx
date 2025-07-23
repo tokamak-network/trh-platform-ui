@@ -47,7 +47,6 @@ export function AWSCredentialForm({
       name: credential?.name || "",
       accessKeyId: credential?.accessKeyId || "",
       secretAccessKey: credential?.secretAccessKey || "",
-      region: credential?.region || "",
     },
   });
 
@@ -57,20 +56,23 @@ export function AWSCredentialForm({
         name: credential.name,
         accessKeyId: credential.accessKeyId,
         secretAccessKey: credential.secretAccessKey,
-        region: credential.region || "",
       });
     } else {
       form.reset({
         name: "",
         accessKeyId: "",
         secretAccessKey: "",
-        region: "",
       });
     }
   }, [credential, form]);
 
   const handleSubmit = form.handleSubmit((data) => {
     onSubmit(data);
+    form.reset({
+      name: "",
+      accessKeyId: "",
+      secretAccessKey: "",
+    });
   });
 
   const handleClose = () => {
@@ -148,16 +150,6 @@ export function AWSCredentialForm({
                 {form.formState.errors.secretAccessKey.message}
               </p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="region">Region (Optional)</Label>
-            <Input
-              id="region"
-              placeholder="us-east-1"
-              {...form.register("region")}
-              disabled={isLoading}
-            />
           </div>
 
           <DialogFooter>

@@ -24,9 +24,7 @@ export const useAwsCredentials = () => {
     queryKey: ["security", "aws-credentials"],
     queryFn: async () => {
       try {
-        console.log("Fetching AWS credentials...");
         const result = await awsCredentialsService.getAwsCredentials();
-        console.log("AWS credentials fetched successfully:", result);
         return result;
       } catch (error) {
         console.error("Error fetching AWS credentials:", error);
@@ -43,11 +41,9 @@ export const useAwsCredentials = () => {
   // Create AWS credential mutation
   const createCredentialMutation = useMutation({
     mutationFn: (data: AWSCredentialFormData) => {
-      console.log("Creating AWS credential:", data);
       return awsCredentialsService.createAwsCredential(data);
     },
     onSuccess: (newCredential) => {
-      console.log("AWS credential created successfully:", newCredential);
       queryClient.setQueryData(
         ["security", "aws-credentials"],
         (old: AWSCredential[] = []) => [...old, newCredential]
@@ -63,11 +59,9 @@ export const useAwsCredentials = () => {
   // Update AWS credential mutation
   const updateCredentialMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: AWSCredentialFormData }) => {
-      console.log("Updating AWS credential:", { id, data });
       return awsCredentialsService.updateAwsCredential(id, data);
     },
     onSuccess: (updatedCredential) => {
-      console.log("AWS credential updated successfully:", updatedCredential);
       queryClient.setQueryData(
         ["security", "aws-credentials"],
         (old: AWSCredential[] = []) =>
@@ -86,14 +80,12 @@ export const useAwsCredentials = () => {
   // Delete AWS credential mutation
   const deleteCredentialMutation = useMutation({
     mutationFn: (id: string) => {
-      console.log("Deleting AWS credential:", id);
       return awsCredentialsService.deleteAwsCredential(id);
     },
     onMutate: (id: string) => {
       setDeletingId(id);
     },
     onSuccess: (_, deletedId) => {
-      console.log("AWS credential deleted successfully:", deletedId);
       queryClient.setQueryData(
         ["security", "aws-credentials"],
         (old: AWSCredential[] = []) =>
@@ -112,11 +104,9 @@ export const useAwsCredentials = () => {
   // Test AWS credential mutation
   const testCredentialMutation = useMutation({
     mutationFn: (id: string) => {
-      console.log("Testing AWS credential:", id);
       return awsCredentialsService.testAwsCredential(id);
     },
     onSuccess: () => {
-      console.log("AWS credential test successful");
       toast.success("AWS credentials are valid");
     },
     onError: (error: Error) => {
@@ -155,7 +145,6 @@ export const useAwsCredentials = () => {
   );
 
   const refreshCredentials = useCallback(() => {
-    console.log("Refreshing credentials...");
     refetch();
   }, [refetch]);
 
@@ -165,15 +154,6 @@ export const useAwsCredentials = () => {
     isLoading,
     error: error?.message || null,
   };
-
-  // Debug logging
-  useEffect(() => {
-    console.log("Security state updated:", {
-      awsCredentials: awsCredentials.length,
-      isLoading,
-      error: error?.message,
-    });
-  }, [awsCredentials, isLoading, error]);
 
   return {
     // State

@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete, ApiError } from "@/lib/api";
+import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/lib/api";
 import {
   AWSCredential,
   CreateAWSCredentialRequest,
@@ -9,39 +9,10 @@ import {
   awsCredentialResponseSchema,
 } from "../../schemas";
 
-// Mock data for development
-const mockCredentials: AWSCredential[] = [
-  {
-    id: "aws_1",
-    name: "Production AWS Account",
-    accessKeyId: "AKIAIOSFODNN7EXAMPLE",
-    secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    region: "us-east-1",
-    createdAt: "2024-01-15",
-    lastUsed: "2 hours ago",
-    status: "active",
-  },
-  {
-    id: "aws_2",
-    name: "Development AWS Account",
-    accessKeyId: "AKIAI44QH8DHBEXAMPLE",
-    secretAccessKey: "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY",
-    region: "us-west-2",
-    createdAt: "2024-02-01",
-    lastUsed: "1 day ago",
-    status: "active",
-  },
-];
-
 export class AwsCredentialsService {
   private static instance: AwsCredentialsService | null = null;
-  private mockData: AWSCredential[];
-  private useMockData: boolean;
 
-  private constructor() {
-    this.mockData = [...mockCredentials];
-    this.useMockData = true; // Set to false when real API is available
-  }
+  private constructor() {}
 
   public static getInstance(): AwsCredentialsService {
     if (!AwsCredentialsService.instance) {
@@ -52,18 +23,19 @@ export class AwsCredentialsService {
 
   // AWS Credentials methods
   async getAwsCredentials(): Promise<AWSCredential[]> {
-    if (this.useMockData) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return [...this.mockData];
-    }
-
     try {
-      const response = await apiGet<AWSCredentialsListResponse>(
-        "security/aws-credentials"
+      const response = await apiGet<{
+        status: number;
+        message: string;
+        data: {
+          credentials: AWSCredential[];
+          total: number;
+        };
+      }>("aws-credentials");
+
+      const validatedResponse = awsCredentialsListResponseSchema.parse(
+        response.data
       );
-      const validatedResponse =
-        awsCredentialsListResponseSchema.parse(response);
       return validatedResponse.credentials;
     } catch (error) {
       const apiError = error as ApiError;
@@ -71,35 +43,44 @@ export class AwsCredentialsService {
     }
   }
 
+  async getAwsCredential(id: string): Promise<AWSCredential> {
+    try {
+      const response = await apiGet<{
+        status: number;
+        message: string;
+        data: {
+          credential: AWSCredential;
+        };
+      }>(`aws-credentials/${id}`);
+
+      const validatedResponse = awsCredentialResponseSchema.parse(
+        response.data.data.credential
+      );
+      return validatedResponse.credential;
+    } catch (error) {
+      const apiError = error as ApiError;
+      if (apiError.status === 404) {
+        throw new Error("AWS credential not found");
+      }
+      throw new Error(apiError.message || "Failed to fetch AWS credential");
+    }
+  }
+
   async createAwsCredential(
     data: CreateAWSCredentialRequest
   ): Promise<AWSCredential> {
-    if (this.useMockData) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Check for duplicate names
-      if (this.mockData.some((cred) => cred.name === data.name)) {
-        throw new Error("AWS credential with this name already exists");
-      }
-
-      const newCredential: AWSCredential = {
-        id: `aws_${Date.now()}`,
-        ...data,
-        createdAt: new Date().toISOString().split("T")[0],
-        status: "active",
-      };
-
-      this.mockData.push(newCredential);
-      return newCredential;
-    }
-
     try {
-      const response = await apiPost<AWSCredentialResponse>(
-        "security/aws-credentials",
-        data
+      const response = await apiPost<{
+        status: number;
+        message: string;
+        data: {
+          credential: AWSCredential;
+        };
+      }>("aws-credentials", data);
+
+      const validatedResponse = awsCredentialResponseSchema.parse(
+        response.data
       );
-      const validatedResponse = awsCredentialResponseSchema.parse(response);
       return validatedResponse.credential;
     } catch (error) {
       const apiError = error as ApiError;
@@ -117,38 +98,18 @@ export class AwsCredentialsService {
     id: string,
     data: UpdateAWSCredentialRequest
   ): Promise<AWSCredential> {
-    if (this.useMockData) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const credentialIndex = this.mockData.findIndex((cred) => cred.id === id);
-      if (credentialIndex === -1) {
-        throw new Error("AWS credential not found");
-      }
-
-      // Check for duplicate names (excluding current credential)
-      if (
-        data.name &&
-        this.mockData.some((cred) => cred.name === data.name && cred.id !== id)
-      ) {
-        throw new Error("AWS credential with this name already exists");
-      }
-
-      const updatedCredential = {
-        ...this.mockData[credentialIndex],
-        ...data,
-      };
-
-      this.mockData[credentialIndex] = updatedCredential;
-      return updatedCredential;
-    }
-
     try {
-      const response = await apiPut<AWSCredentialResponse>(
-        `security/aws-credentials/${id}`,
-        data
+      const response = await apiPatch<{
+        status: number;
+        message: string;
+        data: {
+          credential: AWSCredential;
+        };
+      }>(`aws-credentials/${id}`, data);
+
+      const validatedResponse = awsCredentialResponseSchema.parse(
+        response.data
       );
-      const validatedResponse = awsCredentialResponseSchema.parse(response);
       return validatedResponse.credential;
     } catch (error) {
       const apiError = error as ApiError;
@@ -158,26 +119,16 @@ export class AwsCredentialsService {
       if (apiError.status === 400) {
         throw new Error("Invalid credential data");
       }
+      if (apiError.status === 409) {
+        throw new Error("AWS credential with this name already exists");
+      }
       throw new Error(apiError.message || "Failed to update AWS credential");
     }
   }
 
   async deleteAwsCredential(id: string): Promise<void> {
-    if (this.useMockData) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const credentialIndex = this.mockData.findIndex((cred) => cred.id === id);
-      if (credentialIndex === -1) {
-        throw new Error("AWS credential not found");
-      }
-
-      this.mockData.splice(credentialIndex, 1);
-      return;
-    }
-
     try {
-      await apiDelete(`security/aws-credentials/${id}`);
+      await apiDelete(`aws-credentials/${id}`);
     } catch (error) {
       const apiError = error as ApiError;
       if (apiError.status === 404) {
@@ -191,26 +142,17 @@ export class AwsCredentialsService {
   }
 
   async testAwsCredential(id: string): Promise<boolean> {
-    if (this.useMockData) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const credential = this.mockData.find((cred) => cred.id === id);
-      if (!credential) {
-        throw new Error("AWS credential not found");
-      }
-
-      // Mock validation - just check if it's not empty
-      if (!credential.accessKeyId || !credential.secretAccessKey) {
-        throw new Error("Invalid AWS credentials");
-      }
-
-      return true;
-    }
-
     try {
-      await apiPost(`security/aws-credentials/${id}/test`, {});
-      return true;
+      // Note: This endpoint is not in the Swagger doc, so we're assuming it exists or will be added
+      const response = await apiPost<{
+        status: number;
+        message: string;
+        data: {
+          success: boolean;
+        };
+      }>(`aws-credentials/${id}/test`, {});
+
+      return response.data.data.success;
     } catch (error) {
       const apiError = error as ApiError;
       if (apiError.status === 404) {
@@ -244,16 +186,6 @@ export class AwsCredentialsService {
       document.execCommand("copy");
       document.body.removeChild(textArea);
     }
-  }
-
-  // Development utility to toggle mock data
-  setUseMockData(useMock: boolean) {
-    this.useMockData = useMock;
-  }
-
-  // Reset mock data to initial state
-  resetMockData() {
-    this.mockData = [...mockCredentials];
   }
 }
 

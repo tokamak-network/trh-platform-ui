@@ -6,17 +6,14 @@ export const awsCredentialSchema = z.object({
   name: z.string().min(1, "Name is required"),
   accessKeyId: z.string().min(1, "Access Key ID is required"),
   secretAccessKey: z.string().min(1, "Secret Access Key is required"),
-  region: z.string().optional(),
   createdAt: z.string(),
-  lastUsed: z.string().optional(),
-  status: z.enum(["active", "inactive"]),
+  updatedAt: z.string().optional(),
 });
 
 export const createAwsCredentialSchema = z.object({
   name: z.string().min(1, "Name is required"),
   accessKeyId: z.string().min(1, "Access Key ID is required"),
   secretAccessKey: z.string().min(1, "Secret Access Key is required"),
-  region: z.string().optional(),
 });
 
 export const updateAwsCredentialSchema = z.object({
@@ -26,7 +23,6 @@ export const updateAwsCredentialSchema = z.object({
     .string()
     .min(1, "Secret Access Key is required")
     .optional(),
-  region: z.string().optional(),
 });
 
 // API Response schemas
@@ -44,7 +40,6 @@ export const awsCredentialFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   accessKeyId: z.string().min(1, "Access Key ID is required"),
   secretAccessKey: z.string().min(1, "Secret Access Key is required"),
-  region: z.string().optional(),
 });
 
 // Infer types from schemas
