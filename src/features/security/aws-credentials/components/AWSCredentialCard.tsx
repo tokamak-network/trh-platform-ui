@@ -73,7 +73,7 @@ export function AWSCredentialCard({
     : maskedSecretKey;
 
   return (
-    <Card>
+    <Card className="relative group border-0 shadow-xl bg-white/60 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
