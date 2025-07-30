@@ -91,20 +91,26 @@ export function useCreateRollup() {
 
       switch (currentStep) {
         case 1: // Network & Chain step
-          isValid = await form.trigger([
+          const baseFields = [
             "networkAndChain.network",
             "networkAndChain.chainName",
             "networkAndChain.l1RpcUrl",
             "networkAndChain.l1BeaconUrl",
+          ] as const;
+
+          const advancedFields = [
+            "networkAndChain.l2BlockTime",
+            "networkAndChain.batchSubmissionFreq",
+            "networkAndChain.outputRootFreq",
+            "networkAndChain.challengePeriod",
+          ] as const;
+
+          isValid = await form.trigger([
+            ...baseFields,
             ...(form.getValues("networkAndChain.advancedConfig")
-              ? [
-                  "networkAndChain.l2BlockTime",
-                  "networkAndChain.batchSubmissionFreq",
-                  "networkAndChain.outputRootFreq",
-                  "networkAndChain.challengePeriod",
-                ]
+              ? advancedFields
               : []),
-          ] as const);
+          ]);
           break;
         case 2: // Account & AWS step
           isValid = await form.trigger([

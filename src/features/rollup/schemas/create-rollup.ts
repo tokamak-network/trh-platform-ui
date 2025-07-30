@@ -121,8 +121,9 @@ export const accountAndAwsSchema = z.object({
   batchAccount: z.string().min(1, "Batch account is required"),
   sequencerAccount: z.string().min(1, "Sequencer account is required"),
   accountName: z.string().min(1, "Account name is required"),
-  awsAccessKey: z.string().min(1, "AWS access key is required"),
-  awsSecretKey: z.string().min(1, "AWS secret key is required"),
+  credentialId: z.string().min(1, "AWS credential is required"),
+  awsAccessKey: z.string(),
+  awsSecretKey: z.string(),
   awsRegion: z.string().min(1, "AWS region is required"),
 });
 

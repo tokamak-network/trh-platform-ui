@@ -3,11 +3,19 @@
 import { AccountSetup } from "./AccountSetup";
 import { AwsConfig } from "./AwsConfig";
 
-export function AccountAndAwsStep() {
+interface AccountAndAwsStepProps {
+  onNext?: () => void;
+  onBack?: () => void;
+}
+
+export function AccountAndAwsStep({
+  onNext = () => {},
+  onBack = () => {},
+}: AccountAndAwsStepProps) {
   return (
     <div className="space-y-8">
       <AccountSetup />
-      <AwsConfig />
+      <AwsConfig onNext={onNext} onBack={onBack} />
     </div>
   );
 }
