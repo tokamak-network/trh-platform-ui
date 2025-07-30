@@ -84,9 +84,55 @@ export function useCreateRollup() {
 
   const progress = getProgress(currentStep);
 
-  const goToNextStep = () => {
+  const goToNextStep = async () => {
     if (currentStep < STEPS.length) {
-      setCurrentStep((prev) => prev + 1);
+      // Validate current step fields
+      let isValid = false;
+
+      switch (currentStep) {
+        case 1: // Network & Chain step
+          isValid = await form.trigger([
+            "networkAndChain.network",
+            "networkAndChain.chainName",
+            "networkAndChain.l1RpcUrl",
+            "networkAndChain.l1BeaconUrl",
+            ...(form.getValues("networkAndChain.advancedConfig")
+              ? [
+                  "networkAndChain.l2BlockTime",
+                  "networkAndChain.batchSubmissionFreq",
+                  "networkAndChain.outputRootFreq",
+                  "networkAndChain.challengePeriod",
+                ]
+              : []),
+          ] as const);
+          break;
+        case 2: // Account & AWS step
+          isValid = await form.trigger([
+            "accountAndAws.seedPhrase",
+            "accountAndAws.adminAccount",
+            "accountAndAws.proposerAccount",
+            "accountAndAws.batchAccount",
+            "accountAndAws.sequencerAccount",
+            "accountAndAws.accountName",
+            "accountAndAws.awsAccessKey",
+            "accountAndAws.awsSecretKey",
+            "accountAndAws.awsRegion",
+          ] as const);
+          break;
+        case 3: // DAO Candidate step
+          isValid = await form.trigger([
+            "daoCandidate.daoName",
+            "daoCandidate.daoDescription",
+            "daoCandidate.daoWebsite",
+          ] as const);
+          break;
+        default:
+          isValid = true;
+      }
+
+      if (isValid) {
+        setCurrentStep((prev) => prev + 1);
+      }
     }
   };
 

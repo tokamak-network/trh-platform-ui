@@ -113,6 +113,13 @@ export const networkAndChainSchema = z
 
 // Account & AWS Setup Schema
 export const accountAndAwsSchema = z.object({
+  seedPhrase: z
+    .array(z.string())
+    .length(12, "Seed phrase must contain exactly 12 words"),
+  adminAccount: z.string().min(1, "Admin account is required"),
+  proposerAccount: z.string().min(1, "Proposer account is required"),
+  batchAccount: z.string().min(1, "Batch account is required"),
+  sequencerAccount: z.string().min(1, "Sequencer account is required"),
   accountName: z.string().min(1, "Account name is required"),
   awsAccessKey: z.string().min(1, "AWS access key is required"),
   awsSecretKey: z.string().min(1, "AWS secret key is required"),

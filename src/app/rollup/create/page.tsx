@@ -82,7 +82,11 @@ export default function CreateRollupPage() {
                 </Button>
                 <Button
                   onClick={goToNextStep}
-                  disabled={isLastStep}
+                  disabled={
+                    isLastStep ||
+                    form.formState.isValidating ||
+                    form.formState.isSubmitting
+                  }
                   className="flex items-center gap-2"
                 >
                   {isLastStep ? "Deploy" : "Next"}
