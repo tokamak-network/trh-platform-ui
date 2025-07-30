@@ -23,12 +23,12 @@ export function ReviewAndDeployStep() {
         { label: "AWS Region", value: formData.accountAndAws.awsRegion },
       ],
     },
-    {
+    formData.daoCandidate && {
       title: "DAO Candidate",
       data: [
-        { label: "DAO Name", value: formData.daoCandidate.daoName },
-        { label: "Description", value: formData.daoCandidate.daoDescription },
-        { label: "Website", value: formData.daoCandidate.daoWebsite },
+        { label: "Amount", value: `${formData.daoCandidate.amount} TON` },
+        { label: "Memo", value: formData.daoCandidate.memo },
+        { label: "Name Information", value: formData.daoCandidate.nameInfo },
       ],
     },
   ];
@@ -44,23 +44,26 @@ export function ReviewAndDeployStep() {
         </div>
 
         <div className="space-y-6">
-          {sections.map((section) => (
-            <div key={section.title} className="space-y-4">
-              <h3 className="font-medium text-gray-900">{section.title}</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {section.data.map((item) => (
-                  <div key={item.label} className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      {item.label}
-                    </p>
-                    <p className="text-sm text-gray-900">
-                      {item.value || "Not provided"}
-                    </p>
-                  </div>
-                ))}
+          {sections.filter(Boolean).map((section) => {
+            if (!section) return null;
+            return (
+              <div key={section.title} className="space-y-4">
+                <h3 className="font-medium text-gray-900">{section.title}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {section.data.map((item) => (
+                    <div key={item.label} className="space-y-1">
+                      <p className="text-sm font-medium text-gray-500">
+                        {item.label}
+                      </p>
+                      <p className="text-sm text-gray-900">
+                        {item.value || "Not provided"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="rounded-md bg-yellow-50 p-4">

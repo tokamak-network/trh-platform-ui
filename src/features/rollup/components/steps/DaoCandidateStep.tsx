@@ -17,54 +17,70 @@ export function DaoCandidateStep() {
           <h2 className="text-lg font-semibold">DAO Candidate Registration</h2>
           <p className="text-sm text-gray-500">
             Register your rollup as a DAO candidate by providing the required
-            information.
+            information. This step is optional.
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="daoName">DAO Name</Label>
+            <Label htmlFor="amount" className="flex items-center gap-1">
+              Amount <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="daoName"
-              type="text"
-              placeholder="Enter DAO name"
-              {...register("daoCandidate.daoName")}
+              id="amount"
+              type="number"
+              step="0.1"
+              placeholder="e.g. 1000.1 TON"
+              {...register("daoCandidate.amount")}
             />
-            {errors.daoCandidate?.daoName && (
+            {errors.daoCandidate?.amount && (
               <p className="text-sm text-red-500">
-                {errors.daoCandidate.daoName.message}
+                {errors.daoCandidate.amount.message}
               </p>
             )}
+            <p className="text-xs text-gray-500">
+              Registration amount in TON (minimum 1000.1 TON)
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="daoDescription">Description</Label>
+            <Label htmlFor="memo" className="flex items-center gap-1">
+              Memo <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="daoDescription"
+              id="memo"
               type="text"
-              placeholder="Enter DAO description"
-              {...register("daoCandidate.daoDescription")}
+              placeholder="Enter memo"
+              {...register("daoCandidate.memo")}
             />
-            {errors.daoCandidate?.daoDescription && (
+            {errors.daoCandidate?.memo && (
               <p className="text-sm text-red-500">
-                {errors.daoCandidate.daoDescription.message}
+                {errors.daoCandidate.memo.message}
               </p>
             )}
+            <p className="text-xs text-gray-500">
+              Additional information or memo for the registration
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="daoWebsite">Website</Label>
+            <Label htmlFor="nameInfo" className="flex items-center gap-1">
+              Name Information <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="daoWebsite"
-              type="url"
-              placeholder="Enter DAO website URL"
-              {...register("daoCandidate.daoWebsite")}
+              id="nameInfo"
+              type="text"
+              placeholder="Enter name information"
+              {...register("daoCandidate.nameInfo")}
             />
-            {errors.daoCandidate?.daoWebsite && (
+            {errors.daoCandidate?.nameInfo && (
               <p className="text-sm text-red-500">
-                {errors.daoCandidate.daoWebsite.message}
+                {errors.daoCandidate.nameInfo.message}
               </p>
             )}
+            <p className="text-xs text-gray-500">
+              Name or identifier information for the candidate
+            </p>
           </div>
         </div>
       </div>

@@ -24,6 +24,11 @@ export default function CreateRollupPage() {
     goToPreviousStep,
   } = useCreateRollup();
 
+  const handleSkipDaoCandidate = () => {
+    form.setValue("daoCandidate", undefined);
+    goToNextStep();
+  };
+
   const isFirstStep = currentStep === 1;
   const isLastStep = currentStep === steps.length;
 
@@ -80,18 +85,30 @@ export default function CreateRollupPage() {
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <Button
-                  onClick={goToNextStep}
-                  disabled={
-                    isLastStep ||
-                    form.formState.isValidating ||
-                    form.formState.isSubmitting
-                  }
-                  className="flex items-center gap-2"
-                >
-                  {isLastStep ? "Deploy" : "Next"}
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-3">
+                  {currentStep === 3 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleSkipDaoCandidate()}
+                      type="button"
+                      className="flex items-center"
+                    >
+                      Skip this step
+                    </Button>
+                  )}
+                  <Button
+                    onClick={goToNextStep}
+                    disabled={
+                      isLastStep ||
+                      form.formState.isValidating ||
+                      form.formState.isSubmitting
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    {isLastStep ? "Deploy" : "Next"}
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </footer>

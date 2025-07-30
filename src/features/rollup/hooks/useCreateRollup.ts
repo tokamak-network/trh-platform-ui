@@ -59,11 +59,7 @@ export function useCreateRollup() {
         awsSecretKey: "",
         awsRegion: "",
       },
-      daoCandidate: {
-        daoName: "",
-        daoDescription: "",
-        daoWebsite: "",
-      },
+      daoCandidate: undefined,
     },
   });
 
@@ -126,11 +122,17 @@ export function useCreateRollup() {
           ] as const);
           break;
         case 3: // DAO Candidate step
-          isValid = await form.trigger([
-            "daoCandidate.daoName",
-            "daoCandidate.daoDescription",
-            "daoCandidate.daoWebsite",
-          ] as const);
+          // If daoCandidate exists, validate its fields
+          if (form.getValues("daoCandidate")) {
+            isValid = await form.trigger([
+              "daoCandidate.amount",
+              "daoCandidate.memo",
+              "daoCandidate.nameInfo",
+            ] as const);
+          } else {
+            // If daoCandidate is undefined (skipped), validation passes
+            isValid = true;
+          }
           break;
         default:
           isValid = true;

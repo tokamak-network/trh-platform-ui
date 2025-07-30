@@ -128,11 +128,19 @@ export const accountAndAwsSchema = z.object({
 });
 
 // DAO Candidate Schema
-export const daoCandidateSchema = z.object({
-  daoName: z.string().min(1, "DAO name is required"),
-  daoDescription: z.string().min(1, "DAO description is required"),
-  daoWebsite: z.string().url("Must be a valid URL"),
-});
+export const daoCandidateSchema = z
+  .object({
+    amount: z
+      .string()
+      .min(1, "Amount is required")
+      .refine(
+        (val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 1000.1,
+        "Amount must be at least 1000.1 TON"
+      ),
+    memo: z.string().min(1, "Memo is required"),
+    nameInfo: z.string().min(1, "Name information is required"),
+  })
+  .optional();
 
 // Combined schema for the entire form
 export const createRollupSchema = z.object({
