@@ -306,7 +306,7 @@ export function NetworkAndChainStep() {
                 </TooltipProvider>
                 <Input
                   id="l1BeaconUrl"
-                  placeholder="node.pro/4ed7d53b815c434c082db3eb2f49612c914afe71/"
+                  placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/4ed7d53b815c434c082db3eb2f49612c914afe48/"
                   value={formData.networkAndChain?.l1BeaconUrl}
                   onChange={handleL1BeaconUrlChange}
                   className={`mt-1 ${
