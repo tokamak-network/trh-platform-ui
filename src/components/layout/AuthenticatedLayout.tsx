@@ -33,9 +33,13 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
+    <div className="min-h-screen bg-gray-100">
+      {/* Fixed sidebar */}
+      <div className="fixed left-0 top-0 h-full">
+        <Sidebar />
+      </div>
+      {/* Main content with left margin to account for fixed sidebar */}
+      <div className="ml-[250px] min-h-screen bg-gray-100">{children}</div>
     </div>
   );
 };

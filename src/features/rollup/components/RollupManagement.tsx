@@ -1,0 +1,60 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { RollupHeader } from "./RollupHeader";
+import { RollupStats } from "./RollupStats";
+import { RollupFilters } from "./RollupFilters";
+import { RollupList } from "./RollupList";
+import { useRollupFilter } from "../hooks/useRollupFilter";
+import { getRollups, calculateRollupStats } from "../services/rollupService";
+
+export function RollupManagement() {
+  const router = useRouter();
+  const rollups = getRollups();
+  const stats = calculateRollupStats();
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    typeFilter,
+    setTypeFilter,
+    filteredRollups,
+  } = useRollupFilter({ rollups });
+
+  const handleCreateRollup = () => {
+    router.push("/rollup/create");
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <RollupHeader />
+
+      {/* Stats */}
+      <RollupStats
+        totalRollups={stats.totalRollups}
+        activeRollups={stats.activeRollups}
+        totalUsers={stats.totalUsers}
+        totalTVL={stats.totalTVL}
+      />
+
+      {/* Filters */}
+      <RollupFilters
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+      />
+
+      {/* Rollups List */}
+      <RollupList
+        rollups={filteredRollups}
+        onCreateRollup={handleCreateRollup}
+      />
+    </div>
+  );
+}

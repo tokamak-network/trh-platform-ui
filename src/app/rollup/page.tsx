@@ -1,16 +1,26 @@
 "use client";
+
+import { Suspense } from "react";
 import { AuthenticatedLayout } from "@/components/layout";
+import { RollupManagement } from "@/features/rollup/components/RollupManagement";
+
+function RollupPageContent() {
+  return (
+    <AuthenticatedLayout>
+      <main className="flex-1 p-6">
+        <div className="max-w-7xl mx-auto">
+          <RollupManagement />
+        </div>
+      </main>
+    </AuthenticatedLayout>
+  );
+}
 
 function RollupPage() {
   return (
-    <AuthenticatedLayout>
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Coming Soon</h1>
-          <p className="text-lg text-gray-600">Rollup Hub</p>
-        </div>
-      </div>
-    </AuthenticatedLayout>
+    <Suspense fallback={<div>Loading...</div>}>
+      <RollupPageContent />
+    </Suspense>
   );
 }
 
