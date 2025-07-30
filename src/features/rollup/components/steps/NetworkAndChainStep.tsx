@@ -546,6 +546,22 @@ export function NetworkAndChainStep() {
                   {formData.networkAndChain?.chainName || "Not set"}
                 </span>
               </div>
+              <div>
+                <span className="font-medium text-slate-700">L1 RPC URL:</span>
+                <span className="ml-2 text-slate-900">
+                  {formData.networkAndChain?.l1RpcUrl ? "••••••••" : "Not set"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-slate-700">
+                  L1 Beacon URL:
+                </span>
+                <span className="ml-2 text-slate-900">
+                  {formData.networkAndChain?.l1BeaconUrl
+                    ? "••••••••"
+                    : "Not set"}
+                </span>
+              </div>
               {advancedConfig && (
                 <>
                   <div>
