@@ -4,7 +4,7 @@ import { AuthenticatedLayout } from "@/components/layout";
 import { CreateRollupStepper } from "@/features/rollup/components/CreateRollupStepper";
 import { useCreateRollup } from "@/features/rollup/hooks/useCreateRollup";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Rocket } from "lucide-react";
 import {
   NetworkAndChainStep,
   AccountAndAwsStep,
@@ -105,8 +105,12 @@ export default function CreateRollupPage() {
                     }
                     className="flex items-center gap-2"
                   >
-                    {isLastStep ? "Deploy" : "Next"}
-                    <ChevronRight className="h-4 w-4" />
+                    {isLastStep ? "Deploy Rollup" : "Next"}
+                    {isLastStep ? (
+                      <Rocket className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
