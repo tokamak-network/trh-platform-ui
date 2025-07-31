@@ -117,9 +117,13 @@ export const accountAndAwsSchema = z.object({
     .array(z.string())
     .length(12, "Seed phrase must contain exactly 12 words"),
   adminAccount: z.string().min(1, "Admin account is required"),
+  adminPrivateKey: z.string().min(1, "Admin private key is required"),
   proposerAccount: z.string().min(1, "Proposer account is required"),
+  proposerPrivateKey: z.string().min(1, "Proposer private key is required"),
   batchAccount: z.string().min(1, "Batch account is required"),
+  batchPrivateKey: z.string().min(1, "Batch private key is required"),
   sequencerAccount: z.string().min(1, "Sequencer account is required"),
+  sequencerPrivateKey: z.string().min(1, "Sequencer private key is required"),
   accountName: z.string().min(1, "Account name is required"),
   credentialId: z.string().min(1, "AWS credential is required"),
   awsAccessKey: z.string(),
@@ -150,3 +154,79 @@ export const createRollupSchema = z.object({
 });
 
 export type CreateRollupFormData = z.infer<typeof createRollupSchema>;
+
+// Backend request schema
+export const rollupDeploymentSchema = z.object({
+  network: z.string(),
+  l1RpcUrl: z.string().url(),
+  l1BeaconUrl: z.string().url(),
+  l2BlockTime: z.number().int().positive(),
+  batchSubmissionFrequency: z.number().int().positive(),
+  outputRootFrequency: z.number().int().positive(),
+  challengePeriod: z.number().int().positive(),
+  adminAccount: z.string(),
+  sequencerAccount: z.string(),
+  batcherAccount: z.string(),
+  proposerAccount: z.string(),
+  awsAccessKey: z.string(),
+  awsSecretAccessKey: z.string(),
+  awsRegion: z.string(),
+  chainName: z.string(),
+  registerCandidate: z.boolean(),
+  registerCandidateParams: z
+    .object({
+      amount: z.number().min(1000.1),
+      memo: z.string(),
+      nameInfo: z.string(),
+    })
+    .optional(),
+});
+
+export type RollupDeploymentRequest = z.infer<typeof rollupDeploymentSchema>;
+
+/**
+ * Converts form data to the backend deployment request format
+ */
+export const convertFormToDeploymentRequest = (
+  formData: CreateRollupFormData
+): RollupDeploymentRequest => {
+  const { networkAndChain, accountAndAws, daoCandidate } = formData;
+
+  const request: RollupDeploymentRequest = {
+    network: networkAndChain.network,
+    l1RpcUrl: networkAndChain.l1RpcUrl,
+    l1BeaconUrl: networkAndChain.l1BeaconUrl,
+    l2BlockTime: networkAndChain.l2BlockTime
+      ? parseInt(networkAndChain.l2BlockTime)
+      : 6,
+    batchSubmissionFrequency: networkAndChain.batchSubmissionFreq
+      ? parseInt(networkAndChain.batchSubmissionFreq)
+      : 1440,
+    outputRootFrequency: networkAndChain.outputRootFreq
+      ? parseInt(networkAndChain.outputRootFreq)
+      : 240,
+    challengePeriod: networkAndChain.challengePeriod
+      ? parseInt(networkAndChain.challengePeriod)
+      : 12,
+    adminAccount: accountAndAws.adminPrivateKey.trim().replace("0x", ""),
+    sequencerAccount: accountAndAws.sequencerPrivateKey
+      .trim()
+      .replace("0x", ""),
+    batcherAccount: accountAndAws.batchPrivateKey.trim().replace("0x", ""),
+    proposerAccount: accountAndAws.proposerPrivateKey.trim().replace("0x", ""),
+    awsAccessKey: accountAndAws.awsAccessKey,
+    awsSecretAccessKey: accountAndAws.awsSecretKey,
+    awsRegion: accountAndAws.awsRegion,
+    chainName: networkAndChain.chainName,
+    registerCandidate: !!daoCandidate,
+    registerCandidateParams: daoCandidate
+      ? {
+          amount: parseFloat(daoCandidate.amount),
+          memo: daoCandidate.memo,
+          nameInfo: daoCandidate.nameInfo,
+        }
+      : undefined,
+  };
+
+  return request;
+};

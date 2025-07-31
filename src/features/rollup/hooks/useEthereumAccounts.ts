@@ -96,7 +96,7 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [seedPhraseStr, rpcUrl, seedPhrase]);
+  }, [seedPhraseStr, rpcUrl]);
 
   // Use effect with proper dependency array
   useEffect(() => {
@@ -110,9 +110,10 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } else {
       setAccounts([]);
     }
-  }, [generateAccounts, seedPhrase]);
+  }, [seedPhraseStr]);
 
-  return { accounts, isLoading, error };
+  const privateKeys = accounts.map((account) => account.privateKey);
+  return { accounts, privateKeys, isLoading, error };
 }
 
 // Export the word list from bip39

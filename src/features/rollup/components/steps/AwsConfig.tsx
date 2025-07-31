@@ -67,10 +67,17 @@ export function AwsConfig({ onNext, onBack }: AwsConfigProps) {
   }, [setValue, watch]);
 
   const handleNext = () => {
-    if (selectedCredentialId) {
+    if (selectedCredentialId && watch("accountAndAws.awsRegion")) {
       onNext();
     }
   };
+
+  // Call handleNext when both fields are filled
+  React.useEffect(() => {
+    if (selectedCredentialId && watch("accountAndAws.awsRegion")) {
+      handleNext();
+    }
+  }, [selectedCredentialId, watch("accountAndAws.awsRegion")]);
 
   return (
     <div className="space-y-6">

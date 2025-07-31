@@ -294,7 +294,18 @@ export function AccountSetup() {
               </Label>
               <Select
                 value={adminAccountField.value || undefined}
-                onValueChange={adminAccountField.onChange}
+                onValueChange={(value) => {
+                  adminAccountField.onChange(value);
+                  const accountIndex = accounts.findIndex(
+                    (acc) => acc.address === value
+                  );
+                  if (accountIndex !== -1) {
+                    setValue(
+                      "accountAndAws.adminPrivateKey",
+                      accounts[accountIndex].privateKey
+                    );
+                  }
+                }}
                 disabled={
                   !seedPhraseConfirmed || isLoading || accounts.length === 0
                 }
@@ -343,7 +354,18 @@ export function AccountSetup() {
               </Label>
               <Select
                 value={proposerAccountField.value || undefined}
-                onValueChange={proposerAccountField.onChange}
+                onValueChange={(value) => {
+                  proposerAccountField.onChange(value);
+                  const accountIndex = accounts.findIndex(
+                    (acc) => acc.address === value
+                  );
+                  if (accountIndex !== -1) {
+                    setValue(
+                      "accountAndAws.proposerPrivateKey",
+                      accounts[accountIndex].privateKey
+                    );
+                  }
+                }}
                 disabled={
                   !seedPhraseConfirmed || isLoading || accounts.length === 0
                 }
@@ -392,7 +414,18 @@ export function AccountSetup() {
               </Label>
               <Select
                 value={batchAccountField.value || undefined}
-                onValueChange={batchAccountField.onChange}
+                onValueChange={(value) => {
+                  batchAccountField.onChange(value);
+                  const accountIndex = accounts.findIndex(
+                    (acc) => acc.address === value
+                  );
+                  if (accountIndex !== -1) {
+                    setValue(
+                      "accountAndAws.batchPrivateKey",
+                      accounts[accountIndex].privateKey
+                    );
+                  }
+                }}
                 disabled={
                   !seedPhraseConfirmed || isLoading || accounts.length === 0
                 }
@@ -441,7 +474,18 @@ export function AccountSetup() {
               </Label>
               <Select
                 value={sequencerAccountField.value || undefined}
-                onValueChange={sequencerAccountField.onChange}
+                onValueChange={(value) => {
+                  sequencerAccountField.onChange(value);
+                  const accountIndex = accounts.findIndex(
+                    (acc) => acc.address === value
+                  );
+                  if (accountIndex !== -1) {
+                    setValue(
+                      "accountAndAws.sequencerPrivateKey",
+                      accounts[accountIndex].privateKey
+                    );
+                  }
+                }}
                 disabled={
                   !seedPhraseConfirmed || isLoading || accounts.length === 0
                 }

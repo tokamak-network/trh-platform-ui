@@ -5,8 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Network, Database, Tag, CheckCircle } from "lucide-react";
+import { useDeployRollupMutation } from "../api";
 import type { CreateRollupFormData } from "../schemas/create-rollup";
-import { createRollupSchema } from "../schemas/create-rollup";
+import {
+  convertFormToDeploymentRequest,
+  createRollupSchema,
+} from "../schemas/create-rollup";
 
 export const STEPS = [
   {
@@ -54,7 +58,17 @@ export function useCreateRollup() {
         challengePeriod: "12",
       },
       accountAndAws: {
+        seedPhrase: Array(12).fill(""),
+        adminAccount: "",
+        adminPrivateKey: "",
+        proposerAccount: "",
+        proposerPrivateKey: "",
+        batchAccount: "",
+        batchPrivateKey: "",
+        sequencerAccount: "",
+        sequencerPrivateKey: "",
         accountName: "",
+        credentialId: "",
         awsAccessKey: "",
         awsSecretKey: "",
         awsRegion: "",
@@ -80,67 +94,100 @@ export function useCreateRollup() {
 
   const progress = getProgress(currentStep);
 
+  const deployMutation = useDeployRollupMutation({
+    onError: (error) => {
+      form.setError("root", {
+        message: error.message || "Failed to deploy rollup",
+      });
+    },
+  });
+
+  const handleDeployRollup = async () => {
+    // Validate all form fields before deployment
+    const isValid = await form.trigger();
+    if (!isValid) {
+      return;
+    }
+
+    const formData = form.getValues();
+    const request = convertFormToDeploymentRequest(formData);
+
+    form.setError("root", { message: "" });
+
+    // Use the mutation directly - the isSubmitting state will be handled by the button's disabled state
+    // which checks for deployMutation.isPending
+    await deployMutation.mutateAsync(request);
+  };
+
   const goToNextStep = async () => {
-    if (currentStep < STEPS.length) {
-      // Validate current step fields
-      let isValid = false;
+    if (currentStep === STEPS.length) {
+      await handleDeployRollup();
+      return;
+    }
 
-      switch (currentStep) {
-        case 1: // Network & Chain step
-          const baseFields = [
-            "networkAndChain.network",
-            "networkAndChain.chainName",
-            "networkAndChain.l1RpcUrl",
-            "networkAndChain.l1BeaconUrl",
-          ] as const;
+    // Validate current step fields
+    let isValid = false;
 
-          const advancedFields = [
-            "networkAndChain.l2BlockTime",
-            "networkAndChain.batchSubmissionFreq",
-            "networkAndChain.outputRootFreq",
-            "networkAndChain.challengePeriod",
-          ] as const;
+    switch (currentStep) {
+      case 1: // Network & Chain step
+        const baseFields = [
+          "networkAndChain.network",
+          "networkAndChain.chainName",
+          "networkAndChain.l1RpcUrl",
+          "networkAndChain.l1BeaconUrl",
+        ] as const;
 
+        const advancedFields = [
+          "networkAndChain.l2BlockTime",
+          "networkAndChain.batchSubmissionFreq",
+          "networkAndChain.outputRootFreq",
+          "networkAndChain.challengePeriod",
+        ] as const;
+
+        isValid = await form.trigger([
+          ...baseFields,
+          ...(form.getValues("networkAndChain.advancedConfig")
+            ? advancedFields
+            : []),
+        ]);
+        break;
+      case 2: // Account & AWS step
+        isValid = await form.trigger([
+          "accountAndAws.seedPhrase",
+          "accountAndAws.adminAccount",
+          "accountAndAws.adminPrivateKey",
+          "accountAndAws.proposerAccount",
+          "accountAndAws.proposerPrivateKey",
+          "accountAndAws.batchAccount",
+          "accountAndAws.batchPrivateKey",
+          "accountAndAws.sequencerAccount",
+          "accountAndAws.sequencerPrivateKey",
+          "accountAndAws.accountName",
+          "accountAndAws.credentialId",
+          "accountAndAws.awsAccessKey",
+          "accountAndAws.awsSecretKey",
+          "accountAndAws.awsRegion",
+        ] as const);
+        break;
+      case 3: // DAO Candidate step
+        // If daoCandidate exists, validate its fields
+        if (form.getValues("daoCandidate")) {
           isValid = await form.trigger([
-            ...baseFields,
-            ...(form.getValues("networkAndChain.advancedConfig")
-              ? advancedFields
-              : []),
-          ]);
-          break;
-        case 2: // Account & AWS step
-          isValid = await form.trigger([
-            "accountAndAws.seedPhrase",
-            "accountAndAws.adminAccount",
-            "accountAndAws.proposerAccount",
-            "accountAndAws.batchAccount",
-            "accountAndAws.sequencerAccount",
-            "accountAndAws.accountName",
-            "accountAndAws.awsAccessKey",
-            "accountAndAws.awsSecretKey",
-            "accountAndAws.awsRegion",
+            "daoCandidate.amount",
+            "daoCandidate.memo",
+            "daoCandidate.nameInfo",
           ] as const);
-          break;
-        case 3: // DAO Candidate step
-          // If daoCandidate exists, validate its fields
-          if (form.getValues("daoCandidate")) {
-            isValid = await form.trigger([
-              "daoCandidate.amount",
-              "daoCandidate.memo",
-              "daoCandidate.nameInfo",
-            ] as const);
-          } else {
-            // If daoCandidate is undefined (skipped), validation passes
-            isValid = true;
-          }
-          break;
-        default:
+        } else {
+          // If daoCandidate is undefined (skipped), validation passes
           isValid = true;
-      }
+        }
+        break;
+      default:
+        isValid = true;
+    }
 
-      if (isValid) {
-        setCurrentStep((prev) => prev + 1);
-      }
+    if (isValid) {
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -162,5 +209,6 @@ export function useCreateRollup() {
     goToNextStep,
     goToPreviousStep,
     onBack,
+    isDeploying: deployMutation.isPending,
   };
 }

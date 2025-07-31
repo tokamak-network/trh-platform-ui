@@ -1,4 +1,13 @@
+import { apiPost } from "@/lib/api";
 import { Rollup } from "../schemas/rollup";
+import type { RollupDeploymentRequest } from "../schemas/create-rollup";
+
+export const deployRollup = async (request: RollupDeploymentRequest) => {
+  const response = await apiPost<{ id: string }>("stacks/thanos", request, {
+    timeout: 30000, // Increase timeout for deployment
+  });
+  return response;
+};
 
 export const mockRollups: Rollup[] = [
   {

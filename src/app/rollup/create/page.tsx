@@ -22,6 +22,7 @@ export default function CreateRollupPage() {
     onBack,
     goToNextStep,
     goToPreviousStep,
+    isDeploying,
   } = useCreateRollup();
 
   const handleSkipDaoCandidate = () => {
@@ -98,15 +99,13 @@ export default function CreateRollupPage() {
                   )}
                   <Button
                     onClick={goToNextStep}
-                    disabled={
-                      isLastStep ||
-                      form.formState.isValidating ||
-                      form.formState.isSubmitting
-                    }
+                    disabled={form.formState.isValidating || isDeploying}
                     className="flex items-center gap-2"
                   >
                     {isLastStep ? "Deploy Rollup" : "Next"}
-                    {isLastStep ? (
+                    {isLastStep && isDeploying ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : isLastStep ? (
                       <Rocket className="h-4 w-4" />
                     ) : (
                       <ChevronRight className="h-4 w-4" />
