@@ -5,6 +5,7 @@ import {
   GetAllThanosStacksResponse,
   GetThanosStackResponse,
   ThanosStack,
+  ThanosStackStatus,
 } from "../schemas/thanos";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
@@ -84,23 +85,33 @@ export const getThanosStackById = async (id: string): Promise<ThanosStack> => {
   return response.data.stack;
 };
 
-export const calculateRollupStats = () => {
-  const totalRollups = mockRollups.length;
-  const activeRollups = mockRollups.filter((r) => r.status === "active").length;
-  const totalUsers = mockRollups.reduce(
-    (sum, r) => sum + Number.parseFloat(r.users.replace("K", "")),
-    0
-  );
-  const totalTVL = mockRollups.reduce(
-    (sum, r) =>
-      sum + Number.parseFloat(r.tvl.replace("$", "").replace("M", "")),
-    0
-  );
+export const calculateRollupStats = (stacks?: ThanosStack[]) => {
+  if (!stacks || stacks.length === 0) {
+    return {
+      totalRollups: 0,
+      activeRollups: 0,
+      totalUsers: "0",
+      totalTVL: "$0",
+    };
+  }
+
+  const totalRollups = stacks.length;
+  const activeRollups = stacks.filter(
+    (stack) => stack.status === ThanosStackStatus.DEPLOYED
+  ).length;
+
+  // For now, we'll estimate users and TVL based on stack count
+  // These can be updated with real metrics when available
+  const estimatedUsersPerStack = 5000; // 5K users per stack estimation
+  const estimatedTVLPerStack = 10; // $10M per stack estimation
+
+  const totalUsers = totalRollups * estimatedUsersPerStack;
+  const totalTVL = totalRollups * estimatedTVLPerStack;
 
   return {
     totalRollups,
     activeRollups,
-    totalUsers: totalUsers.toFixed(1) + "K",
+    totalUsers: (totalUsers / 1000).toFixed(1) + "K",
     totalTVL: "$" + totalTVL.toFixed(0) + "M",
   };
 };

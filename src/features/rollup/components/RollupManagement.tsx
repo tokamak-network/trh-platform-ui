@@ -12,7 +12,7 @@ import { calculateRollupStats } from "../services/rollupService";
 export function RollupManagement() {
   const router = useRouter();
   const { stacks, isLoading } = useThanosStack();
-  const stats = calculateRollupStats();
+  const stats = calculateRollupStats(stacks);
 
   const {
     searchTerm,
