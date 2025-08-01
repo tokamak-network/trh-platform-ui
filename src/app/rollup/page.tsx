@@ -7,10 +7,8 @@ import { RollupManagement } from "@/features/rollup/components/RollupManagement"
 function RollupPageContent() {
   return (
     <AuthenticatedLayout>
-      <main className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto">
-          <RollupManagement />
-        </div>
+      <main className="flex-1 p-6 px-16">
+        <RollupManagement />
       </main>
     </AuthenticatedLayout>
   );

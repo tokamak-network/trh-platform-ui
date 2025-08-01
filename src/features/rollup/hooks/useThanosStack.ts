@@ -1,6 +1,11 @@
 import { useCallback, useMemo } from "react";
-import { useThanosStackByIdQuery, useThanosStacksQuery } from "../api/queries";
+import {
+  rollupKeys,
+  useThanosStackByIdQuery,
+  useThanosStacksQuery,
+} from "../api/queries";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
+import { queryClient } from "@/providers/query-provider";
 
 interface UseThanosStackResult {
   stacks: ThanosStack[];
@@ -10,6 +15,10 @@ interface UseThanosStackResult {
   getStackByStatus: (status: ThanosStackStatus) => ThanosStack[];
 }
 
+export const invalidateThanosStacks = () => {
+  queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStacks });
+};
+
 export const useThanosStack = (): UseThanosStackResult => {
   const {
     data: stacks = [],
@@ -17,8 +26,6 @@ export const useThanosStack = (): UseThanosStackResult => {
     isError,
     error,
   } = useThanosStacksQuery();
-
-  console.log("stacks", stacks);
 
   const getStackByStatus = useCallback(
     (status: ThanosStackStatus) => {

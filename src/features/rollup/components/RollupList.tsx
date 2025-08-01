@@ -33,6 +33,7 @@ import { statusConfig } from "../schemas/rollup";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 import { useThanosStack } from "../hooks/useThanosStack";
 import { useEffect } from "react";
+import { getLastActivityTime, formatRelativeTime } from "../utils/dateUtils";
 
 // Map of icon names to their components
 const IconMap: Record<string, LucideIcon> = {
@@ -175,6 +176,19 @@ export function RollupList({ onCreateRollup }: RollupListProps) {
                         >
                           <Server className="w-3 h-3" />
                           {stack.name}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1 text-gray-500"
+                        >
+                          <Clock className="w-3 h-3" />
+                          {formatRelativeTime(
+                            getLastActivityTime(
+                              stack.created_at,
+                              stack.updated_at,
+                              stack.deleted_at
+                            )
+                          )}
                         </Badge>
                       </div>
                     </div>

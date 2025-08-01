@@ -7,7 +7,7 @@ import { SecurityManagement } from "@/features/security";
 function SecurityPageContent() {
   return (
     <AuthenticatedLayout>
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 px-16">
         <SecurityManagement />
       </main>
     </AuthenticatedLayout>

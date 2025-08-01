@@ -53,6 +53,9 @@ export interface ThanosStack {
   deployment_path: string;
   status: ThanosStackStatus;
   metadata: ThanosStackMetadata | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface GetAllThanosStacksResponse extends ApiResponse {

@@ -37,7 +37,7 @@ export const statusConfig = {
     variant: "outline" as const,
   },
   Deploying: {
-    color: "bg-blue-400",
+    color: "bg-blue-600 text-white px-1",
     icon: "Loader",
     label: "Deploying",
     variant: "secondary" as const,
