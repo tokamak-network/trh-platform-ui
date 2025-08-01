@@ -18,12 +18,29 @@ export const useAuth = () => {
   useEffect(() => {
     const token = authService.getStoredToken();
     if (token) {
-      setAuthState({
-        user: null,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      // Fetch user data from token
+      authService
+        .getCurrentUser()
+        .then((userData) => {
+          setAuthState({
+            user: userData,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        })
+        .catch((error) => {
+          console.error("Auth error:", error);
+
+          // If token is invalid, clear it and set not authenticated
+          authService.removeToken();
+          setAuthState({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        });
     } else {
       setAuthState((prev) => ({ ...prev, isLoading: false }));
     }

@@ -17,38 +17,105 @@ import {
   Eye,
   Activity,
   Clock,
+  ExternalLink,
+  RefreshCw,
+  Trash2,
   CheckCircle,
-  AlertTriangle,
-  XCircle,
+  AlertCircle,
+  HelpCircle,
+  Loader,
+  X,
+  Globe,
+  Server,
+  LucideIcon,
 } from "lucide-react";
-import { Rollup, statusConfig } from "../schemas/rollup";
+import { statusConfig } from "../schemas/rollup";
+import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
+import { useThanosStack } from "../hooks/useThanosStack";
+import { useEffect } from "react";
+
+// Map of icon names to their components
+const IconMap: Record<string, LucideIcon> = {
+  CheckCircle,
+  Clock,
+  Pause,
+  Loader,
+  RefreshCw,
+  Trash2,
+  X,
+  AlertCircle,
+  HelpCircle,
+};
+
+// Dynamic status icon component
+const StatusIcon = ({ iconName }: { iconName: string }) => {
+  const Icon = IconMap[iconName];
+  return Icon ? <Icon className="w-3 h-3" /> : null;
+};
 
 interface RollupListProps {
-  rollups: Rollup[];
   onCreateRollup: () => void;
 }
 
-export function RollupList({ rollups, onCreateRollup }: RollupListProps) {
+export function RollupList({ onCreateRollup }: RollupListProps) {
   const router = useRouter();
+  const { stacks, isLoading, isError } = useThanosStack();
 
   const handleViewRollup = (id: string) => {
     router.push(`/rollup/${id}`);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="w-3 h-3" />;
-      case "maintenance":
-        return <AlertTriangle className="w-3 h-3" />;
-      case "inactive":
-        return <XCircle className="w-3 h-3" />;
-      default:
-        return null;
-    }
+  const getStatusBadge = (status: ThanosStackStatus) => {
+    const statusColors: Record<string, string> = {
+      [ThanosStackStatus.PENDING]: statusConfig.Pending.color,
+      [ThanosStackStatus.DEPLOYED]: statusConfig.Deployed.color,
+      [ThanosStackStatus.STOPPED]: statusConfig.Stopped.color,
+      [ThanosStackStatus.DEPLOYING]: statusConfig.Deploying.color,
+      [ThanosStackStatus.UPDATING]: statusConfig.Updating.color,
+      [ThanosStackStatus.TERMINATING]: statusConfig.Terminating.color,
+      [ThanosStackStatus.TERMINATED]: statusConfig.Terminated.color,
+      [ThanosStackStatus.FAILED_TO_DEPLOY]: statusConfig.FailedToDeploy.color,
+      [ThanosStackStatus.FAILED_TO_UPDATE]: statusConfig.FailedToUpdate.color,
+      [ThanosStackStatus.FAILED_TO_TERMINATE]:
+        statusConfig.FailedToTerminate.color,
+      [ThanosStackStatus.UNKNOWN]: statusConfig.Unknown.color,
+    };
+
+    const color =
+      statusColors[status] || statusColors[ThanosStackStatus.UNKNOWN];
+    return <div className={`w-3 h-3 rounded-full ${color}`} />;
   };
 
-  if (rollups.length === 0) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <RefreshCw className="w-10 h-10 text-muted-foreground mx-auto mb-4 animate-spin" />
+          <h3 className="text-lg font-semibold mb-2">Loading rollups...</h3>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Trash2 className="w-10 h-10 text-destructive mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Error loading rollups</h3>
+          <p className="text-muted-foreground mb-6">
+            There was a problem fetching your rollups. Please try again later.
+          </p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!stacks || stacks.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -69,65 +136,105 @@ export function RollupList({ rollups, onCreateRollup }: RollupListProps) {
 
   return (
     <div className="space-y-4">
-      {rollups.map((rollup) => {
-        const statusInfo = statusConfig[rollup.status];
+      {stacks.map((stack) => {
+        const statusInfo = statusConfig[stack.status];
 
         return (
           <Card
-            key={rollup.id}
+            key={stack.id}
             className="hover:shadow-md transition-all duration-200 cursor-pointer"
-            onClick={() => handleViewRollup(rollup.id)}
+            onClick={() => handleViewRollup(stack.id)}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${statusInfo.color}`}
-                    />
+                    {getStatusBadge(stack.status)}
                     <div>
-                      <h3 className="text-lg font-semibold">{rollup.name}</h3>
+                      <h3 className="text-lg font-semibold">
+                        {stack.config.chainName}
+                      </h3>
                       <div className="flex items-center space-x-4 mt-1">
                         <Badge
                           variant={statusInfo.variant}
-                          className="flex items-center gap-1"
+                          className={`flex items-center gap-1 ${statusInfo.color}`}
                         >
-                          {getStatusIcon(rollup.status)}
+                          <StatusIcon iconName={statusInfo.icon} />
                           {statusInfo.label}
                         </Badge>
-                        <Badge variant="outline">{rollup.type}</Badge>
-                        <span className="text-sm text-muted-foreground flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {rollup.lastActivity}
-                        </span>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1 bg-gray-200"
+                        >
+                          <Globe className="w-3 h-3" />
+                          {stack.network}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1 bg-gray-200"
+                        >
+                          <Server className="w-3 h-3" />
+                          {stack.name}
+                        </Badge>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium">{rollup.transactions}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Transactions
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium">{rollup.users}</p>
-                    <p className="text-xs text-muted-foreground">Users</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium">{rollup.tvl}</p>
-                    <p className="text-xs text-muted-foreground">TVL</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium">{rollup.uptime}</p>
-                    <p className="text-xs text-muted-foreground">Uptime</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium">{rollup.gasPrice}</p>
-                    <p className="text-xs text-muted-foreground">Gas Price</p>
-                  </div>
+                  {stack.metadata?.l2_url && (
+                    <div className="text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(stack.metadata?.l2_url, "_blank");
+                        }}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        L2 URL
+                      </Button>
+                    </div>
+                  )}
+
+                  {stack.metadata?.bridge_url && (
+                    <div className="text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(stack.metadata?.bridge_url, "_blank");
+                        }}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Bridge
+                      </Button>
+                    </div>
+                  )}
+
+                  {stack.metadata?.block_explorer_url && (
+                    <div className="text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(
+                            stack.metadata?.block_explorer_url,
+                            "_blank"
+                          );
+                        }}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Explorer
+                      </Button>
+                    </div>
+                  )}
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -146,15 +253,20 @@ export function RollupList({ rollups, onCreateRollup }: RollupListProps) {
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                        {rollup.status === "active" ? (
+                        {stack.status === ThanosStackStatus.DEPLOYED ? (
                           <>
                             <Pause className="mr-2 h-4 w-4" />
-                            Pause Rollup
+                            Stop Rollup
                           </>
-                        ) : (
+                        ) : stack.status === ThanosStackStatus.STOPPED ? (
                           <>
                             <Play className="mr-2 h-4 w-4" />
                             Start Rollup
+                          </>
+                        ) : (
+                          <>
+                            <Settings className="mr-2 h-4 w-4" />
+                            Manage
                           </>
                         )}
                       </DropdownMenuItem>

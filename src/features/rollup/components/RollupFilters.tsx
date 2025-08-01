@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
+import { ThanosStackStatus } from "../schemas/thanos";
+import { RollupType } from "../schemas/rollup";
 
 interface RollupFiltersProps {
   searchTerm: string;
@@ -45,9 +47,32 @@ export function RollupFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="maintenance">Maintenance</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value={ThanosStackStatus.DEPLOYED}>
+                Deployed
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.PENDING}>Pending</SelectItem>
+              <SelectItem value={ThanosStackStatus.DEPLOYING}>
+                Deploying
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.STOPPED}>Stopped</SelectItem>
+              <SelectItem value={ThanosStackStatus.UPDATING}>
+                Updating
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.TERMINATING}>
+                Terminating
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.TERMINATED}>
+                Terminated
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.FAILED_TO_DEPLOY}>
+                Failed to Deploy
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.FAILED_TO_UPDATE}>
+                Failed to Update
+              </SelectItem>
+              <SelectItem value={ThanosStackStatus.FAILED_TO_TERMINATE}>
+                Failed to Terminate
+              </SelectItem>
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -56,8 +81,10 @@ export function RollupFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Optimistic">Optimistic</SelectItem>
-              <SelectItem value="ZK Rollup">ZK Rollup</SelectItem>
+              <SelectItem value={RollupType.OPTIMISTIC_ROLLUP}>
+                Optimistic Rollup
+              </SelectItem>
+              <SelectItem value={RollupType.ZK_ROLLUP}>ZK Rollup</SelectItem>
             </SelectContent>
           </Select>
         </div>

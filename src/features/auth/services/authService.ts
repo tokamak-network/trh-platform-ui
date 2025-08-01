@@ -1,5 +1,11 @@
-import { apiPost, ApiError } from "@/lib/api";
-import { LoginRequest, LoginResponse, loginResponseSchema } from "../schemas";
+import { apiPost, apiGet, ApiError } from "@/lib/api";
+import {
+  LoginRequest,
+  LoginResponse,
+  loginResponseSchema,
+  User,
+  userSchema,
+} from "../schemas";
 
 export class AuthService {
   private static instance: AuthService;
@@ -32,6 +38,24 @@ export class AuthService {
         throw new Error("Server error. Please try again later.");
       }
       throw new Error(apiError.message || "Login failed");
+    }
+  }
+
+  // Get current user from backend API
+  async getCurrentUser(): Promise<User> {
+    try {
+      const token = this.getStoredToken();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Make an API call to get the current user profile
+      const response = await apiGet<User>("auth/profile");
+      // Validate the user data with our schema
+      return userSchema.parse(response);
+    } catch (error) {
+      console.error("Failed to get current user:", error);
+      throw new Error("Failed to authenticate user");
     }
   }
 

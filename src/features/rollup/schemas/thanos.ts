@@ -1,0 +1,64 @@
+import { RollupType } from "./rollup";
+
+export interface ThanosStackMetadata {
+  l2_url: string;
+  bridge_url?: string;
+  block_explorer_url?: string;
+}
+
+export interface ApiResponse {
+  message: string;
+  status: string;
+}
+
+export enum ThanosStackStatus {
+  PENDING = "Pending",
+  DEPLOYED = "Deployed",
+  STOPPED = "Stopped",
+  DEPLOYING = "Deploying",
+  UPDATING = "Updating",
+  TERMINATING = "Terminating",
+  TERMINATED = "Terminated",
+  FAILED_TO_DEPLOY = "FailedToDeploy",
+  FAILED_TO_UPDATE = "FailedToUpdate",
+  FAILED_TO_TERMINATE = "FailedToTerminate",
+  UNKNOWN = "Unknown",
+}
+
+export interface ThanosStackConfig {
+  network: string;
+  type: RollupType;
+  l1RpcUrl: string;
+  awsRegion: string;
+  chainName: string;
+  l1BeaconUrl: string;
+  l2BlockTime: number;
+  adminAccount: string;
+  awsAccessKey: string;
+  batcherAccount: string;
+  deploymentPath: string;
+  challengePeriod: number;
+  proposerAccount: string;
+  sequencerAccount: string;
+  awsSecretAccessKey: string;
+  outputRootFrequency: number;
+  batchSubmissionFrequency: number;
+}
+
+export interface ThanosStack {
+  id: string;
+  name: string;
+  network: string;
+  config: ThanosStackConfig;
+  deployment_path: string;
+  status: ThanosStackStatus;
+  metadata: ThanosStackMetadata | null;
+}
+
+export interface GetAllThanosStacksResponse extends ApiResponse {
+  stacks: ThanosStack[];
+}
+
+export interface GetThanosStackResponse extends ApiResponse {
+  stack: ThanosStack;
+}

@@ -51,10 +51,7 @@ export function RollupManagement() {
       />
 
       {/* Rollups List */}
-      <RollupList
-        rollups={filteredRollups}
-        onCreateRollup={handleCreateRollup}
-      />
+      <RollupList onCreateRollup={handleCreateRollup} />
     </div>
   );
 }

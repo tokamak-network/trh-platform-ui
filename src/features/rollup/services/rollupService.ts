@@ -1,6 +1,11 @@
-import { apiPost } from "@/lib/api";
-import { Rollup } from "../schemas/rollup";
+import { apiGet, apiPost } from "@/lib/api";
+import { Rollup, RollupType } from "../schemas/rollup";
 import type { RollupDeploymentRequest } from "../schemas/create-rollup";
+import {
+  GetAllThanosStacksResponse,
+  GetThanosStackResponse,
+  ThanosStack,
+} from "../schemas/thanos";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
   const response = await apiPost<{ id: string }>("stacks/thanos", request, {
@@ -14,7 +19,7 @@ export const mockRollups: Rollup[] = [
     id: "1",
     name: "DeFi Rollup",
     status: "active",
-    type: "Optimistic",
+    type: RollupType.OPTIMISTIC_ROLLUP,
     transactions: "2.4M",
     users: "45.2K",
     tvl: "$125M",
@@ -26,7 +31,7 @@ export const mockRollups: Rollup[] = [
     id: "2",
     name: "Gaming Chain",
     status: "active",
-    type: "ZK Rollup",
+    type: RollupType.ZK_ROLLUP,
     transactions: "1.8M",
     users: "32.1K",
     tvl: "$89M",
@@ -38,7 +43,7 @@ export const mockRollups: Rollup[] = [
     id: "3",
     name: "NFT Marketplace",
     status: "maintenance",
-    type: "Optimistic",
+    type: RollupType.OPTIMISTIC_ROLLUP,
     transactions: "956K",
     users: "18.5K",
     tvl: "$45M",
@@ -50,7 +55,7 @@ export const mockRollups: Rollup[] = [
     id: "4",
     name: "Social Network",
     status: "inactive",
-    type: "ZK Rollup",
+    type: RollupType.ZK_ROLLUP,
     transactions: "234K",
     users: "8.2K",
     tvl: "$12M",
@@ -66,6 +71,17 @@ export const getRollups = (): Rollup[] => {
 
 export const getRollupById = (id: string): Rollup | undefined => {
   return mockRollups.find((rollup) => rollup.id === id);
+};
+
+export const getThanosStacks = async (): Promise<ThanosStack[]> => {
+  const response = await apiGet<GetAllThanosStacksResponse>("stacks/thanos");
+
+  return response.data.stacks;
+};
+
+export const getThanosStackById = async (id: string): Promise<ThanosStack> => {
+  const response = await apiGet<GetThanosStackResponse>(`stacks/thanos/${id}`);
+  return response.data.stack;
 };
 
 export const calculateRollupStats = () => {

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Rollup } from "../schemas/rollup";
+import { Rollup, RollupType } from "../schemas/rollup";
+import { ThanosStackStatus } from "../schemas/thanos";
 
 interface UseRollupFilterProps {
   rollups: Rollup[];
@@ -27,9 +28,23 @@ export function useRollupFilter({
       const matchesSearch = rollup.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
+
+      // Handle status filter using ThanosStackStatus values
       const matchesStatus =
-        statusFilter === "all" || rollup.status === statusFilter;
+        statusFilter === "all" ||
+        // Convert the rollup.status to match ThanosStackStatus format if needed
+        (rollup.status === "active" &&
+          statusFilter === ThanosStackStatus.DEPLOYED) ||
+        (rollup.status === "maintenance" &&
+          statusFilter === ThanosStackStatus.UPDATING) ||
+        (rollup.status === "inactive" &&
+          statusFilter === ThanosStackStatus.STOPPED) ||
+        // Direct match for stacks that already use ThanosStackStatus
+        rollup.status === statusFilter;
+
+      // Handle type filter using RollupType enum
       const matchesType = typeFilter === "all" || rollup.type === typeFilter;
+
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [rollups, searchTerm, statusFilter, typeFilter]);
