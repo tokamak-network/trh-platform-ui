@@ -48,6 +48,7 @@ export interface ThanosStackConfig {
 export interface ThanosStack {
   id: string;
   name: string;
+  type?: string;
   network: string;
   config: ThanosStackConfig;
   deployment_path: string;

@@ -6,11 +6,12 @@ import { RollupStats } from "./RollupStats";
 import { RollupFilters } from "./RollupFilters";
 import { RollupList } from "./RollupList";
 import { useRollupFilter } from "../hooks/useRollupFilter";
-import { getRollups, calculateRollupStats } from "../services/rollupService";
+import { useThanosStack } from "../hooks/useThanosStack";
+import { calculateRollupStats } from "../services/rollupService";
 
 export function RollupManagement() {
   const router = useRouter();
-  const rollups = getRollups();
+  const { stacks, isLoading } = useThanosStack();
   const stats = calculateRollupStats();
 
   const {
@@ -21,7 +22,7 @@ export function RollupManagement() {
     typeFilter,
     setTypeFilter,
     filteredRollups,
-  } = useRollupFilter({ rollups });
+  } = useRollupFilter({ rollups: stacks || [] });
 
   const handleCreateRollup = () => {
     router.push("/rollup/create");
@@ -51,7 +52,10 @@ export function RollupManagement() {
       />
 
       {/* Rollups List */}
-      <RollupList onCreateRollup={handleCreateRollup} />
+      <RollupList
+        onCreateRollup={handleCreateRollup}
+        filteredRollups={filteredRollups}
+      />
     </div>
   );
 }

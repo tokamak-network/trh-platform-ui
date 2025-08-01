@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { deployRollup } from "../services/rollupService";
+import { invalidateThanosStacks } from "../hooks/useThanosStack";
 
 export const useDeployRollupMutation = (options?: {
   onSuccess?: () => void;
@@ -20,6 +21,7 @@ export const useDeployRollupMutation = (options?: {
       toast.success("Rollup deployment initiated successfully!", {
         id: "deploy-rollup",
       });
+      invalidateThanosStacks();
       router.push("/rollup");
       options?.onSuccess?.();
     },

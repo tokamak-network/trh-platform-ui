@@ -28,12 +28,25 @@ import {
   Globe,
   Server,
   LucideIcon,
+  Layers,
 } from "lucide-react";
 import { statusConfig } from "../schemas/rollup";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 import { useThanosStack } from "../hooks/useThanosStack";
 import { useEffect } from "react";
 import { getLastActivityTime, formatRelativeTime } from "../utils/dateUtils";
+
+// Format rollup type for display
+const formatRollupType = (type: string): string => {
+  switch (type.toLowerCase()) {
+    case "optimistic-rollup":
+      return "Optimistic Rollup";
+    case "zk-rollup":
+      return "ZK Rollup";
+    default:
+      return type;
+  }
+};
 
 // Map of icon names to their components
 const IconMap: Record<string, LucideIcon> = {
@@ -56,11 +69,18 @@ const StatusIcon = ({ iconName }: { iconName: string }) => {
 
 interface RollupListProps {
   onCreateRollup: () => void;
+  filteredRollups?: ThanosStack[];
 }
 
-export function RollupList({ onCreateRollup }: RollupListProps) {
+export function RollupList({
+  onCreateRollup,
+  filteredRollups,
+}: RollupListProps) {
   const router = useRouter();
-  const { stacks, isLoading, isError } = useThanosStack();
+  const { stacks: fetchedStacks, isLoading, isError } = useThanosStack();
+
+  // Use filteredRollups if provided, otherwise use fetched stacks
+  const stacks = filteredRollups || fetchedStacks;
 
   const handleViewRollup = (id: string) => {
     router.push(`/rollup/${id}`);
@@ -176,6 +196,18 @@ export function RollupList({ onCreateRollup }: RollupListProps) {
                         >
                           <Server className="w-3 h-3" />
                           {stack.name}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1 bg-blue-100"
+                        >
+                          <Layers className="w-3 h-3" />
+                          {formatRollupType(
+                            stack.type ||
+                              (stack.config?.type
+                                ? stack.config.type
+                                : "Unknown")
+                          )}
                         </Badge>
                         <Badge
                           variant="outline"

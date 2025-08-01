@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { Rollup, RollupType } from "../schemas/rollup";
-import { ThanosStackStatus } from "../schemas/thanos";
+import { RollupType } from "../schemas/rollup";
+import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 
 interface UseRollupFilterProps {
-  rollups: Rollup[];
+  rollups: ThanosStack[];
 }
 
 interface UseRollupFilterReturn {
@@ -13,7 +13,7 @@ interface UseRollupFilterReturn {
   setStatusFilter: (status: string) => void;
   typeFilter: string;
   setTypeFilter: (type: string) => void;
-  filteredRollups: Rollup[];
+  filteredRollups: ThanosStack[];
 }
 
 export function useRollupFilter({
@@ -24,26 +24,20 @@ export function useRollupFilter({
   const [typeFilter, setTypeFilter] = useState("all");
 
   const filteredRollups = useMemo(() => {
-    return rollups.filter((rollup) => {
-      const matchesSearch = rollup.name
+    return rollups.filter((stack) => {
+      // Search by chain name
+      const matchesSearch = stack.config.chainName
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
       // Handle status filter using ThanosStackStatus values
       const matchesStatus =
-        statusFilter === "all" ||
-        // Convert the rollup.status to match ThanosStackStatus format if needed
-        (rollup.status === "active" &&
-          statusFilter === ThanosStackStatus.DEPLOYED) ||
-        (rollup.status === "maintenance" &&
-          statusFilter === ThanosStackStatus.UPDATING) ||
-        (rollup.status === "inactive" &&
-          statusFilter === ThanosStackStatus.STOPPED) ||
-        // Direct match for stacks that already use ThanosStackStatus
-        rollup.status === statusFilter;
+        statusFilter === "all" || stack.status === statusFilter;
 
       // Handle type filter using RollupType enum
-      const matchesType = typeFilter === "all" || rollup.type === typeFilter;
+      const stackType =
+        stack.type || (stack.config?.type ? stack.config.type : null);
+      const matchesType = typeFilter === "all" || stackType === typeFilter;
 
       return matchesSearch && matchesStatus && matchesType;
     });
