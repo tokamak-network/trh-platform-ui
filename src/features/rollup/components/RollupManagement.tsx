@@ -21,6 +21,8 @@ export function RollupManagement() {
     setStatusFilter,
     typeFilter,
     setTypeFilter,
+    networkFilter,
+    setNetworkFilter,
     filteredRollups,
   } = useRollupFilter({ rollups: stacks || [] });
 
@@ -49,6 +51,8 @@ export function RollupManagement() {
         setStatusFilter={setStatusFilter}
         typeFilter={typeFilter}
         setTypeFilter={setTypeFilter}
+        networkFilter={networkFilter}
+        setNetworkFilter={setNetworkFilter}
       />
 
       {/* Rollups List */}

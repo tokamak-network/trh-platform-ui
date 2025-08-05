@@ -18,6 +18,8 @@ interface RollupFiltersProps {
   setStatusFilter: (status: string) => void;
   typeFilter: string;
   setTypeFilter: (type: string) => void;
+  networkFilter: string;
+  setNetworkFilter: (network: string) => void;
 }
 
 export function RollupFilters({
@@ -27,6 +29,8 @@ export function RollupFilters({
   setStatusFilter,
   typeFilter,
   setTypeFilter,
+  networkFilter,
+  setNetworkFilter,
 }: RollupFiltersProps) {
   return (
     <Card className="py-0">
@@ -85,6 +89,16 @@ export function RollupFilters({
                 Optimistic Rollup
               </SelectItem>
               <SelectItem value={RollupType.ZK_ROLLUP}>ZK Rollup</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={networkFilter} onValueChange={setNetworkFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="All Networks" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Networks</SelectItem>
+              <SelectItem value="testnet">Testnet</SelectItem>
+              <SelectItem value="mainnet">Mainnet</SelectItem>
             </SelectContent>
           </Select>
         </div>

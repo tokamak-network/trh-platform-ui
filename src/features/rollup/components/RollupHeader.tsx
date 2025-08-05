@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function RollupHeader() {
@@ -24,8 +24,8 @@ export function RollupHeader() {
         variant="default"
         className="cursor-pointer"
       >
-        <Plus className="w-4 h-4 mr-2" />
-        Create Rollup
+        <Zap className="w-4 h-4 mr-2" />
+        Deploy New Rollup
       </Button>
     </div>
   );
