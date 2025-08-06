@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, apiDelete } from "@/lib/api";
 import { Rollup, RollupType } from "../schemas/rollup";
 import type { RollupDeploymentRequest } from "../schemas/create-rollup";
 import {
@@ -83,6 +83,11 @@ export const getThanosStacks = async (): Promise<ThanosStack[]> => {
 export const getThanosStackById = async (id: string): Promise<ThanosStack> => {
   const response = await apiGet<GetThanosStackResponse>(`stacks/thanos/${id}`);
   return response.data.stack;
+};
+
+export const deleteRollup = async (id: string) => {
+  const response = await apiDelete<{ success: boolean }>(`stacks/thanos/${id}`);
+  return response;
 };
 
 export const calculateRollupStats = (stacks?: ThanosStack[]) => {

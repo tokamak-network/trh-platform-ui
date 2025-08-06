@@ -1,0 +1,291 @@
+import * as React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  MoreHorizontal,
+  Play,
+  Pause,
+  Settings,
+  Eye,
+  Clock,
+  ExternalLink,
+  Trash2,
+  CheckCircle,
+  AlertCircle,
+  HelpCircle,
+  Loader,
+  RefreshCw,
+  X,
+  Globe,
+  Server,
+  LucideIcon,
+  Layers,
+} from "lucide-react";
+import { statusConfig } from "../schemas/rollup";
+import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
+import { getLastActivityTime, formatRelativeTime } from "../utils/dateUtils";
+import { useDeleteRollupMutation } from "../api/mutations";
+
+// Format rollup type for display
+export const formatRollupType = (type: string): string => {
+  switch (type.toLowerCase()) {
+    case "optimistic-rollup":
+      return "Optimistic Rollup";
+    case "zk-rollup":
+      return "ZK Rollup";
+    default:
+      return type;
+  }
+};
+
+// Map of icon names to their components
+export const IconMap: Record<string, LucideIcon> = {
+  CheckCircle,
+  Clock,
+  Pause,
+  Loader,
+  RefreshCw,
+  Trash2,
+  X,
+  AlertCircle,
+  HelpCircle,
+};
+
+// Dynamic status icon component
+export const StatusIcon = ({ iconName }: { iconName: string }) => {
+  const Icon = IconMap[iconName];
+  return Icon ? <Icon className="w-3 h-3" /> : null;
+};
+
+export const getStatusBadge = (status: ThanosStackStatus) => {
+  const statusColors: Record<string, string> = {
+    [ThanosStackStatus.PENDING]: statusConfig.Pending.color,
+    [ThanosStackStatus.DEPLOYED]: statusConfig.Deployed.color,
+    [ThanosStackStatus.STOPPED]: statusConfig.Stopped.color,
+    [ThanosStackStatus.DEPLOYING]: statusConfig.Deploying.color,
+    [ThanosStackStatus.UPDATING]: statusConfig.Updating.color,
+    [ThanosStackStatus.TERMINATING]: statusConfig.Terminating.color,
+    [ThanosStackStatus.TERMINATED]: statusConfig.Terminated.color,
+    [ThanosStackStatus.FAILED_TO_DEPLOY]: statusConfig.FailedToDeploy.color,
+    [ThanosStackStatus.FAILED_TO_UPDATE]: statusConfig.FailedToUpdate.color,
+    [ThanosStackStatus.FAILED_TO_TERMINATE]:
+      statusConfig.FailedToTerminate.color,
+    [ThanosStackStatus.UNKNOWN]: statusConfig.Unknown.color,
+  };
+
+  const color = statusColors[status] || statusColors[ThanosStackStatus.UNKNOWN];
+  return <div className={`w-3 h-3 rounded-full ${color}`} />;
+};
+
+interface RollupItemProps {
+  stack: ThanosStack;
+  onClick?: (id: string) => void;
+  showActions?: boolean;
+  className?: string;
+}
+
+export function RollupItem({
+  stack,
+  onClick,
+  showActions = true,
+  className = "",
+}: RollupItemProps) {
+  const statusInfo = statusConfig[stack.status];
+  const deleteRollupMutation = useDeleteRollupMutation();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick(stack.id);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    deleteRollupMutation.mutate(stack.id);
+    setIsDeleteDialogOpen(false);
+  };
+
+  return (
+    <Card
+      key={stack.id}
+      className={`${
+        onClick
+          ? "hover:shadow-md transition-all duration-200 cursor-pointer"
+          : ""
+      } ${className}`}
+      onClick={onClick ? handleClick : undefined}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              {getStatusBadge(stack.status)}
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {stack.config.chainName}
+                </h3>
+                <div className="flex items-center space-x-4 mt-1">
+                  <Badge
+                    variant={statusInfo.variant}
+                    className={`flex items-center gap-1 ${statusInfo.color}`}
+                  >
+                    <StatusIcon iconName={statusInfo.icon} />
+                    {statusInfo.label}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1 bg-gray-200"
+                  >
+                    <Globe className="w-3 h-3" />
+                    {stack.network}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1 bg-gray-200"
+                  >
+                    <Server className="w-3 h-3" />
+                    {stack.name}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1 bg-blue-100"
+                  >
+                    <Layers className="w-3 h-3" />
+                    {formatRollupType(
+                      stack.type ||
+                        (stack.config?.type ? stack.config.type : "Unknown")
+                    )}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1 text-gray-500"
+                  >
+                    <Clock className="w-3 h-3" />
+                    {formatRelativeTime(
+                      getLastActivityTime(
+                        stack.created_at,
+                        stack.updated_at,
+                        stack.deleted_at
+                      )
+                    )}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showActions && (
+            <div className="flex items-center space-x-6">
+              {stack.metadata?.l2_url && (
+                <div className="text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(stack.metadata?.l2_url, "_blank");
+                    }}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    L2 URL
+                  </Button>
+                </div>
+              )}
+
+              {stack.metadata?.bridge_url && (
+                <div className="text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(stack.metadata?.bridge_url, "_blank");
+                    }}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Bridge
+                  </Button>
+                </div>
+              )}
+
+              {stack.metadata?.block_explorer_url && (
+                <div className="text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(stack.metadata?.block_explorer_url, "_blank");
+                    }}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Explorer
+                  </Button>
+                </div>
+              )}
+
+              <AlertDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-12 w-12 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  onClick={handleDeleteClick}
+                >
+                  <Trash2 width={32} height={32} />
+                </Button>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Destroy Rollup</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to destroy {stack.config.chainName}?
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleConfirmDelete}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

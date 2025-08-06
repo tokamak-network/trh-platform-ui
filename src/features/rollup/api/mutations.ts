@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { deployRollup } from "../services/rollupService";
+import { deployRollup, deleteRollup } from "../services/rollupService";
 import { invalidateThanosStacks } from "../hooks/useThanosStack";
 
 export const useDeployRollupMutation = (options?: {
@@ -28,6 +28,33 @@ export const useDeployRollupMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to deploy rollup", {
         id: "deploy-rollup",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useDeleteRollupMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: deleteRollup,
+    onMutate: () => {
+      toast.loading("Destroying rollup...", {
+        id: "delete-rollup",
+      });
+    },
+    onSuccess: () => {
+      toast.success("Rollup destruction initiated successfully!", {
+        id: "delete-rollup",
+      });
+      invalidateThanosStacks();
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to destroy rollup", {
+        id: "delete-rollup",
       });
       options?.onError?.(error);
     },

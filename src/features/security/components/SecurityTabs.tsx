@@ -28,11 +28,31 @@ export function SecurityTabs({ currentTab }: SecurityTabsProps) {
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="aws">AWS Credentials</TabsTrigger>
-        <TabsTrigger value="wallets">Wallet Management</TabsTrigger>
-        <TabsTrigger value="encryption">Encryption</TabsTrigger>
-        <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-4 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+        <TabsTrigger
+          value="aws"
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+        >
+          AWS Credentials
+        </TabsTrigger>
+        <TabsTrigger
+          value="wallets"
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+        >
+          Wallet Management
+        </TabsTrigger>
+        <TabsTrigger
+          value="encryption"
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+        >
+          Encryption
+        </TabsTrigger>
+        <TabsTrigger
+          value="monitoring"
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+        >
+          Monitoring
+        </TabsTrigger>
       </TabsList>
 
       {/* AWS Credentials Tab */}

@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       {/* Navigation Items */}
       <nav className="flex-1 p-2 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           return (
             <SidebarItem
               key={item.label}
