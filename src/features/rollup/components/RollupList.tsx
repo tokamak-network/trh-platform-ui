@@ -5,6 +5,8 @@ import { Plus, Activity, RefreshCw, Trash2 } from "lucide-react";
 import { ThanosStack } from "../schemas/thanos";
 import { useThanosStack } from "../hooks/useThanosStack";
 import { RollupItem } from "./RollupItem";
+import { getLastActivityTime } from "../utils/dateUtils";
+import React from "react";
 
 interface RollupListProps {
   onCreateRollup: () => void;
@@ -20,6 +22,21 @@ export function RollupList({
 
   // Use filteredRollups if provided, otherwise use fetched stacks
   const stacks = filteredRollups || fetchedStacks;
+
+  // Sort stacks by last activity (most recent first)
+  const sortedStacks = React.useMemo(() => {
+    if (!stacks) return [];
+
+    return [...stacks].sort((a, b) => {
+      const aLastActivity = new Date(
+        getLastActivityTime(a.created_at, a.updated_at, a.deleted_at)
+      ).getTime();
+      const bLastActivity = new Date(
+        getLastActivityTime(b.created_at, b.updated_at, b.deleted_at)
+      ).getTime();
+      return bLastActivity - aLastActivity; // Most recent first
+    });
+  }, [stacks]);
 
   const handleViewRollup = (id: string) => {
     router.push(`/rollup/${id}`);
@@ -54,7 +71,7 @@ export function RollupList({
     );
   }
 
-  if (!stacks || stacks.length === 0) {
+  if (!sortedStacks || sortedStacks.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -75,7 +92,7 @@ export function RollupList({
 
   return (
     <div className="space-y-4">
-      {stacks.map((stack) => (
+      {sortedStacks.map((stack) => (
         <RollupItem key={stack.id} stack={stack} onClick={handleViewRollup} />
       ))}
     </div>

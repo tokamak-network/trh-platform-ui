@@ -5,11 +5,14 @@ import {
   getThanosStacks,
   getThanosStackById,
 } from "../services/rollupService";
+import { getIntegrations } from "../services/integrationService";
 
 export const rollupKeys = {
   all: ["rollups"] as const,
   thanosStacks: ["thanosStacks"] as const,
   thanosStack: (id: string) => [...rollupKeys.thanosStacks, id] as const,
+  integrations: (stackId: string) =>
+    [...rollupKeys.thanosStack(stackId), "integrations"] as const,
   lists: () => [...rollupKeys.all, "list"] as const,
   list: (filters: string) => [...rollupKeys.lists(), { filters }] as const,
   details: () => [...rollupKeys.all, "detail"] as const,
@@ -42,5 +45,13 @@ export const useThanosStackByIdQuery = (id: string) => {
   return useQuery({
     queryKey: rollupKeys.thanosStack(id),
     queryFn: () => getThanosStackById(id),
+  });
+};
+
+export const useIntegrationsQuery = (stackId: string) => {
+  return useQuery({
+    queryKey: rollupKeys.integrations(stackId),
+    queryFn: () => getIntegrations(stackId),
+    enabled: !!stackId,
   });
 };
