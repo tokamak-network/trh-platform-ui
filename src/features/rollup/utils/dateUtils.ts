@@ -35,7 +35,7 @@ export const getLastActivityTime = (
     timestamps.push(new Date(deleted_at).getTime());
   }
 
-  return new Date(Math.max(...timestamps)).toISOString();
+  return new Date(Math.max(...timestamps) - 3600).toISOString();
 };
 
 /**

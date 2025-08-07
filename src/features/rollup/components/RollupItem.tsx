@@ -3,6 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -37,11 +43,15 @@ import {
   Server,
   LucideIcon,
   Layers,
+  RotateCcw,
 } from "lucide-react";
 import { statusConfig } from "../schemas/rollup";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 import { getLastActivityTime, formatRelativeTime } from "../utils/dateUtils";
-import { useDeleteRollupMutation } from "../api/mutations";
+import {
+  useDeleteRollupMutation,
+  useResumeRollupMutation,
+} from "../api/mutations";
 
 // Format rollup type for display
 export const formatRollupType = (type: string): string => {
@@ -109,7 +119,18 @@ export function RollupItem({
 }: RollupItemProps) {
   const statusInfo = statusConfig[stack.status];
   const deleteRollupMutation = useDeleteRollupMutation();
+  const resumeRollupMutation = useResumeRollupMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isResumeDialogOpen, setIsResumeDialogOpen] = React.useState(false);
+
+  // Check if resume button should be active
+  const canResume = [
+    ThanosStackStatus.STOPPED,
+    ThanosStackStatus.TERMINATED,
+    ThanosStackStatus.FAILED_TO_DEPLOY,
+    ThanosStackStatus.FAILED_TO_UPDATE,
+    ThanosStackStatus.FAILED_TO_TERMINATE,
+  ].includes(stack.status);
 
   const handleClick = () => {
     if (onClick) {
@@ -125,6 +146,16 @@ export function RollupItem({
   const handleConfirmDelete = () => {
     deleteRollupMutation.mutate(stack.id);
     setIsDeleteDialogOpen(false);
+  };
+
+  const handleResumeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsResumeDialogOpen(true);
+  };
+
+  const handleConfirmResume = () => {
+    resumeRollupMutation.mutate(stack.id);
+    setIsResumeDialogOpen(false);
   };
 
   return (
@@ -249,39 +280,98 @@ export function RollupItem({
                 </div>
               )}
 
-              <AlertDialog
-                open={isDeleteDialogOpen}
-                onOpenChange={setIsDeleteDialogOpen}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-12 w-12 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-                  onClick={handleDeleteClick}
+              {canResume && (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-12 w-12 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer"
+                          onClick={handleResumeClick}
+                        >
+                          <RotateCcw width={32} height={32} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Resume Rollup</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <AlertDialog
+                    open={isResumeDialogOpen}
+                    onOpenChange={setIsResumeDialogOpen}
+                  >
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Resume Rollup</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to resume{" "}
+                          {stack.config.chainName}? This will restart the rollup
+                          deployment.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleConfirmResume}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Resume
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
+
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-12 w-12 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                        onClick={handleDeleteClick}
+                      >
+                        <Trash2 width={32} height={32} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Destroy Rollup</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
                 >
-                  <Trash2 width={32} height={32} />
-                </Button>
-                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Destroy Rollup</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to destroy {stack.config.chainName}?
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleConfirmDelete}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Destroy Rollup</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to destroy{" "}
+                        {stack.config.chainName}? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleConfirmDelete}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             </div>
           )}
         </div>
