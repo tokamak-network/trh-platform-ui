@@ -1,9 +1,21 @@
 import { RollupType } from "./rollup";
 
 export interface ThanosStackMetadata {
-  l2_url: string;
+  // Legacy fields
+  l2_url?: string;
   bridge_url?: string;
   block_explorer_url?: string;
+
+  // New fields
+  layer1?: string;
+  layer2?: string;
+  l2RpcUrl?: string;
+  bridgeUrl?: string;
+  l1ChainId?: number;
+  l2ChainId?: number;
+  grafanaUrl?: string;
+  explorerUrl?: string;
+  rollupConfigUrl?: string;
 }
 
 export interface ApiResponse {

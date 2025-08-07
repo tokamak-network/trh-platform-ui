@@ -1,4 +1,20 @@
 /**
+ * Formats a date string to a readable format
+ * @param dateString ISO date string
+ * @returns Formatted date string (e.g., "Jan 15, 2023")
+ */
+export const formatDate = (dateString: string): string => {
+  if (!dateString) return "N/A";
+
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+/**
  * Calculates the last activity time from created_at, updated_at and deleted_at timestamps
  * @param created_at Creation timestamp
  * @param updated_at Update timestamp

@@ -5,6 +5,8 @@ export type RollupDetailTab =
   | "settings"
   | "logs";
 
+import { ThanosStack } from "./thanos";
+
 export interface RollupDetailTabProps {
-  stack?: unknown; // Replace with proper type when available
+  stack?: ThanosStack;
 }
