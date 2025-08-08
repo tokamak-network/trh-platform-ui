@@ -5,13 +5,8 @@ import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThanosStack } from "../../schemas/thanos";
 import { RollupDetailTab } from "../../schemas/detail-tabs";
-import {
-  OverviewTab,
-  ComponentsTab,
-  MonitoringTab,
-  SettingsTab,
-  LogsTab,
-} from "./tabs";
+import { OverviewTab, MonitoringTab, SettingsTab, LogsTab } from "./tabs";
+import { ComponentsTab } from "@/features/integrations";
 
 interface RollupDetailTabsProps {
   stack?: ThanosStack;

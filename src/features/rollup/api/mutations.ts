@@ -7,6 +7,12 @@ import {
   resumeRollup,
 } from "../services/rollupService";
 import { invalidateThanosStacks } from "../hooks/useThanosStack";
+import { queryClient } from "@/providers/query-provider";
+import { rollupKeys } from "./queries";
+export {
+  useUninstallIntegrationMutation,
+  useInstallBridgeMutation,
+} from "@/features/integrations/api/mutations";
 
 export const useDeployRollupMutation = (options?: {
   onSuccess?: () => void;

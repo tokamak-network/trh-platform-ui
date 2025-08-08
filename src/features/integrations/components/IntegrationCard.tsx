@@ -1,15 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Integration, INTEGRATION_TYPES } from "../schemas";
 import {
   ExternalLink,
   Copy,
@@ -18,9 +29,10 @@ import {
   AlertCircle,
   Loader2,
   Eye,
+  Trash2,
 } from "lucide-react";
-import { Integration, INTEGRATION_TYPES } from "../../../schemas/integration";
-import { useState } from "react";
+import { useUninstallIntegrationMutation } from "../api";
+import { INTEGRATION_TYPES as INTEGRATION_TYPES_CONST } from "../schemas";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -29,7 +41,12 @@ interface IntegrationCardProps {
 export function IntegrationCard({ integration }: IntegrationCardProps) {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
   const integrationType = INTEGRATION_TYPES[integration.type];
+  const uninstallMutation = useUninstallIntegrationMutation({
+    onSuccess: () => setShowUninstallConfirm(false),
+    onError: () => setShowUninstallConfirm(false),
+  });
 
   const getStatusIcon = () => {
     switch (integration.status) {
@@ -196,7 +213,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
       );
     }
 
-    if (integration.info.url) {
+    if (integration.info?.url) {
       return (
         <div className="space-y-3">
           <div>
@@ -258,7 +275,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
       );
     }
 
-    if (integration.info.url) {
+    if (integration.info?.url) {
       return (
         <div className="text-sm text-gray-600">
           <p className="truncate">
@@ -277,7 +294,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
 
   return (
     <>
-      <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+      <Card className="relative border-0 shadow-xl bg-white/60 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -300,28 +317,72 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
                 {getStatusIcon()}
                 {integration.status}
               </Badge>
+              {integration.type !== "register-candidate" && (
+                <Button
+                  aria-label="Uninstall"
+                  variant="destructive"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={
+                    uninstallMutation.isPending ||
+                    integration.status !== "Completed"
+                  }
+                  onClick={() => setShowUninstallConfirm(true)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {renderCompactInfo()}
-
-          {/* Show Details button */}
-          <div className="mt-4 pt-3 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowModal(true)}
-              className="w-full justify-center text-xs py-1"
-            >
-              <Eye className="w-3 h-3 mr-1" />
-              View Details
-            </Button>
-          </div>
-        </CardContent>
+        <CardContent className="pb-10">{renderCompactInfo()}</CardContent>
+        <Button
+          variant="link"
+          size="sm"
+          onClick={() => setShowModal(true)}
+          className="absolute bottom-3 right-3 h-auto p-0 text-xs hover:underline underline-offset-2"
+          aria-label="View details"
+        >
+          <Eye className="w-3 h-3 mr-1" />
+          View details
+        </Button>
       </Card>
 
-      {/* Details Modal */}
+      <AlertDialog
+        open={showUninstallConfirm}
+        onOpenChange={(open) => !open && setShowUninstallConfirm(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Uninstall Component</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Are you sure you want to uninstall ${
+                INTEGRATION_TYPES_CONST[
+                  integration.type as keyof typeof INTEGRATION_TYPES_CONST
+                ].label
+              }? This will initiate the uninstall process.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={uninstallMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={uninstallMutation.isPending}
+              onClick={() =>
+                uninstallMutation.mutate({
+                  stackId: integration.stack_id,
+                  type: integration.type,
+                })
+              }
+            >
+              Uninstall
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="w-auto min-w-[600px] max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>

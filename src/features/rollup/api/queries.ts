@@ -5,7 +5,7 @@ import {
   getThanosStacks,
   getThanosStackById,
 } from "../services/rollupService";
-import { getIntegrations } from "../services/integrationService";
+import { getIntegrations } from "@/features/integrations/services/integrationService";
 
 export const rollupKeys = {
   all: ["rollups"] as const,
@@ -48,10 +48,4 @@ export const useThanosStackByIdQuery = (id: string) => {
   });
 };
 
-export const useIntegrationsQuery = (stackId: string) => {
-  return useQuery({
-    queryKey: rollupKeys.integrations(stackId),
-    queryFn: () => getIntegrations(stackId),
-    enabled: !!stackId,
-  });
-};
+export { useIntegrationsQuery } from "@/features/integrations/api/queries";
