@@ -1,6 +1,6 @@
 // Components
-export { SecurityManagement } from "./components/SecurityManagement";
-export { SecurityTabs } from "./components/SecurityTabs";
+export { ConfigurationManagement } from "./components/ConfigurationManagement";
+export { ConfigurationTabs } from "./components/ConfigurationTabs";
 
 // Feature Modules
 export * from "./aws-credentials";

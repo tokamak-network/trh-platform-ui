@@ -33,11 +33,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  {
-    label: "Dashboard",
-    icon: DashboardItemIcon,
-    href: "/dashboard",
-  },
+  // {
+  //   label: "Dashboard",
+  //   icon: DashboardItemIcon,
+  //   href: "/dashboard",
+  // },
   {
     label: "Rollup",
     icon: RollupItemIcon,
@@ -59,15 +59,15 @@ const navItems: NavItem[] = [
     href: "/users",
   },
   {
-    label: "Security",
-    icon: SecurityItemIcon,
-    href: "/security",
-  },
-  {
-    label: "Settings",
+    label: "Configuration",
     icon: SettingItemIcon,
-    href: "/settings",
+    href: "/configuration",
   },
+  // {
+  //   label: "Settings",
+  //   icon: SettingItemIcon,
+  //   href: "/settings",
+  // },
 ];
 
 const bottomNavItems: NavItem[] = [

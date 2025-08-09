@@ -10,7 +10,7 @@ const protectedRoutes = [
   "/explore",
   "/analytics",
   "/users",
-  "/security",
+  "/configuration",
   "/notification",
   "/support",
 ];

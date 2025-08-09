@@ -20,7 +20,7 @@ import { AlertCircle, ExternalLink, RotateCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
-import { useAwsCredentials } from "@/features/security/aws-credentials/hooks/useAwsCredentials";
+import { useAwsCredentials } from "@/features/configuration/aws-credentials/hooks/useAwsCredentials";
 
 const AWS_REGIONS = [
   { value: "ap-northeast-1", label: "Asia Pacific (Tokyo)" },
@@ -198,11 +198,16 @@ export function AwsConfig({ onNext, onBack }: AwsConfigProps) {
               <AlertDescription className="flex items-center justify-between">
                 <span>
                   No AWS access keys found. Please add AWS credentials in the
-                  Security section.
+                  Configuration section.
                 </span>
                 <Button variant="outline" size="sm" asChild>
-                  <a href="/security" target="_blank" rel="noopener noreferrer">
-                    Go to Security <ExternalLink className="w-3 h-3 ml-1" />
+                  <a
+                    href="/configuration"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Go to Configuration{" "}
+                    <ExternalLink className="w-3 h-3 ml-1" />
                   </a>
                 </Button>
               </AlertDescription>

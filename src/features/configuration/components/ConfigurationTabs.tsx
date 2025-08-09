@@ -6,14 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AWSCredentialsTab } from "../aws-credentials";
 import { WalletManagement } from "../wallet-management";
 import { EncryptionSettings } from "../encryption";
-import { SecurityMonitoring } from "../monitoring";
-import { SecurityTab } from "../schemas";
+import { ConfigurationMonitoring } from "../monitoring";
+import { ConfigurationTab } from "../schemas";
 
-interface SecurityTabsProps {
-  currentTab: SecurityTab;
+interface ConfigurationTabsProps {
+  currentTab: ConfigurationTab;
 }
 
-export function SecurityTabs({ currentTab }: SecurityTabsProps) {
+export function ConfigurationTabs({ currentTab }: ConfigurationTabsProps) {
   const router = useRouter();
 
   const handleTabChange = (value: string) => {
@@ -72,7 +72,7 @@ export function SecurityTabs({ currentTab }: SecurityTabsProps) {
 
       {/* Monitoring Tab */}
       <TabsContent value="monitoring" className="space-y-6">
-        <SecurityMonitoring />
+        <ConfigurationMonitoring />
       </TabsContent>
     </Tabs>
   );

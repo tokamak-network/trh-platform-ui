@@ -2,24 +2,24 @@
 
 import { Suspense } from "react";
 import { AuthenticatedLayout } from "@/components/layout";
-import { SecurityManagement } from "@/features/security";
+import { ConfigurationManagement } from "@/features/configuration";
 
-function SecurityPageContent() {
+function ConfigurationPageContent() {
   return (
     <AuthenticatedLayout>
       <main className="flex-1 p-6 px-16">
-        <SecurityManagement />
+        <ConfigurationManagement />
       </main>
     </AuthenticatedLayout>
   );
 }
 
-function SecurityPage() {
+function ConfigurationPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SecurityPageContent />
+      <ConfigurationPageContent />
     </Suspense>
   );
 }
 
-export default SecurityPage;
+export default ConfigurationPage;

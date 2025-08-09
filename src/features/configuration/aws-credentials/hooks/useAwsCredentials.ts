@@ -6,7 +6,7 @@ import { awsCredentialsService } from "../services/awsCredentialsService";
 import {
   AWSCredential,
   AWSCredentialFormData,
-  SecurityState,
+  ConfigurationState,
 } from "../../schemas";
 import toast from "react-hot-toast";
 
@@ -21,7 +21,7 @@ export const useAwsCredentials = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["security", "aws-credentials"],
+    queryKey: ["configuration", "aws-credentials"],
     queryFn: async () => {
       try {
         const result = await awsCredentialsService.getAwsCredentials();
@@ -148,8 +148,8 @@ export const useAwsCredentials = () => {
     refetch();
   }, [refetch]);
 
-  // Security state
-  const securityState: SecurityState = {
+  // Configuration state
+  const configurationState: ConfigurationState = {
     awsCredentials,
     isLoading,
     error: error?.message || null,
@@ -157,7 +157,7 @@ export const useAwsCredentials = () => {
 
   return {
     // State
-    ...securityState,
+    ...configurationState,
 
     // Loading states
     isAdding: createCredentialMutation.isPending,

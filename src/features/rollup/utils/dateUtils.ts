@@ -35,7 +35,7 @@ export const getLastActivityTime = (
     timestamps.push(new Date(deleted_at).getTime());
   }
 
-  return new Date(Math.max(...timestamps) - 3600).toISOString();
+  return new Date(Math.max(...timestamps)).toISOString();
 };
 
 /**
@@ -47,6 +47,10 @@ export const formatRelativeTime = (timestamp: string): string => {
   const date = new Date(timestamp);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 0) {
+    return "just now";
+  }
 
   if (diffInSeconds < 60) {
     return `${diffInSeconds} second${diffInSeconds !== 1 ? "s" : ""} ago`;

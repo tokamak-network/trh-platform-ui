@@ -4,7 +4,7 @@ import React from "react";
 import { AlertTriangle } from "lucide-react";
 import { ComingSoonTab } from "../../shared/components/ComingSoonTab";
 
-export function SecurityMonitoring() {
+export function ConfigurationMonitoring() {
   return (
     <ComingSoonTab
       icon={AlertTriangle}

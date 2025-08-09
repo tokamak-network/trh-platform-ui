@@ -56,13 +56,13 @@ export type AWSCredentialsListResponse = z.infer<
 export type AWSCredentialResponse = z.infer<typeof awsCredentialResponseSchema>;
 export type AWSCredentialFormData = z.infer<typeof awsCredentialFormSchema>;
 
-// Security tab types
-export type SecurityTab = "aws" | "wallets" | "encryption" | "monitoring";
+// Configuration tab types
+export type ConfigurationTab = "aws" | "wallets" | "encryption" | "monitoring";
 
 // UI state types
 export type SecretVisibilityState = { [key: string]: boolean };
 
-export interface SecurityState {
+export interface ConfigurationState {
   awsCredentials: AWSCredential[];
   isLoading: boolean;
   error: string | null;
