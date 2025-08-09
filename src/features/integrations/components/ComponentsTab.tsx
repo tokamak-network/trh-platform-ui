@@ -25,11 +25,19 @@ import { INTEGRATION_TYPES, Integration } from "../schemas";
 import {
   useInstallBridgeMutation,
   useInstallBlockExplorerMutation,
+  useInstallMonitoringMutation,
+  useRegisterDaoCandidateMutation,
 } from "../api";
 import InstallBridgeDialog from "./InstallBridgeDialog";
 import InstallBlockExplorerDialog, {
   BlockExplorerFormData,
 } from "./InstallBlockExplorerDialog";
+import InstallMonitoringDialog, {
+  MonitoringFormData,
+} from "./InstallMonitoringDialog";
+import InstallDaoCandidateDialog, {
+  DaoCandidateFormData,
+} from "./InstallDaoCandidateDialog";
 
 export function ComponentsTab({ stack }: RollupDetailTabProps) {
   const {
@@ -43,8 +51,13 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
 
   const installBridgeMutation = useInstallBridgeMutation();
   const installBlockExplorerMutation = useInstallBlockExplorerMutation();
+  const installMonitoringMutation = useInstallMonitoringMutation();
+  const installDaoCandidateMutation = useRegisterDaoCandidateMutation();
   const isAnyInstallPending =
-    installBridgeMutation.isPending || installBlockExplorerMutation.isPending;
+    installBridgeMutation.isPending ||
+    installBlockExplorerMutation.isPending ||
+    installMonitoringMutation.isPending ||
+    installDaoCandidateMutation.isPending;
   const [installType, setInstallType] = useState<Integration["type"] | null>(
     null
   );
@@ -302,6 +315,14 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                                       setInstallType(
                                         type as Integration["type"]
                                       );
+                                    } else if (type === "monitoring") {
+                                      setInstallType(
+                                        type as Integration["type"]
+                                      );
+                                    } else if (type === "register-candidate") {
+                                      setInstallType(
+                                        type as Integration["type"]
+                                      );
                                     } else {
                                       console.log(
                                         "Install integration (coming soon)",
@@ -353,6 +374,37 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
               databasePassword: data.databasePassword,
               coinmarketcapKey: data.coinmarketcapKey,
               walletConnectId: data.walletConnectId,
+            },
+            { onSettled: () => setInstallType(null) }
+          );
+        }}
+      />
+
+      <InstallMonitoringDialog
+        open={installType === "monitoring"}
+        onOpenChange={(open) => !open && setInstallType(null)}
+        isPending={installMonitoringMutation.isPending}
+        onSubmit={(data: MonitoringFormData) => {
+          if (!stack) return;
+          installMonitoringMutation.mutate(
+            { stackId: stack.id, grafanaPassword: data.grafanaPassword },
+            { onSettled: () => setInstallType(null) }
+          );
+        }}
+      />
+
+      <InstallDaoCandidateDialog
+        open={installType === "register-candidate"}
+        onOpenChange={(open) => !open && setInstallType(null)}
+        isPending={installDaoCandidateMutation.isPending}
+        onSubmit={(data: DaoCandidateFormData) => {
+          if (!stack) return;
+          installDaoCandidateMutation.mutate(
+            {
+              stackId: stack.id,
+              amount: data.amount,
+              memo: data.memo,
+              nameInfo: data.nameInfo,
             },
             { onSettled: () => setInstallType(null) }
           );

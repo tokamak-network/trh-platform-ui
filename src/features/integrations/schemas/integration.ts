@@ -1,5 +1,25 @@
 export interface IntegrationInfo {
   url?: string;
+  // Monitoring credentials
+  username?: string;
+  password?: string;
+  // AlertManager configuration snapshot returned by API
+  alert_manager?: {
+    Email?: {
+      Enabled: boolean;
+      SmtpFrom: string;
+      SmtpSmarthost: string;
+      DefaultReceivers: string[] | null;
+      SmtpAuthPassword: string;
+      SmtpAuthUsername: string;
+      CriticalReceivers: string[] | null;
+    };
+    Telegram?: {
+      Enabled: boolean;
+      ApiToken: string;
+      CriticalReceivers: string[] | null;
+    };
+  };
   safe_wallet?: {
     owners: string[];
     address: string;
@@ -55,5 +75,3 @@ export const INTEGRATION_TYPES = {
     color: "from-orange-500 to-red-400",
   },
 } as const;
-
-
