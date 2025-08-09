@@ -621,7 +621,8 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
                   className="h-7 w-7"
                   disabled={
                     uninstallMutation.isPending ||
-                    integration.status !== "Completed"
+                    (integration.status !== "Completed" &&
+                      integration.status !== "Failed")
                   }
                   onClick={() => setShowUninstallConfirm(true)}
                 >
