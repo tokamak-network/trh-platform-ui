@@ -7,6 +7,10 @@ import {
   ThanosStack,
   ThanosStackStatus,
 } from "../schemas/thanos";
+import {
+  ThanosDeployment,
+  GetThanosDeploymentsResponse,
+} from "../schemas/thanos-deployments";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
   const response = await apiPost<{ id: string }>("stacks/thanos", request, {
@@ -83,6 +87,15 @@ export const getThanosStacks = async (): Promise<ThanosStack[]> => {
 export const getThanosStackById = async (id: string): Promise<ThanosStack> => {
   const response = await apiGet<GetThanosStackResponse>(`stacks/thanos/${id}`);
   return response.data.stack;
+};
+
+export const getThanosDeployments = async (
+  id: string
+): Promise<ThanosDeployment[]> => {
+  const response = await apiGet<GetThanosDeploymentsResponse>(
+    `stacks/thanos/${id}/deployments`
+  );
+  return response.data.deployments;
 };
 
 export const deleteRollup = async (id: string) => {

@@ -4,6 +4,7 @@ import {
   getRollupById,
   getThanosStacks,
   getThanosStackById,
+  getThanosDeployments,
 } from "../services/rollupService";
 import { getIntegrations } from "@/features/integrations/services/integrationService";
 
@@ -11,6 +12,8 @@ export const rollupKeys = {
   all: ["rollups"] as const,
   thanosStacks: ["thanosStacks"] as const,
   thanosStack: (id: string) => [...rollupKeys.thanosStacks, id] as const,
+  thanosDeployments: (stackId: string) =>
+    [...rollupKeys.thanosStack(stackId), "deployments"] as const,
   integrations: (stackId: string) =>
     [...rollupKeys.thanosStack(stackId), "integrations"] as const,
   lists: () => [...rollupKeys.all, "list"] as const,
@@ -49,3 +52,14 @@ export const useThanosStackByIdQuery = (id: string) => {
 };
 
 export { useIntegrationsQuery } from "@/features/integrations/api/queries";
+
+export const useThanosDeploymentsQuery = (id?: string) => {
+  return useQuery({
+    queryKey: id
+      ? rollupKeys.thanosDeployments(id)
+      : (["thanosStacks", "deployments", "disabled"] as const),
+    queryFn: () => getThanosDeployments(id as string),
+    enabled: Boolean(id),
+    refetchInterval: 5000,
+  });
+};

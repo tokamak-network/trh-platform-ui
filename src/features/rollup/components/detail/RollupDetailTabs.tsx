@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThanosStack } from "../../schemas/thanos";
 import { RollupDetailTab } from "../../schemas/detail-tabs";
-import { OverviewTab, MonitoringTab, SettingsTab, LogsTab } from "./tabs";
+import {
+  OverviewTab,
+  MonitoringTab,
+  SettingsTab,
+  LogsTab,
+  DeploymentsTab,
+} from "./tabs";
 import { ComponentsTab } from "@/features/integrations";
 
 interface RollupDetailTabsProps {
@@ -37,12 +43,18 @@ export function RollupDetailTabs({
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-5 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+      <TabsList className="grid w-full grid-cols-6 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
         <TabsTrigger
           value="overview"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
           Overview
+        </TabsTrigger>
+        <TabsTrigger
+          value="deployments"
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+        >
+          Deployments
         </TabsTrigger>
         <TabsTrigger
           value="components"
@@ -83,6 +95,11 @@ export function RollupDetailTabs({
       {/* Monitoring Tab */}
       <TabsContent value="monitoring" className="space-y-6">
         <MonitoringTab stack={stack} />
+      </TabsContent>
+
+      {/* Deployments Tab */}
+      <TabsContent value="deployments" className="space-y-6">
+        <DeploymentsTab stack={stack} />
       </TabsContent>
 
       {/* Settings Tab */}
