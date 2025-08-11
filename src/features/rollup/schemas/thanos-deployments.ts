@@ -1,4 +1,8 @@
-export type ThanosDeploymentStatus = "InProgress" | "Success" | "Failed";
+export type ThanosDeploymentStatus =
+  | "InProgress"
+  | "Success"
+  | "Failed"
+  | "Not Started";
 
 export interface ThanosDeploymentConfig {
   [key: string]: unknown;

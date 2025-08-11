@@ -16,7 +16,9 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  Circle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
@@ -46,26 +48,28 @@ const formatDuration = (start?: string, end?: string) => {
 const StatusBadge = ({ status }: { status: ThanosDeployment["status"] }) => {
   const config = {
     InProgress: {
-      color: "bg-blue-100 text-blue-700",
-      icon: <Loader2 className="w-3 h-3 mr-1 animate-spin" />,
+      className: "bg-blue-100 text-blue-700 border-blue-200",
+      icon: <Loader2 className="w-3 h-3 animate-spin" />,
     },
     Success: {
-      color: "bg-green-100 text-green-700",
-      icon: <CheckCircle className="w-3 h-3 mr-1" />,
+      className: "bg-green-100 text-green-700 border-green-200",
+      icon: <CheckCircle className="w-3 h-3" />,
     },
     Failed: {
-      color: "bg-red-100 text-red-700",
-      icon: <AlertCircle className="w-3 h-3 mr-1" />,
+      className: "bg-red-100 text-red-700 border-red-200",
+      icon: <AlertCircle className="w-3 h-3" />,
+    },
+    "Not Started": {
+      className: "bg-gray-100 text-gray-700 border-gray-200",
+      icon: <Circle className="w-3 h-3" />,
     },
   } as const;
-  const { color, icon } = config[status] || config.InProgress;
+  const { className, icon } = config[status] || config.InProgress;
   return (
-    <span
-      className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded ${color}`}
-    >
+    <Badge variant="outline" className={`flex items-center gap-1 ${className}`}>
       {icon}
       {status}
-    </span>
+    </Badge>
   );
 };
 

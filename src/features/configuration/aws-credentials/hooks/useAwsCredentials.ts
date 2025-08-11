@@ -45,9 +45,12 @@ export const useAwsCredentials = () => {
     },
     onSuccess: (newCredential) => {
       queryClient.setQueryData(
-        ["security", "aws-credentials"],
+        ["configuration", "aws-credentials"],
         (old: AWSCredential[] = []) => [...old, newCredential]
       );
+      queryClient.invalidateQueries({
+        queryKey: ["configuration", "aws-credentials"],
+      });
       toast.success("AWS credentials added successfully");
     },
     onError: (error: Error) => {
@@ -63,12 +66,15 @@ export const useAwsCredentials = () => {
     },
     onSuccess: (updatedCredential) => {
       queryClient.setQueryData(
-        ["security", "aws-credentials"],
+        ["configuration", "aws-credentials"],
         (old: AWSCredential[] = []) =>
           old.map((cred) =>
             cred.id === updatedCredential.id ? updatedCredential : cred
           )
       );
+      queryClient.invalidateQueries({
+        queryKey: ["configuration", "aws-credentials"],
+      });
       toast.success("AWS credentials updated successfully");
     },
     onError: (error: Error) => {
@@ -87,10 +93,13 @@ export const useAwsCredentials = () => {
     },
     onSuccess: (_, deletedId) => {
       queryClient.setQueryData(
-        ["security", "aws-credentials"],
+        ["configuration", "aws-credentials"],
         (old: AWSCredential[] = []) =>
           old.filter((cred) => cred.id !== deletedId)
       );
+      queryClient.invalidateQueries({
+        queryKey: ["configuration", "aws-credentials"],
+      });
       toast.success("AWS credentials deleted successfully");
       setDeletingId(null);
     },

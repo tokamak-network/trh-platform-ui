@@ -26,6 +26,7 @@ export const useRollups = () => {
   return useQuery({
     queryKey: rollupKeys.lists(),
     queryFn: getRollups,
+    refetchInterval: 120000, // 2 minutes
   });
 };
 
@@ -33,6 +34,7 @@ export const useRollup = (id: string) => {
   return useQuery({
     queryKey: rollupKeys.detail(id),
     queryFn: () => getRollupById(id),
+    refetchInterval: 120000, // 2 minutes
   });
 };
 
@@ -41,6 +43,7 @@ export const useThanosStacksQuery = () => {
     queryKey: rollupKeys.thanosStacks,
     queryFn: getThanosStacks,
     retry: 2,
+    refetchInterval: 120000, // 2 minutes
   });
 };
 
@@ -48,6 +51,7 @@ export const useThanosStackByIdQuery = (id: string) => {
   return useQuery({
     queryKey: rollupKeys.thanosStack(id),
     queryFn: () => getThanosStackById(id),
+    refetchInterval: 120000, // 2 minutes
   });
 };
 
@@ -60,6 +64,6 @@ export const useThanosDeploymentsQuery = (id?: string) => {
       : (["thanosStacks", "deployments", "disabled"] as const),
     queryFn: () => getThanosDeployments(id as string),
     enabled: Boolean(id),
-    refetchInterval: 5000,
+    refetchInterval: 10000, // 10 seconds
   });
 };

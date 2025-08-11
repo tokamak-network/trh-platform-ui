@@ -132,6 +132,14 @@ export function RollupItem({
     ThanosStackStatus.FAILED_TO_TERMINATE,
   ].includes(stack.status);
 
+  // Disable destroy when stack is in-flight or mutation running
+  const isDestroyDisabled =
+    [
+      ThanosStackStatus.DEPLOYING,
+      ThanosStackStatus.UPDATING,
+      ThanosStackStatus.TERMINATING,
+    ].includes(stack.status) || deleteRollupMutation.isPending;
+
   const handleClick = () => {
     if (onClick) {
       onClick(stack.id);
@@ -335,7 +343,8 @@ export function RollupItem({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-12 w-12 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                        className="h-12 w-12 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isDestroyDisabled}
                         onClick={handleDeleteClick}
                       >
                         <Trash2 width={32} height={32} />
@@ -364,6 +373,7 @@ export function RollupItem({
                       </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleConfirmDelete}
+                        disabled={isDestroyDisabled}
                         className="bg-red-600 hover:bg-red-700 text-white"
                       >
                         Delete

@@ -55,11 +55,17 @@ export const useDeleteRollupMutation = (options?: {
         id: "delete-rollup",
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       toast.success("Rollup destruction initiated successfully!", {
         id: "delete-rollup",
       });
       invalidateThanosStacks();
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStack(id) });
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.thanosDeployments(id),
+        });
+      }
       options?.onSuccess?.();
     },
     onError: (error: Error) => {
@@ -82,11 +88,17 @@ export const useResumeRollupMutation = (options?: {
         id: "resume-rollup",
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       toast.success("Rollup resume initiated successfully!", {
         id: "resume-rollup",
       });
       invalidateThanosStacks();
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStack(id) });
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.thanosDeployments(id),
+        });
+      }
       options?.onSuccess?.();
     },
     onError: (error: Error) => {
