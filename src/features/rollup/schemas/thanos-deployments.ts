@@ -22,3 +22,15 @@ export interface ThanosDeployment {
 export interface GetThanosDeploymentsResponse {
   deployments: ThanosDeployment[];
 }
+
+export interface ThanosDeploymentLog {
+  id: string;
+  stack_id: string;
+  deployment_id: string;
+  message: string;
+  created_at: string;
+}
+
+export interface GetThanosDeploymentLogsResponse {
+  logs: ThanosDeploymentLog[];
+}

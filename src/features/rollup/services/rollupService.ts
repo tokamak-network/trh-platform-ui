@@ -10,6 +10,8 @@ import {
 import {
   ThanosDeployment,
   GetThanosDeploymentsResponse,
+  GetThanosDeploymentLogsResponse,
+  ThanosDeploymentLog,
 } from "../schemas/thanos-deployments";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
@@ -96,6 +98,23 @@ export const getThanosDeployments = async (
     `stacks/thanos/${id}/deployments`
   );
   return response.data.deployments;
+};
+
+export const getThanosDeploymentLogs = async (
+  stackId: string,
+  deploymentId: string,
+  params?: { limit?: number; afterId?: string }
+): Promise<ThanosDeploymentLog[]> => {
+  const response = await apiGet<GetThanosDeploymentLogsResponse>(
+    `stacks/thanos/${stackId}/deployments/${deploymentId}/logs`,
+    {
+      params: {
+        limit: params?.limit ?? 200,
+        afterId: params?.afterId,
+      },
+    }
+  );
+  return response.data.logs;
 };
 
 export const deleteRollup = async (id: string) => {

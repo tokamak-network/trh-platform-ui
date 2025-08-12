@@ -17,11 +17,13 @@ import {
   Loader2,
   RefreshCw,
   Circle,
+  FileText,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
+import { LogDialog } from "../LogDialog";
 
 const formatDateTime = (iso?: string) => {
   if (!iso) return "-";
@@ -84,6 +86,9 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
   } = useThanosDeploymentsQuery(stackId);
   const [open, setOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<ThanosDeployment | null>(null);
+  const [logsOpen, setLogsOpen] = React.useState(false);
+  const [logsSelected, setLogsSelected] =
+    React.useState<ThanosDeployment | null>(null);
 
   // Sort deployments by last activity (finished_at if present, otherwise started_at)
   const sortedDeployments = React.useMemo(() => {
@@ -99,6 +104,11 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
   const handleView = (deployment: ThanosDeployment) => {
     setSelected(deployment);
     setOpen(true);
+  };
+
+  const handleLogs = (deployment: ThanosDeployment) => {
+    setLogsSelected(deployment);
+    setLogsOpen(true);
   };
 
   return (
@@ -163,7 +173,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                           {formatDateTime(d.started_at)}
                         </td>
                         <td className="py-3 pr-4 text-slate-700">{duration}</td>
-                        <td className="py-3 pr-0">
+                        <td className="py-3 pr-0 space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -171,6 +181,14 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                             onClick={() => handleView(d)}
                           >
                             <Eye className="w-4 h-4 mr-2" /> View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="inline-flex items-center"
+                            onClick={() => handleLogs(d)}
+                          >
+                            <FileText className="w-4 h-4 mr-2" /> Logs
                           </Button>
                         </td>
                       </tr>
@@ -244,6 +262,13 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      <LogDialog
+        open={logsOpen}
+        onOpenChange={setLogsOpen}
+        deployment={logsSelected}
+        stackId={stackId}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   getThanosStacks,
   getThanosStackById,
   getThanosDeployments,
+  getThanosDeploymentLogs,
 } from "../services/rollupService";
 import { getIntegrations } from "@/features/integrations/services/integrationService";
 
@@ -65,5 +66,35 @@ export const useThanosDeploymentsQuery = (id?: string) => {
     queryFn: () => getThanosDeployments(id as string),
     enabled: Boolean(id),
     refetchInterval: 10000, // 10 seconds
+  });
+};
+
+export const useThanosDeploymentLogsQuery = (
+  stackId?: string,
+  deploymentId?: string,
+  options?: {
+    limit?: number;
+    afterId?: string;
+    refetchIntervalMs?: number | false;
+  }
+) => {
+  return useQuery({
+    queryKey:
+      stackId && deploymentId
+        ? [
+            ...rollupKeys.thanosDeployments(stackId),
+            deploymentId,
+            "logs",
+            options?.limit ?? 200,
+            options?.afterId,
+          ]
+        : (["thanosStacks", "deployments", "logs", "disabled"] as const),
+    queryFn: () =>
+      getThanosDeploymentLogs(stackId as string, deploymentId as string, {
+        limit: options?.limit,
+        afterId: options?.afterId,
+      }),
+    enabled: Boolean(stackId && deploymentId),
+    refetchInterval: options?.refetchIntervalMs ?? 5000,
   });
 };
