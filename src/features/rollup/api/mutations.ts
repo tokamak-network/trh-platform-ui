@@ -5,6 +5,7 @@ import {
   deployRollup,
   deleteRollup,
   resumeRollup,
+  stopRollup,
 } from "../services/rollupService";
 import { invalidateThanosStacks } from "../hooks/useThanosStack";
 import { queryClient } from "@/providers/query-provider";
@@ -104,6 +105,39 @@ export const useResumeRollupMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to resume rollup", {
         id: "resume-rollup",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useStopRollupMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: stopRollup,
+    onMutate: () => {
+      toast.loading("Stopping rollup deployment...", {
+        id: "stop-rollup",
+      });
+    },
+    onSuccess: (_data, id) => {
+      toast.success("Rollup deployment stopped successfully!", {
+        id: "stop-rollup",
+      });
+      invalidateThanosStacks();
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStack(id) });
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.thanosDeployments(id),
+        });
+      }
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to stop rollup deployment", {
+        id: "stop-rollup",
       });
       options?.onError?.(error);
     },

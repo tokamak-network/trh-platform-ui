@@ -44,6 +44,7 @@ import {
   LucideIcon,
   Layers,
   RotateCcw,
+  PauseIcon,
 } from "lucide-react";
 import { statusConfig } from "../schemas/rollup";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
@@ -51,6 +52,7 @@ import { getLastActivityTime, formatRelativeTime } from "../utils/dateUtils";
 import {
   useDeleteRollupMutation,
   useResumeRollupMutation,
+  useStopRollupMutation,
 } from "../api/mutations";
 
 // Format rollup type for display
@@ -120,8 +122,10 @@ export function RollupItem({
   const statusInfo = statusConfig[stack.status];
   const deleteRollupMutation = useDeleteRollupMutation();
   const resumeRollupMutation = useResumeRollupMutation();
+  const stopRollupMutation = useStopRollupMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isResumeDialogOpen, setIsResumeDialogOpen] = React.useState(false);
+  const [isStopDialogOpen, setIsStopDialogOpen] = React.useState(false);
 
   // Check if resume button should be active
   const canResume = [
@@ -132,12 +136,18 @@ export function RollupItem({
     ThanosStackStatus.FAILED_TO_TERMINATE,
   ].includes(stack.status);
 
+  // Check if stop button should be active (only when deploying)
+  // const canStop = stack.status === ThanosStackStatus.DEPLOYING;
+  const canStop = false;
+
   // Disable destroy when stack is in-flight or mutation running
   const isDestroyDisabled =
     [
       ThanosStackStatus.DEPLOYING,
       ThanosStackStatus.UPDATING,
       ThanosStackStatus.TERMINATING,
+      ThanosStackStatus.TERMINATED,
+      ThanosStackStatus.PENDING,
     ].includes(stack.status) || deleteRollupMutation.isPending;
 
   const handleClick = () => {
@@ -166,6 +176,16 @@ export function RollupItem({
     setIsResumeDialogOpen(false);
   };
 
+  const handleStopClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsStopDialogOpen(true);
+  };
+
+  const handleConfirmStop = () => {
+    stopRollupMutation.mutate(stack.id);
+    setIsStopDialogOpen(false);
+  };
+
   return (
     <Card
       key={stack.id}
@@ -177,7 +197,7 @@ export function RollupItem({
       onClick={onClick ? handleClick : undefined}
     >
       <CardContent className="p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-10">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
               {getStatusBadge(stack.status)}
@@ -288,6 +308,54 @@ export function RollupItem({
                 </div>
               )}
 
+              {canStop && (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50 cursor-pointer"
+                          onClick={handleStopClick}
+                        >
+                          <PauseIcon width={16} height={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Stop Deployment</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <AlertDialog
+                    open={isStopDialogOpen}
+                    onOpenChange={setIsStopDialogOpen}
+                  >
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Stop Deployment</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to stop the deployment of{" "}
+                          {stack.config.chainName}? This will halt the current
+                          deployment process.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleConfirmStop}
+                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                        >
+                          Stop
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
+
               {canResume && (
                 <>
                   <TooltipProvider>
@@ -296,10 +364,10 @@ export function RollupItem({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-12 w-12 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer"
+                          className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer"
                           onClick={handleResumeClick}
                         >
-                          <RotateCcw width={32} height={32} />
+                          <RotateCcw width={16} height={16} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -343,11 +411,11 @@ export function RollupItem({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-12 w-12 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isDestroyDisabled}
                         onClick={handleDeleteClick}
                       >
-                        <Trash2 width={32} height={32} />
+                        <Trash2 width={16} height={16} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

@@ -129,6 +129,13 @@ export const resumeRollup = async (id: string) => {
   return response;
 };
 
+export const stopRollup = async (id: string) => {
+  const response = await apiPost<{ success: boolean }>(
+    `stacks/thanos/${id}/stop`
+  );
+  return response;
+};
+
 export const calculateRollupStats = (stacks?: ThanosStack[]) => {
   if (!stacks || stacks.length === 0) {
     return {
