@@ -26,6 +26,7 @@ import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { LogDialog } from "../LogDialog";
 import { downloadThanosDeploymentLogs } from "@/features/rollup/services/rollupService";
+import toast from "react-hot-toast";
 
 const formatDateTime = (iso?: string) => {
   if (!iso) return "-";
@@ -133,7 +134,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
       await downloadThanosDeploymentLogs(stackId, deployment.id);
     } catch (error) {
       console.error("Failed to download logs:", error);
-      // You might want to show a toast notification here
+      toast.error("Failed to download logs");
     }
   };
 

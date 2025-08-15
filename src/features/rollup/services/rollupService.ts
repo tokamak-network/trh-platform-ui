@@ -191,6 +191,79 @@ export const downloadThanosDeploymentLogs = async (
   }
 };
 
+export const downloadThanosRollupConfig = async (
+  stackId: string
+): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+      }/api/v1/stacks/thanos/${stackId}/rollupconfig`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${
+            typeof window !== "undefined"
+              ? localStorage.getItem("accessToken")
+              : ""
+          }`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Failed to download rollup config";
+
+      // Handle specific error cases based on backend response
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // If response is not JSON, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+
+      // Provide more specific error messages based on status codes
+      switch (response.status) {
+        case 400:
+          throw new Error("Invalid stack ID format");
+        case 404:
+          throw new Error("Stack or rollup config not found");
+        case 500:
+          throw new Error("Server error while accessing rollup config");
+        default:
+          throw new Error(errorMessage);
+      }
+    }
+
+    // Get the filename from the Content-Disposition header or create a default one
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = `rollup-config-${stackId}.json`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+      );
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, "");
+      }
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Download failed:", error);
+    throw error;
+  }
+};
+
 export const deleteRollup = async (id: string) => {
   const response = await apiDelete<{ success: boolean }>(`stacks/thanos/${id}`);
   return response;

@@ -7,6 +7,8 @@ import { Download, Eye, Link, Network, Zap } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { TabsContent } from "@/components/ui/tabs";
 import { formatDate } from "../../../utils/dateUtils";
+import { downloadThanosRollupConfig } from "../../../services/rollupService";
+import toast from "react-hot-toast";
 
 export function OverviewTab({ stack }: RollupDetailTabProps) {
   if (!stack) return null;
@@ -20,9 +22,19 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
     explorerUrl: stack.metadata?.explorerUrl || "#",
     bridgeUrl: stack.metadata?.bridgeUrl || "#",
     grafanaUrl: stack.metadata?.grafanaUrl || "#",
-    rollupConfigUrl: stack.metadata?.rollupConfigUrl || "#",
     layer1: stack.metadata?.layer1 || "Not available",
     layer2: stack.metadata?.layer2 || "Not available",
+  };
+
+  const handleDownloadConfig = async () => {
+    if (!stack.id) return;
+
+    try {
+      await downloadThanosRollupConfig(stack.id);
+    } catch (error) {
+      console.error("Failed to download rollup config:", error);
+      toast.error("Failed to download rollup config");
+    }
   };
 
   return (
@@ -130,28 +142,19 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
                 </a>
               </Button>
             )}
-            {rollup.rollupConfigUrl !== "#" && (
-              <Button
-                variant="outline"
-                className="w-full justify-start bg-white/60 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-200"
-                asChild
-              >
-                <a
-                  href={rollup.rollupConfigUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Config
-                </a>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="w-full justify-start bg-white/60 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-200"
+              onClick={handleDownloadConfig}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download Config
+            </Button>
             {rollup.explorerUrl === "#" &&
               rollup.bridgeUrl === "#" &&
-              rollup.grafanaUrl === "#" &&
-              rollup.rollupConfigUrl === "#" && (
+              rollup.grafanaUrl === "#" && (
                 <div className="text-center py-4 text-slate-600">
-                  No links available for this rollup
+                  No external links available for this rollup
                 </div>
               )}
           </CardContent>
