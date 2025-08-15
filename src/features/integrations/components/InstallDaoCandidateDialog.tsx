@@ -81,7 +81,7 @@ export default function InstallDaoCandidateDialog({
       <Dialog open={open} onOpenChange={handleDialogChange}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
-            <DialogTitle>Register DAO Candidate</DialogTitle>
+            <DialogTitle>Staking/DAO Candidate Registration</DialogTitle>
             <DialogDescription>
               Enter details to register your DAO candidate. Amount must be
               greater than 1000 TON.

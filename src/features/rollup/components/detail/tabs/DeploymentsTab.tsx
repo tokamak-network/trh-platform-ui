@@ -18,12 +18,14 @@ import {
   RefreshCw,
   Circle,
   FileText,
+  Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { LogDialog } from "../LogDialog";
+import { downloadThanosDeploymentLogs } from "@/features/rollup/services/rollupService";
 
 const formatDateTime = (iso?: string) => {
   if (!iso) return "-";
@@ -99,6 +101,19 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     });
   }, [deployments]);
 
+  const StepnameMap: Record<string, string> = {
+    "deploy-l1-contracts": "Deploy L1 Contracts",
+    "deploy-aws-infra": "Deploy AWS Infrastructure",
+    "destroy-aws-infra": "Destroy AWS Infrastructure",
+    "install-bridge": "Install Bridge",
+    "uninstall-bridge": "Uninstall Bridge",
+    "install-block-explorer": "Install Block Explorer",
+    "uninstall-block-explorer": "Uninstall Block Explorer",
+    "install-monitoring": "Install Monitoring Dashboard",
+    "uninstall-monitoring": "Uninstall Monitoring Dashboard",
+    "register-candidate": "Staking/DAO Candidate Registration",
+  };
+
   if (!stack) return null;
 
   const handleView = (deployment: ThanosDeployment) => {
@@ -111,23 +126,34 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     setLogsOpen(true);
   };
 
+  const handleDownload = async (deployment: ThanosDeployment) => {
+    if (!stackId) return;
+
+    try {
+      await downloadThanosDeploymentLogs(stackId, deployment.id);
+    } catch (error) {
+      console.error("Failed to download logs:", error);
+      // You might want to show a toast notification here
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-gray-100">
         <CardHeader className="flex items-center justify-between">
-          <CardTitle className="text-slate-800">Deployments</CardTitle>
+          <CardTitle className="text-slate-800">Deployment history</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-10 text-slate-600">
               <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading
-              deployments...
+              deployment history...
             </div>
           ) : isError ? (
             <div className="flex flex-col items-center justify-center gap-3 py-10">
               <div className="text-red-600 inline-flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2" /> Failed to load
-                deployments
+                deployment history
               </div>
               <Button
                 variant="outline"
@@ -164,7 +190,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                     return (
                       <tr key={d.id} className="border-t border-slate-200/60">
                         <td className="py-3 pr-4 font-medium text-slate-800 capitalize">
-                          {name}
+                          {StepnameMap[d.step] || name}
                         </td>
                         <td className="py-3 pr-4">
                           <StatusBadge status={d.status} />
@@ -189,6 +215,14 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                             onClick={() => handleLogs(d)}
                           >
                             <FileText className="w-4 h-4 mr-2" /> Logs
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="inline-flex items-center"
+                            onClick={() => handleDownload(d)}
+                          >
+                            <Download className="w-4 h-4" />
                           </Button>
                         </td>
                       </tr>

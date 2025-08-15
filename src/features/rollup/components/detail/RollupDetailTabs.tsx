@@ -54,13 +54,13 @@ export function RollupDetailTabs({
           value="deployments"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
-          Deployments
+          Deployment History
         </TabsTrigger>
         <TabsTrigger
           value="components"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
-          Components
+          Integrations
         </TabsTrigger>
         <TabsTrigger
           value="monitoring"

@@ -117,6 +117,80 @@ export const getThanosDeploymentLogs = async (
   return response.data.logs;
 };
 
+export const downloadThanosDeploymentLogs = async (
+  stackId: string,
+  deploymentId: string
+): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+      }/api/v1/stacks/thanos/${stackId}/deployments/${deploymentId}/logs/download`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${
+            typeof window !== "undefined"
+              ? localStorage.getItem("accessToken")
+              : ""
+          }`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Failed to download logs";
+
+      // Handle specific error cases based on backend response
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // If response is not JSON, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+
+      // Provide more specific error messages based on status codes
+      switch (response.status) {
+        case 400:
+          throw new Error("Invalid stack ID or deployment ID format");
+        case 404:
+          throw new Error("Stack, deployment, or log file not found");
+        case 500:
+          throw new Error("Server error while accessing log file");
+        default:
+          throw new Error(errorMessage);
+      }
+    }
+
+    // Get the filename from the Content-Disposition header or create a default one
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = `deployment-${deploymentId}-logs.log`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+      );
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, "");
+      }
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Download failed:", error);
+    throw error;
+  }
+};
+
 export const deleteRollup = async (id: string) => {
   const response = await apiDelete<{ success: boolean }>(`stacks/thanos/${id}`);
   return response;

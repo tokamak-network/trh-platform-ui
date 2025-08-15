@@ -69,8 +69,8 @@ export const INTEGRATION_TYPES = {
     color: "from-green-500 to-emerald-400",
   },
   "register-candidate": {
-    label: "DAO Candidate",
-    description: "DAO candidate registration",
+    label: "Staking/DAO Candidate Registration",
+    description: "Staking/DAO candidate registration",
     icon: "🏛️",
     color: "from-orange-500 to-red-400",
   },
