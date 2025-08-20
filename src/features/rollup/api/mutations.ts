@@ -6,6 +6,8 @@ import {
   deleteRollup,
   resumeRollup,
   stopRollup,
+  updateChainConfiguration,
+  ChainConfigurationUpdateRequest,
 } from "../services/rollupService";
 import { invalidateThanosStacks } from "../hooks/useThanosStack";
 import { queryClient } from "@/providers/query-provider";
@@ -138,6 +140,42 @@ export const useStopRollupMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to stop rollup deployment", {
         id: "stop-rollup",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useUpdateChainConfigurationMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      config,
+    }: {
+      id: string;
+      config: ChainConfigurationUpdateRequest;
+    }) => updateChainConfiguration(id, config),
+    onMutate: () => {
+      toast.loading("Updating chain configuration...", {
+        id: "update-chain-config",
+      });
+    },
+    onSuccess: (_data, { id }) => {
+      toast.success("Chain configuration updated successfully!", {
+        id: "update-chain-config",
+      });
+      invalidateThanosStacks();
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStack(id) });
+      }
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update chain configuration", {
+        id: "update-chain-config",
       });
       options?.onError?.(error);
     },

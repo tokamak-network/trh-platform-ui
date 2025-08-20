@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "@/lib/api";
+import { apiGet, apiPost, apiDelete, apiPut } from "@/lib/api";
 import { Rollup, RollupType } from "../schemas/rollup";
 import type { RollupDeploymentRequest } from "../schemas/create-rollup";
 import {
@@ -312,4 +312,18 @@ export const calculateRollupStats = (stacks?: ThanosStack[]) => {
     totalUsers: (totalUsers / 1000).toFixed(1) + "K",
     totalTVL: "$" + totalTVL.toFixed(0) + "M",
   };
+};
+
+// Interface for chain configuration update request
+export interface ChainConfigurationUpdateRequest {
+  l1RpcUrl: string;
+  l1BeaconUrl: string;
+}
+
+// Update chain configuration for a Thanos stack
+export const updateChainConfiguration = async (
+  id: string,
+  config: ChainConfigurationUpdateRequest
+): Promise<void> => {
+  await apiPut<{ stack: ThanosStack }>(`stacks/thanos/${id}`, config);
 };
