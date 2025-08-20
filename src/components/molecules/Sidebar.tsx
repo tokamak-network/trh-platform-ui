@@ -5,12 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   DashboardLogoSmIcon,
   LogoIcon,
-  DashboardItemIcon,
   RollupItemIcon,
   ExploreItemIcon,
   AnalyticsItemIcon,
   UsersItemIcon,
-  SecurityItemIcon,
   SettingItemIcon,
   NotificationItemIcon,
   SupportItemIcon,
@@ -88,10 +86,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const { user } = useAuthContext();
   const pathname = usePathname();
   const router = useRouter();
-
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
 
   const handleNavigation = (href: string) => {
     router.push(href);

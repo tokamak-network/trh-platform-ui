@@ -15,7 +15,7 @@ export const RequireRole: React.FC<RequireRoleProps> = ({
   roles,
   fallback,
 }) => {
-  const { user, isAuthenticated } = useAuthContext();
+  const { user } = useAuthContext();
 
   // Check if user has required role
   const hasRequiredRole = user && roles.includes(user.role);

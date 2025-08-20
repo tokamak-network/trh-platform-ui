@@ -144,7 +144,7 @@ export function ChainConfigurationForm({
               <Lock className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
                 Chain configuration can only be updated when the stack status is
-                "Deployed". Current status:{" "}
+                &ldquo;Deployed&rdquo;. Current status:{" "}
                 <span className="font-semibold">{stack.status}</span>
               </AlertDescription>
             </Alert>
