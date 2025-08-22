@@ -4,9 +4,8 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AWSCredentialsTab } from "../aws-credentials";
-import { WalletManagement } from "../wallet-management";
-import { EncryptionSettings } from "../encryption";
-import { ConfigurationMonitoring } from "../monitoring";
+import { RPCManagement } from "../rpc-management";
+import { APIKeysManagement } from "../api-keys";
 import { ConfigurationTab } from "../schemas";
 
 interface ConfigurationTabsProps {
@@ -28,7 +27,7 @@ export function ConfigurationTabs({ currentTab }: ConfigurationTabsProps) {
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-4 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+      <TabsList className="grid w-full grid-cols-3 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
         <TabsTrigger
           value="aws"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -36,22 +35,16 @@ export function ConfigurationTabs({ currentTab }: ConfigurationTabsProps) {
           AWS Credentials
         </TabsTrigger>
         <TabsTrigger
-          value="wallets"
+          value="rpc"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
-          Wallet Management
+          RPC Management
         </TabsTrigger>
         <TabsTrigger
-          value="encryption"
+          value="api-keys"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
-          Encryption
-        </TabsTrigger>
-        <TabsTrigger
-          value="monitoring"
-          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
-        >
-          Monitoring
+          API Keys
         </TabsTrigger>
       </TabsList>
 
@@ -60,19 +53,14 @@ export function ConfigurationTabs({ currentTab }: ConfigurationTabsProps) {
         <AWSCredentialsTab />
       </TabsContent>
 
-      {/* Wallet Management Tab */}
-      <TabsContent value="wallets" className="space-y-6">
-        <WalletManagement />
+      {/* RPC Management Tab */}
+      <TabsContent value="rpc" className="space-y-6">
+        <RPCManagement />
       </TabsContent>
 
-      {/* Encryption Tab */}
-      <TabsContent value="encryption" className="space-y-6">
-        <EncryptionSettings />
-      </TabsContent>
-
-      {/* Monitoring Tab */}
-      <TabsContent value="monitoring" className="space-y-6">
-        <ConfigurationMonitoring />
+      {/* API Keys Tab */}
+      <TabsContent value="api-keys" className="space-y-6">
+        <APIKeysManagement />
       </TabsContent>
     </Tabs>
   );

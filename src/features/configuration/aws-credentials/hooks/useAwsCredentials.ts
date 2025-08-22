@@ -110,20 +110,6 @@ export const useAwsCredentials = () => {
     },
   });
 
-  // Test AWS credential mutation
-  const testCredentialMutation = useMutation({
-    mutationFn: (id: string) => {
-      return awsCredentialsService.testAwsCredential(id);
-    },
-    onSuccess: () => {
-      toast.success("AWS credentials are valid");
-    },
-    onError: (error: Error) => {
-      console.error("Error testing AWS credential:", error);
-      toast.error(error.message || "AWS credentials test failed");
-    },
-  });
-
   // Handler functions
   const addCredential = useCallback(
     (data: AWSCredentialFormData) => {
@@ -146,13 +132,6 @@ export const useAwsCredentials = () => {
     [deleteCredentialMutation]
   );
 
-  const testCredential = useCallback(
-    (id: string) => {
-      testCredentialMutation.mutate(id);
-    },
-    [testCredentialMutation]
-  );
-
   const refreshCredentials = useCallback(() => {
     refetch();
   }, [refetch]);
@@ -172,14 +151,14 @@ export const useAwsCredentials = () => {
     isAdding: createCredentialMutation.isPending,
     isUpdating: updateCredentialMutation.isPending,
     isDeleting: deleteCredentialMutation.isPending,
-    isTesting: testCredentialMutation.isPending,
+
     deletingId,
 
     // Actions
     addCredential,
     updateCredential,
     deleteCredential,
-    testCredential,
+
     refreshCredentials,
 
     // Utilities

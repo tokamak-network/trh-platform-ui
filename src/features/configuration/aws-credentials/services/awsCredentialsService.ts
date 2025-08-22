@@ -31,7 +31,7 @@ export class AwsCredentialsService {
           credentials: AWSCredential[];
           total: number;
         };
-      }>("aws-credentials");
+      }>("configuration/aws-credentials");
 
       const validatedResponse = awsCredentialsListResponseSchema.parse(
         response.data
@@ -51,7 +51,7 @@ export class AwsCredentialsService {
         data: {
           credential: AWSCredential;
         };
-      }>(`aws-credentials/${id}`);
+      }>(`configuration/aws-credentials/${id}`);
 
       const validatedResponse = awsCredentialResponseSchema.parse(
         response.data.data.credential
@@ -76,7 +76,7 @@ export class AwsCredentialsService {
         data: {
           credential: AWSCredential;
         };
-      }>("aws-credentials", data);
+      }>("configuration/aws-credentials", data);
 
       const validatedResponse = awsCredentialResponseSchema.parse(
         response.data
@@ -105,7 +105,7 @@ export class AwsCredentialsService {
         data: {
           credential: AWSCredential;
         };
-      }>(`aws-credentials/${id}`, data);
+      }>(`configuration/aws-credentials/${id}`, data);
 
       const validatedResponse = awsCredentialResponseSchema.parse(
         response.data
@@ -128,7 +128,7 @@ export class AwsCredentialsService {
 
   async deleteAwsCredential(id: string): Promise<void> {
     try {
-      await apiDelete(`aws-credentials/${id}`);
+      await apiDelete(`configuration/aws-credentials/${id}`);
     } catch (error) {
       const apiError = error as ApiError;
       if (apiError.status === 404) {
@@ -141,31 +141,6 @@ export class AwsCredentialsService {
     }
   }
 
-  async testAwsCredential(id: string): Promise<boolean> {
-    try {
-      // Note: This endpoint is not in the Swagger doc, so we're assuming it exists or will be added
-      const response = await apiPost<{
-        status: number;
-        message: string;
-        data: {
-          success: boolean;
-        };
-      }>(`aws-credentials/${id}/test`, {});
-
-      return response.data.data.success;
-    } catch (error) {
-      const apiError = error as ApiError;
-      if (apiError.status === 404) {
-        throw new Error("AWS credential not found");
-      }
-      if (apiError.status === 401) {
-        throw new Error("Invalid AWS credentials");
-      }
-      throw new Error(apiError.message || "Failed to test AWS credential");
-    }
-  }
-
-  // Utility methods
   maskSecretKey(secretKey: string): string {
     if (secretKey.length <= 8) {
       return "•".repeat(secretKey.length);
