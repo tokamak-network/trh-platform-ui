@@ -16,9 +16,10 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
-  Circle,
+  Hourglass,
   FileText,
   Download,
+  Pause,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
@@ -64,9 +65,13 @@ const StatusBadge = ({ status }: { status: ThanosDeployment["status"] }) => {
       className: "bg-red-100 text-red-700 border-red-200",
       icon: <AlertCircle className="w-3 h-3" />,
     },
-    "Not Started": {
+    Pending: {
+      className: "bg-gray-100 text-yellow-700 border-yellow-200",
+      icon: <Hourglass className="w-3 h-3" />,
+    },
+    Stopped: {
       className: "bg-gray-100 text-gray-700 border-gray-200",
-      icon: <Circle className="w-3 h-3" />,
+      icon: <Pause className="w-3 h-3" />,
     },
   } as const;
   const { className, icon } = config[status] || config.InProgress;
@@ -176,7 +181,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                   <tr className="text-left text-slate-600">
                     <th className="py-2 pr-4 font-medium">Name</th>
                     <th className="py-2 pr-4 font-medium">Status</th>
-                    <th className="py-2 pr-4 font-medium">Created</th>
+                    <th className="py-2 pr-4 font-medium">Started</th>
                     <th className="py-2 pr-4 font-medium">Duration</th>
                     <th className="py-2 pr-4"></th>
                   </tr>

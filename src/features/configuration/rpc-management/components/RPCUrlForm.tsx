@@ -207,8 +207,8 @@ export function RPCUrlForm({
                   ? "Updating..."
                   : "Adding..."
                 : isEditing
-                ? "Update Endpoint"
-                : "Add Endpoint"}
+                ? "Update"
+                : "Add"}
             </Button>
           </DialogFooter>
         </form>
