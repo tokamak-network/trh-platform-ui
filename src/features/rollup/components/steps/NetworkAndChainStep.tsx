@@ -20,6 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useFormContext } from "react-hook-form";
+import { RPCSelector } from "@/components/molecules";
+import { useRpcUrls } from "@/features/configuration/rpc-management/hooks/useRpcUrls";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 
 export function NetworkAndChainStep() {
@@ -32,6 +34,19 @@ export function NetworkAndChainStep() {
 
   const formData = watch();
   const advancedConfig = watch("networkAndChain.advancedConfig");
+  const selectedNetwork = watch("networkAndChain.network");
+
+  // Get RPC URLs from configuration
+  const { rpcUrls, addRpcUrl } = useRpcUrls();
+
+  // Filter RPC URLs based on selected network
+  const networkFilter = selectedNetwork === "mainnet" ? "Mainnet" : "Testnet";
+  const executionLayerRpcs = rpcUrls.filter(
+    (rpc) => rpc.network === networkFilter && rpc.type === "ExecutionLayer"
+  );
+  const beaconChainRpcs = rpcUrls.filter(
+    (rpc) => rpc.network === networkFilter && rpc.type === "BeaconChain"
+  );
 
   const handleAdvancedConfigChange = (checked: boolean) => {
     setValue("networkAndChain.advancedConfig", checked);
@@ -69,17 +84,13 @@ export function NetworkAndChainStep() {
     await trigger("networkAndChain.chainName" as const);
   };
 
-  const handleL1RpcUrlChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setValue("networkAndChain.l1RpcUrl", e.target.value);
+  const handleL1RpcUrlChange = async (value: string) => {
+    setValue("networkAndChain.l1RpcUrl", value);
     await trigger("networkAndChain.l1RpcUrl" as const);
   };
 
-  const handleL1BeaconUrlChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setValue("networkAndChain.l1BeaconUrl", e.target.value);
+  const handleL1BeaconUrlChange = async (value: string) => {
+    setValue("networkAndChain.l1BeaconUrl", value);
     await trigger("networkAndChain.l1BeaconUrl" as const);
   };
 
@@ -254,71 +265,37 @@ export function NetworkAndChainStep() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Label
-                        htmlFor="l1RpcUrl"
-                        className="text-sm font-medium text-slate-700 flex items-center gap-1"
-                      >
-                        L1 RPC URL <span className="text-red-500">*</span>
-                        <Info className="w-3 h-3 text-slate-400" />
-                      </Label>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>The RPC endpoint for the L1 network</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Input
-                  id="l1RpcUrl"
-                  placeholder="https://eth-sepolia.g.alchemy.com/v2/gLQMMAYYch413sW"
-                  value={formData.networkAndChain?.l1RpcUrl}
-                  onChange={handleL1RpcUrlChange}
-                  className={`mt-1 ${
-                    errors.networkAndChain?.l1RpcUrl ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.networkAndChain?.l1RpcUrl && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.networkAndChain.l1RpcUrl.message}
-                  </p>
-                )}
-              </div>
+              <RPCSelector
+                id="l1RpcUrl"
+                label="L1 RPC URL"
+                placeholder="https://eth-sepolia.g.alchemy.com/v2/gLQMMAYYch413sW"
+                value={formData.networkAndChain?.l1RpcUrl || ""}
+                onChange={handleL1RpcUrlChange}
+                rpcUrls={executionLayerRpcs}
+                error={errors.networkAndChain?.l1RpcUrl?.message}
+                required
+                tooltip="The RPC endpoint for the L1 network execution layer"
+                rpcType="ExecutionLayer"
+                network={networkFilter as "Mainnet" | "Testnet"}
+                onSaveUrl={addRpcUrl}
+                allowSave={true}
+              />
 
-              <div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Label
-                        htmlFor="l1BeaconUrl"
-                        className="text-sm font-medium text-slate-700 flex items-center gap-1"
-                      >
-                        L1 Beacon URL <span className="text-red-500">*</span>
-                        <Info className="w-3 h-3 text-slate-400" />
-                      </Label>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>The beacon chain endpoint for the L1 network</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Input
-                  id="l1BeaconUrl"
-                  placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/4ed7d53b815c434c082db3eb2f49612c914afe48/"
-                  value={formData.networkAndChain?.l1BeaconUrl}
-                  onChange={handleL1BeaconUrlChange}
-                  className={`mt-1 ${
-                    errors.networkAndChain?.l1BeaconUrl ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.networkAndChain?.l1BeaconUrl && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.networkAndChain.l1BeaconUrl.message}
-                  </p>
-                )}
-              </div>
+              <RPCSelector
+                id="l1BeaconUrl"
+                label="L1 Beacon URL"
+                placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/4ed7d53b815c434c082db3eb2f49612c914afe48/"
+                value={formData.networkAndChain?.l1BeaconUrl || ""}
+                onChange={handleL1BeaconUrlChange}
+                rpcUrls={beaconChainRpcs}
+                error={errors.networkAndChain?.l1BeaconUrl?.message}
+                required
+                tooltip="The beacon chain endpoint for the L1 network"
+                rpcType="BeaconChain"
+                network={networkFilter as "Mainnet" | "Testnet"}
+                onSaveUrl={addRpcUrl}
+                allowSave={true}
+              />
             </div>
 
             {/* Advanced Configuration Toggle */}
@@ -346,26 +323,28 @@ export function NetworkAndChainStep() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label
-                              htmlFor="l2BlockTime"
-                              className="text-sm font-medium text-slate-700 flex items-center gap-1"
-                            >
-                              L2 Block Time{" "}
-                              <span className="text-red-500">*</span>
-                              <Info className="w-3 h-3 text-slate-400" />
-                            </Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              Block time in seconds for the L2 network. Default
-                              is 2 seconds.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Label
+                        htmlFor="l2BlockTime"
+                        className="text-sm font-medium text-slate-700 flex items-center gap-1"
+                      >
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 cursor-help">
+                                L2 Block Time
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                Block time in seconds for the L2 network.
+                                Default is 2 seconds.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
                       <Input
                         id="l2BlockTime"
                         type="number"
@@ -388,27 +367,29 @@ export function NetworkAndChainStep() {
                     </div>
 
                     <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label
-                              htmlFor="batchSubmissionFreq"
-                              className="text-sm font-medium text-slate-700 flex items-center gap-1"
-                            >
-                              Batch Submission Frequency{" "}
-                              <span className="text-red-500">*</span>
-                              <Info className="w-3 h-3 text-slate-400" />
-                            </Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              How often batches are submitted to L1. Default is
-                              120 blocks (1440 seconds). Must be a multiple of
-                              12.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Label
+                        htmlFor="batchSubmissionFreq"
+                        className="text-sm font-medium text-slate-700 flex items-center gap-1"
+                      >
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 cursor-help">
+                                Batch Submission Frequency
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                How often batches are submitted to L1. Default
+                                is 120 blocks (1440 seconds). Must be a multiple
+                                of 12.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
                       <Input
                         id="batchSubmissionFreq"
                         type="number"
@@ -431,28 +412,30 @@ export function NetworkAndChainStep() {
                     </div>
 
                     <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label
-                              htmlFor="outputRootFreq"
-                              className="text-sm font-medium text-slate-700 flex items-center gap-1"
-                            >
-                              Output Root Frequency{" "}
-                              <span className="text-red-500">*</span>
-                              <Info className="w-3 h-3 text-slate-400" />
-                            </Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              How often output roots are published (in seconds).
-                              Must be a multiple of{" "}
-                              {formData.networkAndChain?.l2BlockTime} seconds.
-                              Default is 240 seconds.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Label
+                        htmlFor="outputRootFreq"
+                        className="text-sm font-medium text-slate-700 flex items-center gap-1"
+                      >
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 cursor-help">
+                                Output Root Frequency
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                How often output roots are published (in
+                                seconds). Must be a multiple of{" "}
+                                {formData.networkAndChain?.l2BlockTime} seconds.
+                                Default is 240 seconds.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
                       <Input
                         id="outputRootFreq"
                         type="number"
@@ -475,26 +458,28 @@ export function NetworkAndChainStep() {
                     </div>
 
                     <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label
-                              htmlFor="challengePeriod"
-                              className="text-sm font-medium text-slate-700 flex items-center gap-1"
-                            >
-                              Challenge Period{" "}
-                              <span className="text-red-500">*</span>
-                              <Info className="w-3 h-3 text-slate-400" />
-                            </Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              The period during which outputs can be challenged
-                              (in seconds). Default is 12 seconds.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Label
+                        htmlFor="challengePeriod"
+                        className="text-sm font-medium text-slate-700 flex items-center gap-1"
+                      >
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 cursor-help">
+                                Challenge Period
+                                <Info className="w-3 h-3 text-slate-400" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                The period during which outputs can be
+                                challenged (in seconds). Default is 12 seconds.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
                       <Input
                         id="challengePeriod"
                         type="number"

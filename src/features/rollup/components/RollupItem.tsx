@@ -137,8 +137,8 @@ export function RollupItem({
   ].includes(stack.status);
 
   // Check if stop button should be active (only when deploying)
-  // const canStop = stack.status === ThanosStackStatus.DEPLOYING;
-  const canStop = false;
+  const canStop = stack.status === ThanosStackStatus.DEPLOYING;
+  // const canStop = false;
 
   // Disable destroy when stack is in-flight or mutation running
   const isDestroyDisabled =

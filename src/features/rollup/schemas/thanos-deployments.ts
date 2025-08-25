@@ -2,7 +2,8 @@ export type ThanosDeploymentStatus =
   | "InProgress"
   | "Success"
   | "Failed"
-  | "Not Started";
+  | "Pending"
+  | "Stopped";
 
 export interface ThanosDeploymentConfig {
   [key: string]: unknown;

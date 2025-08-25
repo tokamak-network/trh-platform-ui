@@ -4,9 +4,8 @@ export { ConfigurationTabs } from "./components/ConfigurationTabs";
 
 // Feature Modules
 export * from "./aws-credentials";
-export * from "./wallet-management";
-export * from "./encryption";
-export * from "./monitoring";
+export * from "./rpc-management";
+export * from "./api-keys";
 export * from "./shared";
 
 // Schemas and Types
