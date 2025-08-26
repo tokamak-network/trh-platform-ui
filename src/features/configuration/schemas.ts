@@ -35,6 +35,11 @@ export const awsCredentialResponseSchema = z.object({
   credential: awsCredentialSchema,
 });
 
+export const awsRegionsResponseSchema = z.object({
+  regions: z.array(z.string()),
+  total: z.number(),
+});
+
 // Form schemas
 export const awsCredentialFormSchema = z.object({
   name: z.string().min(1, "Name is required"),

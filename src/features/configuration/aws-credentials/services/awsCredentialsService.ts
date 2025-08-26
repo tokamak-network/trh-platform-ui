@@ -7,6 +7,7 @@ import {
   AWSCredentialResponse,
   awsCredentialsListResponseSchema,
   awsCredentialResponseSchema,
+  awsRegionsResponseSchema,
 } from "../../schemas";
 
 export class AwsCredentialsService {
@@ -138,6 +139,40 @@ export class AwsCredentialsService {
         throw new Error("Cannot delete credential that is currently in use");
       }
       throw new Error(apiError.message || "Failed to delete AWS credential");
+    }
+  }
+
+  async getAwsRegions(
+    accessKeyId: string,
+    secretAccessKey: string
+  ): Promise<string[]> {
+    try {
+      const response = await apiPost<{
+        status: number;
+        message: string;
+        data: {
+          regions: string[];
+          total: number;
+        };
+      }>("configuration/aws-credentials/regions", {
+        accessKeyId,
+        secretAccessKey,
+      });
+
+      const validatedResponse = awsRegionsResponseSchema.parse(response.data);
+      return validatedResponse.regions;
+    } catch (error) {
+      const apiError = error as ApiError;
+      if (apiError.status === 400) {
+        throw new Error("Invalid AWS credentials");
+      }
+      if (apiError.status === 401) {
+        throw new Error("AWS credentials are not authorized");
+      }
+      if (apiError.status === 403) {
+        throw new Error("Insufficient permissions to access AWS regions");
+      }
+      throw new Error(apiError.message || "Failed to fetch AWS regions");
     }
   }
 

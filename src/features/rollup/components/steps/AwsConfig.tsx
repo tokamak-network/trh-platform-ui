@@ -21,19 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { useAwsCredentials } from "@/features/configuration/aws-credentials/hooks/useAwsCredentials";
-
-const AWS_REGIONS = [
-  { value: "ap-northeast-1", label: "Asia Pacific (Tokyo)" },
-  { value: "ap-northeast-2", label: "Asia Pacific (Seoul)" },
-  { value: "ap-southeast-1", label: "Asia Pacific (Singapore)" },
-  { value: "ap-southeast-2", label: "Asia Pacific (Sydney)" },
-  { value: "us-east-1", label: "US East (N. Virginia)" },
-  { value: "us-east-2", label: "US East (Ohio)" },
-  { value: "us-west-1", label: "US West (N. California)" },
-  { value: "us-west-2", label: "US West (Oregon)" },
-  { value: "eu-west-1", label: "EU (Ireland)" },
-  { value: "eu-central-1", label: "EU (Frankfurt)" },
-];
+import { useAwsRegions } from "@/features/configuration/aws-credentials/hooks/useAwsRegions";
 
 interface AwsConfigProps {
   onNext: () => void;
@@ -57,14 +45,64 @@ export function AwsConfig({ onNext, onBack }: AwsConfigProps) {
   }, [register]);
 
   const { awsCredentials, isLoading, refreshCredentials } = useAwsCredentials();
+  const {
+    regions,
+    isLoading: isLoadingRegions,
+    error: regionsError,
+    fetchRegions,
+    clearRegions,
+  } = useAwsRegions();
   const selectedCredentialId = watch("accountAndAws.credentialId") as string;
 
-  // Set default region to ap-northeast-1 if not already set
+  // Track the last fetched credential to prevent refetching
+  const [lastFetchedCredentialId, setLastFetchedCredentialId] =
+    React.useState<string>("");
+
+  // Fetch regions when credentials are selected
   React.useEffect(() => {
-    if (!watch("accountAndAws.awsRegion")) {
-      setValue("accountAndAws.awsRegion", "ap-northeast-1");
+    if (
+      selectedCredentialId &&
+      awsCredentials &&
+      selectedCredentialId !== lastFetchedCredentialId
+    ) {
+      const selectedCredential = awsCredentials.find(
+        (cred) => cred.id === selectedCredentialId
+      );
+
+      if (selectedCredential) {
+        // Clear current region selection and fetch new regions
+        setValue("accountAndAws.awsRegion", "");
+        fetchRegions(
+          selectedCredential.accessKeyId,
+          selectedCredential.secretAccessKey
+        );
+        setLastFetchedCredentialId(selectedCredentialId);
+      }
+    } else if (!selectedCredentialId && lastFetchedCredentialId) {
+      // Clear regions when no credential is selected
+      clearRegions();
+      setValue("accountAndAws.awsRegion", "");
+      setLastFetchedCredentialId("");
     }
-  }, [setValue, watch]);
+  }, [
+    selectedCredentialId,
+    awsCredentials,
+    lastFetchedCredentialId,
+    fetchRegions,
+    clearRegions,
+    setValue,
+  ]);
+
+  // Set default region when regions are loaded
+  const currentRegion = watch("accountAndAws.awsRegion");
+  React.useEffect(() => {
+    if (regions.length > 0 && !currentRegion && !isLoadingRegions) {
+      // Set first available region as default, or prefer us-east-1 if available
+      const defaultRegion =
+        regions.find((r) => r.value === "us-east-1") || regions[0];
+      setValue("accountAndAws.awsRegion", defaultRegion.value);
+    }
+  }, [regions, currentRegion, isLoadingRegions, setValue]);
 
   const handleNext = () => {
     if (selectedCredentialId && watch("accountAndAws.awsRegion")) {
@@ -162,18 +200,30 @@ export function AwsConfig({ onNext, onBack }: AwsConfigProps) {
                   onValueChange={(value) =>
                     setValue("accountAndAws.awsRegion", value)
                   }
+                  disabled={!selectedCredentialId || isLoadingRegions}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a region" />
+                    <SelectValue
+                      placeholder={
+                        !selectedCredentialId
+                          ? "Select AWS credentials first"
+                          : isLoadingRegions
+                          ? "Loading regions..."
+                          : "Select a region"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {AWS_REGIONS.map((region) => (
+                    {regions.map((region) => (
                       <SelectItem key={region.value} value={region.value}>
                         {region.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {regionsError && (
+                  <p className="text-sm text-destructive">{regionsError}</p>
+                )}
                 {errors.accountAndAws?.awsRegion && (
                   <p className="text-sm text-destructive">
                     {errors.accountAndAws.awsRegion.message}
