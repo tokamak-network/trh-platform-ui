@@ -8,7 +8,9 @@ import {
   stopRollup,
   updateChainConfiguration,
   ChainConfigurationUpdateRequest,
+  createRegisterMetadataDAO,
 } from "../services/rollupService";
+import { CreateRegisterMetadataDAORequest } from "../schemas/register-metadata-dao";
 import { invalidateThanosStacks } from "../hooks/useThanosStack";
 import { queryClient } from "@/providers/query-provider";
 import { rollupKeys } from "./queries";
@@ -176,6 +178,45 @@ export const useUpdateChainConfigurationMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update chain configuration", {
         id: "update-chain-config",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useCreateRegisterMetadataDAOMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      request,
+    }: {
+      id: string;
+      request: CreateRegisterMetadataDAORequest;
+    }) => createRegisterMetadataDAO(id, request),
+    onMutate: () => {
+      toast.loading("Registering metadata...", {
+        id: "register-metadata-dao",
+      });
+    },
+    onSuccess: (_data, { id }) => {
+      toast.success("Metadata registered successfully!", {
+        id: "register-metadata-dao",
+      });
+      invalidateThanosStacks();
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStack(id) });
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.registerMetadataDAO(id),
+        });
+      }
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to register metadata", {
+        id: "register-metadata-dao",
       });
       options?.onError?.(error);
     },

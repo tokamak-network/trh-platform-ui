@@ -13,6 +13,10 @@ import {
   GetThanosDeploymentLogsResponse,
   ThanosDeploymentLog,
 } from "../schemas/thanos-deployments";
+import {
+  CreateRegisterMetadataDAORequest,
+  RegisterMetadataDAOData,
+} from "../schemas/register-metadata-dao";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
   const response = await apiPost<{ id: string }>("stacks/thanos", request, {
@@ -326,4 +330,26 @@ export const updateChainConfiguration = async (
   config: ChainConfigurationUpdateRequest
 ): Promise<void> => {
   await apiPut<{ stack: ThanosStack }>(`stacks/thanos/${id}`, config);
+};
+
+// Get register metadata DAO data for a Thanos stack
+export const getRegisterMetadataDAO = async (
+  id: string
+): Promise<RegisterMetadataDAOData> => {
+  const response = await apiGet<RegisterMetadataDAOData>(
+    `stacks/thanos/${id}/integrations/register-metadata-dao`
+  );
+  return response.data;
+};
+
+// Create/update register metadata DAO for a Thanos stack
+export const createRegisterMetadataDAO = async (
+  id: string,
+  request: CreateRegisterMetadataDAORequest
+): Promise<RegisterMetadataDAOData> => {
+  const response = await apiPost<RegisterMetadataDAOData>(
+    `stacks/thanos/${id}/integrations/register-metadata-dao`,
+    request
+  );
+  return response.data;
 };

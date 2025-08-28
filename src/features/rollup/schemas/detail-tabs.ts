@@ -4,7 +4,8 @@ export type RollupDetailTab =
   | "deployments"
   | "monitoring"
   | "settings"
-  | "logs";
+  | "logs"
+  | "metadata";
 
 import { ThanosStack } from "./thanos";
 
