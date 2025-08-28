@@ -43,7 +43,7 @@ export function RollupDetailTabs({
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-6 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+      <TabsList className="grid w-full grid-cols-4 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
         <TabsTrigger
           value="overview"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -62,24 +62,24 @@ export function RollupDetailTabs({
         >
           Integrations
         </TabsTrigger>
-        <TabsTrigger
+        {/* <TabsTrigger
           value="monitoring"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
           Monitoring
-        </TabsTrigger>
+        </TabsTrigger> */}
         <TabsTrigger
           value="settings"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
           Settings
         </TabsTrigger>
-        <TabsTrigger
+        {/* <TabsTrigger
           value="logs"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
           Logs
-        </TabsTrigger>
+        </TabsTrigger> */}
       </TabsList>
 
       {/* Overview Tab */}
