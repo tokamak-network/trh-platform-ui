@@ -3,14 +3,18 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Link, Network, Zap } from "lucide-react";
+import { Download, Eye, Link, Network, Zap, GitPullRequest } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { TabsContent } from "@/components/ui/tabs";
 import { formatDate } from "../../../utils/dateUtils";
 import { downloadThanosRollupConfig } from "../../../services/rollupService";
+import { useRegisterMetadataDAOQuery } from "../../../api/queries";
 import toast from "react-hot-toast";
 
 export function OverviewTab({ stack }: RollupDetailTabProps) {
+  // Query to fetch metadata - must be called before any conditional returns
+  const { data: metadataData } = useRegisterMetadataDAOQuery(stack?.id);
+
   if (!stack) return null;
 
   const rollup = {
@@ -24,6 +28,7 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
     grafanaUrl: stack.metadata?.grafanaUrl || "#",
     layer1: stack.metadata?.layer1 || "Not available",
     layer2: stack.metadata?.layer2 || "Not available",
+    metadataPrUrl: metadataData?.info?.pr_link || "#",
   };
 
   const handleDownloadConfig = async () => {
@@ -137,8 +142,24 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Network className="w-4 h-4 mr-2" />
+                  <Network className="h-4 w-4 mr-2" />
                   Grafana Dashboard
+                </a>
+              </Button>
+            )}
+            {rollup.metadataPrUrl !== "#" && (
+              <Button
+                variant="outline"
+                className="w-full justify-start bg-white/60 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-200"
+                asChild
+              >
+                <a
+                  href={rollup.metadataPrUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <GitPullRequest className="h-4 w-4 mr-2" />
+                  Metadata PR
                 </a>
               </Button>
             )}
@@ -152,7 +173,8 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
             </Button>
             {rollup.explorerUrl === "#" &&
               rollup.bridgeUrl === "#" &&
-              rollup.grafanaUrl === "#" && (
+              rollup.grafanaUrl === "#" &&
+              rollup.metadataPrUrl === "#" && (
                 <div className="text-center py-4 text-slate-600">
                   No external links available for this rollup
                 </div>

@@ -111,10 +111,10 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
   useEffect(() => {
     if (existingMetadata) {
       setMetadata({
-        token: existingMetadata.token,
-        username: existingMetadata.username,
-        email: existingMetadata.email,
-        metadata: existingMetadata.metadata,
+        token: existingMetadata.config.token,
+        username: existingMetadata.config.username,
+        email: existingMetadata.config.email,
+        metadata: existingMetadata.config.metadata,
       });
     }
   }, [existingMetadata]);

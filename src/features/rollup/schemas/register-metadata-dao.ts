@@ -21,7 +21,7 @@ export interface SupportResourcesMetadata {
   supportContactUrl: string;
 }
 
-export interface RegisterMetadataDAOData {
+export interface RegisterMetadataDAOConfig {
   email: string;
   token: string;
   username: string;
@@ -31,6 +31,15 @@ export interface RegisterMetadataDAOData {
     explorer: ExplorerMetadata;
     supportResources: SupportResourcesMetadata;
   };
+}
+
+export interface RegisterMetadataDAOInfo {
+  pr_link: string;
+}
+
+export interface RegisterMetadataDAOData {
+  config: RegisterMetadataDAOConfig;
+  info: RegisterMetadataDAOInfo;
 }
 
 export interface RegisterMetadataDAOResponse {
