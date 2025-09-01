@@ -9,15 +9,15 @@ export interface IntegrationInfo {
       Enabled: boolean;
       SmtpFrom: string;
       SmtpSmarthost: string;
-      DefaultReceivers: string[] | null;
+      AlertReceivers: string[];
       SmtpAuthPassword: string;
-      SmtpAuthUsername: string;
-      CriticalReceivers: string[] | null;
     };
     Telegram?: {
       Enabled: boolean;
       ApiToken: string;
-      CriticalReceivers: string[] | null;
+      CriticalReceivers: {
+        ChatId: string;
+      }[];
     };
   };
   safe_wallet?: {
@@ -38,7 +38,7 @@ export interface Integration {
   id: string;
   stack_id: string;
   type: "bridge" | "block-explorer" | "monitoring" | "register-candidate";
-  status: "Pending" | "InProgress" | "Completed" | "Failed";
+  status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
   log_path: string;

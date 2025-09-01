@@ -118,6 +118,21 @@ export const useInstallBlockExplorerMutation = (options?: {
 export interface InstallMonitoringVariables {
   stackId: string;
   grafanaPassword: string;
+  loggingEnabled: boolean;
+  alertManager: {
+    telegram: {
+      enabled: boolean;
+      apiToken: string;
+      criticalReceivers: Array<{ chatId: string }>;
+    };
+    email: {
+      enabled: boolean;
+      smtpSmarthost: string;
+      smtpFrom: string;
+      smtpAuthPassword: string;
+      alertReceivers: string[];
+    };
+  };
 }
 
 export const useInstallMonitoringMutation = (options?: {
@@ -128,6 +143,8 @@ export const useInstallMonitoringMutation = (options?: {
     mutationFn: (variables: InstallMonitoringVariables) =>
       installMonitoringIntegration(variables.stackId, {
         grafanaPassword: variables.grafanaPassword,
+        loggingEnabled: variables.loggingEnabled,
+        alertManager: variables.alertManager,
       }),
     onMutate: () => {
       toast.loading("Installing Monitoring...", {

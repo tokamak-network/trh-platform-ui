@@ -291,7 +291,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
             <Textarea
               id="chainDescription"
               placeholder="Example rollup deployed with TRH SDK"
-              value={metadata.metadata.chain.description}
+              value={metadata.metadata?.chain.description}
               onChange={(e) =>
                 handleMetadataChange("chain", "description", e.target.value)
               }
@@ -304,7 +304,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="chainLogo"
                 placeholder="https://example.com/logo.png"
-                value={metadata.metadata.chain.logo}
+                value={metadata.metadata?.chain.logo}
                 onChange={(e) =>
                   handleMetadataChange("chain", "logo", e.target.value)
                 }
@@ -315,7 +315,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="chainWebsite"
                 placeholder="https://example-l2.com"
-                value={metadata.metadata.chain.website}
+                value={metadata.metadata?.chain.website}
                 onChange={(e) =>
                   handleMetadataChange("chain", "website", e.target.value)
                 }
@@ -341,7 +341,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="bridgeName"
                 placeholder="Example Bridge"
-                value={metadata.metadata.bridge.name}
+                value={metadata.metadata?.bridge.name}
                 onChange={(e) =>
                   handleMetadataChange("bridge", "name", e.target.value)
                 }
@@ -352,7 +352,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="explorerName"
                 placeholder="Example Explorer"
-                value={metadata.metadata.explorer.name}
+                value={metadata.metadata?.explorer.name}
                 onChange={(e) =>
                   handleMetadataChange("explorer", "name", e.target.value)
                 }
@@ -378,7 +378,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="statusPageUrl"
                 placeholder="https://status.example-l2.com"
-                value={metadata.metadata.supportResources.statusPageUrl}
+                value={metadata.metadata?.supportResources.statusPageUrl}
                 onChange={(e) =>
                   handleMetadataChange(
                     "supportResources",
@@ -393,7 +393,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="supportContactUrl"
                 placeholder="https://discord.gg/example-support"
-                value={metadata.metadata.supportResources.supportContactUrl}
+                value={metadata.metadata?.supportResources.supportContactUrl}
                 onChange={(e) =>
                   handleMetadataChange(
                     "supportResources",
@@ -408,7 +408,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="documentationUrl"
                 placeholder="https://docs.example-l2.com"
-                value={metadata.metadata.supportResources.documentationUrl}
+                value={metadata.metadata?.supportResources.documentationUrl}
                 onChange={(e) =>
                   handleMetadataChange(
                     "supportResources",
@@ -423,7 +423,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="communityUrl"
                 placeholder="https://t.me/example_community"
-                value={metadata.metadata.supportResources.communityUrl}
+                value={metadata.metadata?.supportResources.communityUrl}
                 onChange={(e) =>
                   handleMetadataChange(
                     "supportResources",
@@ -438,7 +438,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="helpCenterUrl"
                 placeholder="https://help.example-l2.com"
-                value={metadata.metadata.supportResources.helpCenterUrl}
+                value={metadata.metadata?.supportResources.helpCenterUrl}
                 onChange={(e) =>
                   handleMetadataChange(
                     "supportResources",
@@ -453,7 +453,7 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
               <Input
                 id="announcementUrl"
                 placeholder="https://twitter.com/example_l2"
-                value={metadata.metadata.supportResources.announcementUrl}
+                value={metadata.metadata?.supportResources.announcementUrl}
                 onChange={(e) =>
                   handleMetadataChange(
                     "supportResources",

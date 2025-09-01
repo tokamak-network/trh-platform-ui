@@ -172,7 +172,6 @@ export function LogDialog({
             className="inline-flex items-center gap-1"
           >
             <RefreshCw className="w-3 h-3" />
-            Refresh
           </Button>
         </div>
 

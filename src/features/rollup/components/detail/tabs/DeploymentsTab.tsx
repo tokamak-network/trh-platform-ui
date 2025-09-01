@@ -241,15 +241,15 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
         </CardContent>
       </Card>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Deployment details</DialogTitle>
             <DialogDescription>
               Information about this deployment run
             </DialogDescription>
           </DialogHeader>
           {selected && (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-sm overflow-y-auto flex-1 pr-2">
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-slate-600">Name</div>
                 <div className="col-span-2 font-medium capitalize">

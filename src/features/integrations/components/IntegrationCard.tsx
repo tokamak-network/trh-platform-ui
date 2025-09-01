@@ -22,17 +22,17 @@ import {
 } from "@/components/ui/dialog";
 import { Integration, INTEGRATION_TYPES } from "../schemas";
 import {
-  ExternalLink,
-  Copy,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Loader2,
   Eye,
   Trash2,
 } from "lucide-react";
 import { useUninstallIntegrationMutation } from "../api";
 import { INTEGRATION_TYPES as INTEGRATION_TYPES_CONST } from "../schemas";
+
+// Import plugin-specific components
+import { BridgeCard, BridgeCompactInfo } from "./BridgeCard";
+import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
+import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
+import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -51,15 +51,46 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
   const getStatusIcon = () => {
     switch (integration.status) {
       case "Completed":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <div className="w-4 h-4 bg-green-500 rounded-full" />;
       case "InProgress":
-        return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+        return <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse" />;
       case "Pending":
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <div className="w-4 h-4 bg-yellow-500 rounded-full" />;
       case "Failed":
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <div className="w-4 h-4 bg-red-500 rounded-full" />;
+      case "Stopped":
+        return <div className="w-4 h-4 bg-gray-500 rounded-full" />;
+      case "Terminating":
+        return <div className="w-4 h-4 bg-orange-500 rounded-full animate-pulse" />;
+      case "Terminated":
+        return <div className="w-4 h-4 bg-red-900 rounded-full" />;
+      case "Unknown":
+        return <div className="w-4 h-4 bg-gray-500 rounded-full" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
+        return <div className="w-4 h-4 bg-gray-500 rounded-full" />;
+    }
+  };
+
+  const StatusText = () => {
+    switch (integration.status) {
+      case "Completed":
+        return "Installed";
+      case "InProgress":
+        return "Installing";
+      case "Pending":
+        return "Pending";
+      case "Failed":
+        return "Failed";
+      case "Stopped":
+        return "Stopped";
+      case "Terminating":
+        return "Uninstalling";
+      case "Terminated":
+        return "Uninstalled";
+      case "Unknown":
+        return "Unknown";
+      default:
+        return "Unknown";
     }
   };
 
@@ -89,503 +120,49 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
   };
 
   const renderIntegrationInfo = () => {
-    if (
-      integration.type === "register-candidate" &&
-      integration.info?.candidate_registration
-    ) {
-      const reg = integration.info?.candidate_registration;
-      return (
-        <div className="space-y-3">
-          {integration.info?.url && (
-            <div>
-              <span className="font-medium text-gray-600">URL:</span>
-              <div className="flex items-start gap-2 mt-1">
-                <p className="text-gray-900 font-mono text-sm break-all flex-1">
-                  {integration.info.url}
-                </p>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      copyToClipboard(integration.info.url!, "url")
-                    }
-                    className="h-6 w-6 p-0"
-                  >
-                    {copiedItem === "url" ? (
-                      <CheckCircle className="w-3 h-3" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.open(integration.info.url!, "_blank")}
-                    className="h-6 w-6 p-0"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-600">Candidate Name:</span>
-              <p className="text-gray-900">{reg.candidate_name}</p>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Staking Amount:</span>
-              <p className="text-gray-900">{reg.staking_amount} TON</p>
-            </div>
-            <div className="col-span-2">
-              <span className="font-medium text-gray-600">Memo:</span>
-              <p className="text-gray-900">{reg.candidate_memo}</p>
-            </div>
-            <div className="col-span-2">
-              <span className="font-medium text-gray-600">
-                Registration Time:
-              </span>
-              <p className="text-gray-900">{reg.registration_time}</p>
-            </div>
-            <div className="col-span-2">
-              <span className="font-medium text-gray-600">
-                Rollup Config Address:
-              </span>
-              <div className="flex items-center gap-2">
-                <p className="text-gray-900 font-mono text-xs truncate flex-1">
-                  {reg.rollup_config_address}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    copyToClipboard(
-                      reg.rollup_config_address,
-                      "rollup_config_address"
-                    )
-                  }
-                  className="h-6 w-6 p-0"
-                >
-                  {copiedItem === "rollup_config_address" ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
+    const commonProps = {
+      integration,
+      copiedItem,
+      copyToClipboard,
+    };
+
+    switch (integration.type) {
+      case "bridge":
+        return <BridgeCard {...commonProps} />;
+      case "block-explorer":
+        return <BlockExplorerCard {...commonProps} />;
+      case "monitoring":
+        return <MonitoringCard {...commonProps} />;
+      case "register-candidate":
+        return <RegisterCandidateCard {...commonProps} />;
+      default:
+        return (
+          <div className="text-sm text-gray-600">
+            No additional information available
           </div>
-
-          {integration.info.safe_wallet && (
-            <div className="border-t pt-3">
-              <h4 className="font-medium text-gray-900 mb-2">Safe Wallet</h4>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium text-gray-600">Address:</span>
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-900 font-mono text-xs truncate flex-1">
-                      {integration.info.safe_wallet.address}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(
-                          integration.info.safe_wallet!.address,
-                          "safe_wallet_address"
-                        )
-                      }
-                      className="h-6 w-6 p-0"
-                    >
-                      {copiedItem === "safe_wallet_address" ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-600">Threshold:</span>
-                  <p className="text-gray-900">
-                    {integration.info.safe_wallet.threshold} of{" "}
-                    {integration.info.safe_wallet.owners.length}
-                  </p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-600">Owners:</span>
-                  <div className="space-y-1">
-                    {integration.info.safe_wallet.owners.map((owner, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <p className="text-gray-900 font-mono text-xs truncate flex-1">
-                          {owner}
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(owner, `safe_wallet_owner_${index}`)
-                          }
-                          className="h-6 w-6 p-0"
-                        >
-                          {copiedItem === `safe_wallet_owner_${index}` ? (
-                            <CheckCircle className="w-3 h-3" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {integration.log_path && (
-            <div className="border-t pt-3">
-              <span className="font-medium text-gray-600">Log Path:</span>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-gray-900 font-mono text-xs break-all flex-1">
-                  {integration.log_path}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(integration.log_path, "log")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copiedItem === "log" ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
+        );
     }
-
-    if (integration.type === "monitoring") {
-      return (
-        <div className="space-y-4">
-          {integration.info?.url && (
-            <div>
-              <span className="font-medium text-gray-600">URL:</span>
-              <div className="flex items-start gap-2 mt-1">
-                <p className="text-gray-900 font-mono text-sm break-all flex-1">
-                  {integration.info.url}
-                </p>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      copyToClipboard(integration.info.url!, "url")
-                    }
-                    className="h-6 w-6 p-0"
-                  >
-                    {copiedItem === "url" ? (
-                      <CheckCircle className="w-3 h-3" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.open(integration.info.url!, "_blank")}
-                    className="h-6 w-6 p-0"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(integration.info?.username || integration.info?.password) && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {integration.info.username && (
-                <div>
-                  <span className="font-medium text-gray-600">Username:</span>
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-900">{integration.info.username}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(
-                          integration.info.username!,
-                          "monitoring_username"
-                        )
-                      }
-                      className="h-6 w-6 p-0"
-                    >
-                      {copiedItem === "monitoring_username" ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {integration.info?.password && (
-                <div>
-                  <span className="font-medium text-gray-600">Password:</span>
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-900">{integration.info.password}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(
-                          integration.info.password!,
-                          "monitoring_password"
-                        )
-                      }
-                      className="h-6 w-6 p-0"
-                    >
-                      {copiedItem === "monitoring_password" ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {integration.info?.alert_manager && (
-            <div className="border-t pt-3">
-              <h4 className="font-medium text-gray-900 mb-2">Alert Manager</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {integration.info?.alert_manager?.Email && (
-                  <div className="p-3 rounded-lg bg-gray-50 border">
-                    <div className="font-medium text-gray-700 mb-1">Email</div>
-                    <div>
-                      <span className="text-gray-600">Enabled:</span>
-                      <span className="ml-2 text-gray-900">
-                        {integration.info?.alert_manager?.Email?.Enabled
-                          ? "Yes"
-                          : "No"}
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-gray-600">Default Receivers:</span>
-                      <span className="ml-2 text-gray-900">
-                        {integration.info?.alert_manager?.Email
-                          ?.DefaultReceivers &&
-                        integration.info?.alert_manager?.Email?.DefaultReceivers
-                          .length > 0
-                          ? integration.info?.alert_manager?.Email?.DefaultReceivers.join(
-                              ", "
-                            )
-                          : "None"}
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-gray-600">Critical Receivers:</span>
-                      <span className="ml-2 text-gray-900">
-                        {integration.info?.alert_manager?.Email
-                          ?.CriticalReceivers &&
-                        integration.info?.alert_manager?.Email
-                          ?.CriticalReceivers.length > 0
-                          ? integration.info?.alert_manager?.Email?.CriticalReceivers.join(
-                              ", "
-                            )
-                          : "None"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {integration.info?.alert_manager?.Telegram && (
-                  <div className="p-3 rounded-lg bg-gray-50 border">
-                    <div className="font-medium text-gray-700 mb-1">
-                      Telegram
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Enabled:</span>
-                      <span className="ml-2 text-gray-900">
-                        {integration.info?.alert_manager?.Telegram?.Enabled
-                          ? "Yes"
-                          : "No"}
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-gray-600">Critical Receivers:</span>
-                      <span className="ml-2 text-gray-900">
-                        {integration.info?.alert_manager?.Telegram
-                          ?.CriticalReceivers &&
-                        integration.info?.alert_manager?.Telegram
-                          .CriticalReceivers!.length > 0
-                          ? integration.info?.alert_manager?.Telegram?.CriticalReceivers!.join(
-                              ", "
-                            )
-                          : "None"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {integration.log_path && (
-            <div className="border-t pt-3">
-              <span className="font-medium text-gray-600">Log Path:</span>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-gray-900 font-mono text-xs break-all flex-1">
-                  {integration.log_path}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(integration.log_path, "log")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copiedItem === "log" ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    if (integration.info?.url) {
-      return (
-        <div className="space-y-3">
-          <div>
-            <span className="font-medium text-gray-600">URL:</span>
-            <div className="flex items-start gap-2 mt-1">
-              <p className="text-gray-900 font-mono text-sm break-all flex-1">
-                {integration.info.url}
-              </p>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(integration.info.url!, "url")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copiedItem === "url" ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(integration.info.url, "_blank")}
-                  className="h-6 w-6 p-0"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {integration.log_path && (
-            <div>
-              <span className="font-medium text-gray-600">Log Path:</span>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-gray-900 font-mono text-xs break-all flex-1">
-                  {integration.log_path}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(integration.log_path, "log")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copiedItem === "log" ? (
-                    <CheckCircle className="w-3 h-3" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-sm text-gray-600">
-        No additional information available
-      </div>
-    );
   };
 
   const renderCompactInfo = () => {
-    if (
-      integration.type === "register-candidate" &&
-      integration.info?.candidate_registration
-    ) {
-      const reg = integration.info?.candidate_registration;
-      return (
-        <div className="text-sm text-gray-600">
-          <p>
-            <span className="font-medium">Candidate:</span> {reg.candidate_name}
-          </p>
-          <p>
-            <span className="font-medium">Stake:</span> {reg.staking_amount} TON
-          </p>
-        </div>
-      );
-    }
+    const commonProps = { integration };
 
-    if (integration.type === "monitoring") {
-      return (
-        <div className="text-sm text-gray-600">
-          {integration.info?.url && (
-            <p className="truncate">
-              <span className="font-medium">URL:</span> {integration.info.url}
-            </p>
-          )}
-          {(integration.info?.username || integration.info?.password) && (
-            <p className="truncate">
-              <span className="font-medium">Creds:</span>{" "}
-              {integration.info.username || ""}
-              {integration.info?.username && integration.info?.password
-                ? " / "
-                : ""}
-              {integration.info?.password || ""}
-            </p>
-          )}
-        </div>
-      );
+    switch (integration.type) {
+      case "bridge":
+        return <BridgeCompactInfo {...commonProps} />;
+      case "block-explorer":
+        return <BlockExplorerCompactInfo {...commonProps} />;
+      case "monitoring":
+        return <MonitoringCompactInfo {...commonProps} />;
+      case "register-candidate":
+        return <RegisterCandidateCompactInfo {...commonProps} />;
+      default:
+        return (
+          <div className="text-sm text-gray-600">
+            No additional information available
+          </div>
+        );
     }
-
-    if (integration.info?.url) {
-      return (
-        <div className="text-sm text-gray-600">
-          <p className="truncate">
-            <span className="font-medium">URL:</span> {integration.info.url}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-sm text-gray-600">
-        No additional information available
-      </div>
-    );
   };
 
   return (
@@ -611,7 +188,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
             <div className="flex items-center gap-2">
               <Badge className={`${getStatusColor()} flex items-center gap-1`}>
                 {getStatusIcon()}
-                {integration.status}
+                {StatusText()}
               </Badge>
               {integration.type !== "register-candidate" && (
                 <Button

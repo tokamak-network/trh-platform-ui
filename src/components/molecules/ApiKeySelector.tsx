@@ -5,110 +5,89 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Globe, Info, ChevronDown, Save } from "lucide-react";
+import { Key, Info, ChevronDown, Save } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RPCUrl, RPCUrlFormData } from "@/features/configuration/schemas";
-import { SaveRpcUrlDialog } from "./SaveRpcUrlDialog";
+import { APIKey, APIKeyFormData } from "@/features/configuration/schemas";
+import { SaveApiKeyDialog } from "./SaveApiKeyDialog";
 import toast from "react-hot-toast";
 
-interface RPCSelectorProps {
-  id: string;
-  label: string;
-  placeholder: string;
-  value?: string;
-  onChange: (value: string) => void;
-  rpcUrls: RPCUrl[];
-  error?: string;
-  required?: boolean;
-  tooltip?: string;
-  className?: string;
-  // New props for save functionality
-  rpcType: "ExecutionLayer" | "BeaconChain";
-  network: "Mainnet" | "Testnet";
-  onSaveUrl?: (data: RPCUrlFormData) => Promise<void>;
-  allowSave?: boolean;
+interface ApiKeySelectorProps {
+  readonly id: string;
+  readonly label: string;
+  readonly placeholder: string;
+  readonly value?: string;
+  readonly onChange: (value: string) => void;
+  readonly apiKeys: APIKey[];
+  readonly error?: string;
+  readonly required?: boolean;
+  readonly tooltip?: string;
+  readonly className?: string;
+  // Props for filtering and save functionality
+  readonly keyType: string; // e.g., "CMC" for CoinMarketCap
+  readonly onSaveKey?: (data: APIKeyFormData) => Promise<void>;
+  readonly allowSave?: boolean;
 }
 
-export function RPCSelector({
+export function ApiKeySelector({
   id,
   label,
   placeholder,
   value = "",
   onChange,
-  rpcUrls,
+  apiKeys,
   error,
   required = false,
   tooltip,
   className = "",
-  rpcType,
-  network,
-  onSaveUrl,
+  keyType,
+  onSaveKey,
   allowSave = true,
-}: RPCSelectorProps) {
+}: ApiKeySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filterText, setFilterText] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Filter RPCs based on input text
-  const filteredRpcs = rpcUrls.filter((rpc) => {
+  // Filter API keys based on type and input text
+  const filteredApiKeys = apiKeys.filter((apiKey) => {
     const searchText = filterText.toLowerCase();
     return (
-      rpc.name.toLowerCase().includes(searchText) ||
-      rpc.rpcUrl.toLowerCase().includes(searchText)
+      apiKey.type === keyType &&
+      (apiKey.apiKey.toLowerCase().includes(searchText) ||
+        apiKey.id.toLowerCase().includes(searchText))
     );
   });
 
-  // Check if the current value is a new URL that doesn't exist in rpcUrls
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
+  // Check if the current value is a new API key that doesn't exist in apiKeys
+  const isValidApiKey = (key: string): boolean => {
+    // Basic validation - API key should be non-empty and reasonable length
+    return key.trim().length > 0 && key.trim().length >= 8;
   };
 
-  const isNewUrl =
+  const isNewApiKey =
     value &&
-    isValidUrl(value) &&
-    !rpcUrls.some((rpc) => rpc.rpcUrl === value) &&
+    isValidApiKey(value) &&
+    !apiKeys.some((apiKey) => apiKey.apiKey === value) &&
     allowSave &&
-    onSaveUrl;
+    onSaveKey;
 
-  // Generate a default name for the new URL
-  const generateDefaultName = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-      const hostname = urlObj.hostname;
-      // Use hostname and add network/type info
-      return `${hostname} (${network} ${
-        rpcType === "ExecutionLayer" ? "Execution" : "Beacon"
-      })`;
-    } catch {
-      return `Custom ${
-        rpcType === "ExecutionLayer" ? "Execution" : "Beacon"
-      } URL`;
-    }
-  };
-
-  // Handle save URL - opens dialog
-  const handleSaveUrl = () => {
-    if (!value || !onSaveUrl || !isValidUrl(value)) return;
+  // Handle save API key - opens dialog
+  const handleSaveApiKey = () => {
+    if (!value || !onSaveKey || !isValidApiKey(value)) return;
     setShowSaveDialog(true);
   };
 
   // Handle actual save from dialog
-  const handleDialogSave = async (data: RPCUrlFormData) => {
-    if (!onSaveUrl) return;
-    await onSaveUrl(data);
-    toast.success("RPC URL saved successfully!");
+  const handleDialogSave = async (data: APIKeyFormData) => {
+    if (!onSaveKey) return;
+    await onSaveKey(data);
+    toast.success("API key saved successfully!");
   };
 
   // Handle input change
@@ -119,9 +98,9 @@ export function RPCSelector({
     setIsOpen(true);
   };
 
-  // Handle RPC selection
-  const handleRpcSelect = (rpc: RPCUrl) => {
-    onChange(rpc.rpcUrl);
+  // Handle API key selection
+  const handleApiKeySelect = (apiKey: APIKey) => {
+    onChange(apiKey.apiKey);
     setFilterText("");
     setIsOpen(false);
     inputRef.current?.blur();
@@ -129,7 +108,7 @@ export function RPCSelector({
 
   // Handle input focus
   const handleInputFocus = () => {
-    if (rpcUrls.length > 0) {
+    if (filteredApiKeys.length > 0) {
       setIsOpen(true);
     }
   };
@@ -155,7 +134,13 @@ export function RPCSelector({
   }, []);
 
   // Show dropdown when there are filtered results
-  const shouldShowDropdown = isOpen && filteredRpcs.length > 0;
+  const shouldShowDropdown = isOpen && filteredApiKeys.length > 0;
+
+  // Format API key for display (masked)
+  const formatApiKeyForDisplay = (apiKey: string): string => {
+    if (apiKey.length <= 16) return apiKey;
+    return `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 8)}`;
+  };
 
   return (
     <div className={`space-y-3 ${className} relative`}>
@@ -192,13 +177,14 @@ export function RPCSelector({
             <Input
               ref={inputRef}
               id={id}
+              type="password"
               placeholder={placeholder}
               value={value}
               onChange={handleInputChange}
               onFocus={handleInputFocus}
               className={`pr-8 ${error ? "border-red-500" : ""}`}
             />
-            {rpcUrls.length > 0 && (
+            {filteredApiKeys.length > 0 && (
               <ChevronDown
                 className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-transform duration-200 ${
                   isOpen ? "rotate-180" : ""
@@ -207,13 +193,13 @@ export function RPCSelector({
             )}
           </div>
 
-          {/* Save Button for new URLs */}
-          {isNewUrl && (
+          {/* Save Button for new API keys */}
+          {isNewApiKey && (
             <Button
               type="button"
               size="sm"
               variant="outline"
-              onClick={handleSaveUrl}
+              onClick={handleSaveApiKey}
               className="shrink-0 px-3"
             >
               <Save className="w-3 h-3 mr-1" />
@@ -228,26 +214,29 @@ export function RPCSelector({
             ref={dropdownRef}
             className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
           >
-            {filteredRpcs.map((rpc) => (
-              <div
-                key={rpc.id}
-                className="px-3 py-2 cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
-                onClick={() => handleRpcSelect(rpc)}
+            {filteredApiKeys.map((apiKey) => (
+              <button
+                key={apiKey.id}
+                type="button"
+                className="w-full px-3 py-2 text-left cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                onClick={() => handleApiKeySelect(apiKey)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{rpc.name}</span>
+                      <span className="font-medium text-sm font-mono">
+                        {formatApiKeyForDisplay(apiKey.apiKey)}
+                      </span>
                       <Badge variant="outline" className="text-xs">
-                        {rpc.type === "ExecutionLayer" ? "Execution" : "Beacon"}
+                        {apiKey.type}
                       </Badge>
                     </div>
-                    <span className="text-xs text-slate-500 truncate">
-                      {rpc.rpcUrl}
+                    <span className="text-xs text-slate-500">
+                      Created: {new Date(apiKey.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -258,32 +247,30 @@ export function RPCSelector({
 
       {/* Helper text */}
       <div className="flex items-center gap-1 text-xs text-slate-500">
-        <Globe className="w-3 h-3" />
+        <Key className="w-3 h-3" />
         <span>
-          {rpcUrls.length > 0
-            ? `${rpcUrls.length} configured RPC${
-                rpcUrls.length !== 1 ? "s" : ""
-              } available • Type to filter or enter custom URL${
-                allowSave && onSaveUrl ? " • Click Save to store new URLs" : ""
-              }`
-            : `Enter RPC URL manually${
-                allowSave && onSaveUrl
-                  ? " • New URLs can be saved for future use"
-                  : ""
-              }`}
+          {filteredApiKeys.length > 0 ? (
+            <>
+              {filteredApiKeys.length} saved {keyType} key{filteredApiKeys.length !== 1 ? "s" : ""} available • Type to filter or enter new key
+              {allowSave && onSaveKey ? " • Click Save to store new keys" : ""}
+            </>
+          ) : (
+            <>
+              Enter {keyType} API key manually
+              {allowSave && onSaveKey ? " • New keys can be saved for future use" : ""}
+            </>
+          )}
         </span>
       </div>
 
-      {/* Save RPC URL Dialog */}
+      {/* Save API Key Dialog */}
       {showSaveDialog && (
-        <SaveRpcUrlDialog
+        <SaveApiKeyDialog
           isOpen={showSaveDialog}
           onClose={() => setShowSaveDialog(false)}
           onSave={handleDialogSave}
-          rpcUrl={value}
-          rpcType={rpcType}
-          network={network}
-          defaultName={generateDefaultName(value)}
+          apiKey={value}
+          type={keyType}
         />
       )}
     </div>

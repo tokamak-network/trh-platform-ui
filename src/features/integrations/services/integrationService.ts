@@ -45,6 +45,21 @@ export const installBlockExplorerIntegration = async (
 
 export interface InstallMonitoringRequestBody {
   grafanaPassword: string;
+  loggingEnabled: boolean;
+  alertManager: {
+    telegram: {
+      enabled: boolean;
+      apiToken: string;
+      criticalReceivers: Array<{ chatId: string }>;
+    };
+    email: {
+      enabled: boolean;
+      smtpSmarthost: string;
+      smtpFrom: string;
+      smtpAuthPassword: string;
+      alertReceivers: string[];
+    };
+  };
 }
 
 export const installMonitoringIntegration = async (

@@ -25,6 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ApiKeySelector } from "@/components/molecules";
+import { useApiKeys, useCreateApiKey } from "@/features/configuration/api-keys/hooks/useApiKeys";
 
 const blockExplorerSchema = z.object({
   databaseUsername: z
@@ -44,10 +46,10 @@ const blockExplorerSchema = z.object({
 export type BlockExplorerFormData = z.infer<typeof blockExplorerSchema>;
 
 interface InstallBlockExplorerDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: BlockExplorerFormData) => void;
-  isPending?: boolean;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onSubmit: (data: BlockExplorerFormData) => void;
+  readonly isPending?: boolean;
 }
 
 export default function InstallBlockExplorerDialog({
@@ -70,6 +72,10 @@ export default function InstallBlockExplorerDialog({
   const [pendingData, setPendingData] =
     React.useState<BlockExplorerFormData | null>(null);
 
+  // API Keys hooks
+  const { apiKeys } = useApiKeys();
+  const createApiKeyMutation = useCreateApiKey();
+
   const handleSubmit = form.handleSubmit((data) => {
     setPendingData(data);
     setConfirmOpen(true);
@@ -85,6 +91,15 @@ export default function InstallBlockExplorerDialog({
       form.reset();
     }
     onOpenChange(next);
+  };
+
+  const handleSaveApiKey = async (data: { apiKey: string; type: string }) => {
+    await createApiKeyMutation.mutateAsync(data);
+  };
+
+  const handleCoinMarketCapKeyChange = (value: string) => {
+    form.setValue("coinmarketcapKey", value);
+    form.trigger("coinmarketcapKey");
   };
 
   return (
@@ -140,25 +155,20 @@ export default function InstallBlockExplorerDialog({
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="coinmarketcapKey">CoinMarketCap API Key</Label>
-              <Input
-                id="coinmarketcapKey"
-                placeholder="c291ce7b-..."
-                disabled={isPending}
-                {...form.register("coinmarketcapKey")}
-                className={
-                  form.formState.errors.coinmarketcapKey
-                    ? "border-destructive"
-                    : ""
-                }
-              />
-              {form.formState.errors.coinmarketcapKey && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.coinmarketcapKey.message}
-                </p>
-              )}
-            </div>
+            <ApiKeySelector
+              id="coinmarketcapKey"
+              label="CoinMarketCap API Key"
+              placeholder="c291ce7b-..."
+              value={form.watch("coinmarketcapKey")}
+              onChange={handleCoinMarketCapKeyChange}
+              apiKeys={apiKeys}
+              error={form.formState.errors.coinmarketcapKey?.message}
+              required
+              tooltip="Your CoinMarketCap API key for cryptocurrency data"
+              keyType="CMC"
+              onSaveKey={handleSaveApiKey}
+              allowSave={true}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="walletConnectId">WalletConnect Project ID</Label>

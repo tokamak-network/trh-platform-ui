@@ -186,9 +186,8 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                 disabled={isFetching}
               >
                 <RefreshCw
-                  className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
+                  className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
                 />
-                Refresh
               </Button>
             </div>
           </CardHeader>
@@ -246,7 +245,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {integrations.map((integration) => (
               <IntegrationCard key={integration.id} integration={integration} />
             ))}
@@ -387,7 +386,12 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         onSubmit={(data: MonitoringFormData) => {
           if (!stack) return;
           installMonitoringMutation.mutate(
-            { stackId: stack.id, grafanaPassword: data.grafanaPassword },
+            {
+              stackId: stack.id,
+              grafanaPassword: data.grafanaPassword,
+              loggingEnabled: data.loggingEnabled,
+              alertManager: data.alertManager,
+            },
             { onSettled: () => setInstallType(null) }
           );
         }}
