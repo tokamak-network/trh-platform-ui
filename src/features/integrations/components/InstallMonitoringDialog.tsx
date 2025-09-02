@@ -232,7 +232,7 @@ export default function InstallMonitoringDialog({
                     <div className="space-y-2">
                       <Label>Critical Receivers (Chat IDs)</Label>
                       {form.watch("alertManager.telegram.criticalReceivers").map((receiver, index) => (
-                        <div key={`telegram-${index}-${receiver.chatId}`} className="flex items-center space-x-2">
+                        <div key={`telegram-${index}`} className="flex items-center space-x-2">
                           <Input
                             placeholder="123456789"
                             disabled={isPending}
@@ -349,7 +349,7 @@ export default function InstallMonitoringDialog({
                     <div className="space-y-2">
                       <Label>Alert Receivers</Label>
                       {form.watch("alertManager.email.alertReceivers").map((email, index) => (
-                        <div key={`email-${index}-${email}`} className="flex items-center space-x-2">
+                        <div key={`email-${index}`} className="flex items-center space-x-2">
                           <Input
                             type="email"
                             placeholder="user@company.com"

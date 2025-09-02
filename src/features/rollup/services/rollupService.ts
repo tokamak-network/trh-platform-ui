@@ -1,6 +1,7 @@
 import { apiGet, apiPost, apiDelete, apiPut } from "@/lib/api";
 import { Rollup, RollupType } from "../schemas/rollup";
 import type { RollupDeploymentRequest } from "../schemas/create-rollup";
+import { env } from "next-runtime-env";
 import {
   GetAllThanosStacksResponse,
   GetThanosStackResponse,
@@ -128,7 +129,7 @@ export const downloadThanosDeploymentLogs = async (
   try {
     const response = await fetch(
       `${
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+        env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
       }/api/v1/stacks/thanos/${stackId}/deployments/${deploymentId}/logs/download`,
       {
         method: "GET",
@@ -201,7 +202,7 @@ export const downloadThanosRollupConfig = async (
   try {
     const response = await fetch(
       `${
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+        env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
       }/api/v1/stacks/thanos/${stackId}/rollupconfig`,
       {
         method: "GET",
