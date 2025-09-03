@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import {
   convertFormToDeploymentRequest,
   createRollupSchema,
 } from "../schemas/create-rollup";
+import { useRollupCreationContext, defaultFormData } from "../context/RollupCreationContext";
 
 export const STEPS = [
   {
@@ -40,42 +41,33 @@ export const STEPS = [
 ];
 
 export function useCreateRollup() {
-  const [currentStep, setCurrentStep] = useState(1);
   const router = useRouter();
+  const { state, updateFormData, updateCurrentStep, setHasUnsavedChanges, resetState } = useRollupCreationContext();
 
   const form = useForm<CreateRollupFormData>({
     resolver: zodResolver(createRollupSchema),
-    defaultValues: {
-      networkAndChain: {
-        network: "",
-        chainName: "",
-        l1RpcUrl: "",
-        l1BeaconUrl: "",
-        advancedConfig: false,
-        l2BlockTime: "2",
-        batchSubmissionFreq: "1440",
-        outputRootFreq: "240",
-        challengePeriod: "12",
-      },
-      accountAndAws: {
-        seedPhrase: Array(12).fill(""),
-        adminAccount: "",
-        adminPrivateKey: "",
-        proposerAccount: "",
-        proposerPrivateKey: "",
-        batchAccount: "",
-        batchPrivateKey: "",
-        sequencerAccount: "",
-        sequencerPrivateKey: "",
-        accountName: "",
-        credentialId: "",
-        awsAccessKey: "",
-        awsSecretKey: "",
-        awsRegion: "",
-      },
-      daoCandidate: undefined,
-    },
+    defaultValues: state.formData || defaultFormData,
   });
+
+  // Load saved data when component mounts
+  useEffect(() => {
+    if (state.formData) {
+      // Reset with saved data but keep it as the new default values
+      form.reset(state.formData, { keepDefaultValues: true });
+    }
+  }, [state.formData, form]);
+
+  // Watch for form changes and save to context
+  useEffect(() => {
+    const subscription = form.watch((data, { name }) => {
+      // Save to context whenever any field changes
+      if (name && data) {
+        updateFormData(data as CreateRollupFormData);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, updateFormData]);
 
   const getProgress = (step: number) => {
     switch (step) {
@@ -92,9 +84,14 @@ export function useCreateRollup() {
     }
   };
 
-  const progress = getProgress(currentStep);
+  const progress = getProgress(state.currentStep);
 
   const deployMutation = useDeployRollupMutation({
+    onSuccess: () => {
+      // Reset form and context state on successful deployment
+      form.reset(defaultFormData);
+      resetState();
+    },
     onError: (error) => {
       form.setError("root", {
         message: error.message || "Failed to deploy rollup",
@@ -120,7 +117,7 @@ export function useCreateRollup() {
   };
 
   const goToNextStep = async () => {
-    if (currentStep === STEPS.length) {
+    if (state.currentStep === STEPS.length) {
       await handleDeployRollup();
       return;
     }
@@ -128,7 +125,7 @@ export function useCreateRollup() {
     // Validate current step fields
     let isValid = false;
 
-    switch (currentStep) {
+    switch (state.currentStep) {
       case 1: // Network & Chain step
         const baseFields = [
           "networkAndChain.network",
@@ -187,13 +184,13 @@ export function useCreateRollup() {
     }
 
     if (isValid) {
-      setCurrentStep((prev) => prev + 1);
+      updateCurrentStep(state.currentStep + 1);
     }
   };
 
   const goToPreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+    if (state.currentStep > 1) {
+      updateCurrentStep(state.currentStep - 1);
     }
   };
 
@@ -203,7 +200,7 @@ export function useCreateRollup() {
 
   return {
     form,
-    currentStep,
+    currentStep: state.currentStep,
     progress,
     steps: STEPS,
     goToNextStep,

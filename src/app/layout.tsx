@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider, AuthProvider, ToasterProvider } from "@/providers";
+import { RollupCreationProvider } from "@/features/rollup/context/RollupCreationContext";
 import { PublicEnvScript } from "next-runtime-env";
 
 const geistSans = Geist({
@@ -35,8 +36,10 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            {children}
-            <ToasterProvider />
+            <RollupCreationProvider>
+              {children}
+              <ToasterProvider />
+            </RollupCreationProvider>
           </AuthProvider>
         </QueryProvider>
       </body>
