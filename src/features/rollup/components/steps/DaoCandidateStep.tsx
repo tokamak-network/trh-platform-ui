@@ -2,7 +2,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFormContext } from "react-hook-form";
+import Link from "next/link";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
+import { DAO_CANDIDATE_GUIDE_URL } from "../../const";
 
 export function DaoCandidateStep() {
   const {
@@ -17,7 +19,14 @@ export function DaoCandidateStep() {
           <h2 className="text-lg font-semibold">DAO Candidate Registration</h2>
           <p className="text-sm text-gray-500">
             Register your rollup as a DAO candidate by providing the required
-            information. This step is optional.
+            information. This step is optional.{" "}
+            <Link
+              href={DAO_CANDIDATE_GUIDE_URL}
+              target="_blank"
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              Learn more
+            </Link>
           </p>
         </div>
 

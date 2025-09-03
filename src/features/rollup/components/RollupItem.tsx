@@ -337,7 +337,7 @@ export function RollupItem({
                         <AlertDialogDescription>
                           Are you sure you want to stop the deployment of{" "}
                           {stack.config.chainName}? This will halt the current
-                          deployment process.
+                          deployment process. You can resume the deployment later.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

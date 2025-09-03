@@ -22,10 +22,12 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
+import Link from "next/link";
 import { useFormContext, useController } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { useEthereumAccounts, wordList } from "../../hooks/useEthereumAccounts";
 import * as bip39 from "bip39";
+import { THANOS_STACK_PREREQUISITE_GUIDE_URL } from "../../const";
 
 type AccountRole =
   | "adminAccount"
@@ -529,10 +531,18 @@ export function AccountSetup() {
 
             {/* Info Message */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-slate-700">
                 Make sure each selected account has sufficient ETH balance for
                 their operations. The accounts will be used to sign transactions
-                for their respective roles.
+                for their respective roles. See{" "}
+                <Link
+                  href={THANOS_STACK_PREREQUISITE_GUIDE_URL}
+                  target="_blank"
+                  className="text-blue-700 underline"
+                >
+                  here
+                </Link>
+                {" "}for more details.
               </p>
             </div>
           </>
