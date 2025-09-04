@@ -42,7 +42,7 @@ export const STEPS = [
 
 export function useCreateRollup() {
   const router = useRouter();
-  const { state, updateFormData, updateCurrentStep, setHasUnsavedChanges, resetState } = useRollupCreationContext();
+  const { state, updateFormData, updateCurrentStep, resetState } = useRollupCreationContext();
 
   const form = useForm<CreateRollupFormData>({
     resolver: zodResolver(createRollupSchema),
