@@ -11,6 +11,7 @@ import {
 import { AWSCredentialCard } from "./AWSCredentialCard";
 import { AWSCredentialForm } from "./AWSCredentialForm";
 import Image from "next/image";
+import Link from "next/link";
 
 interface AWSCredentialsListProps {
   credentials: AWSCredential[];
@@ -83,7 +84,13 @@ export function AWSCredentialsList({
           <h2 className="text-2xl font-bold">AWS Credentials</h2>
           <p className="text-muted-foreground">
             Manage AWS access keys for rollup deployments
+            {" ("}
+            <Link href="https://repost.aws/knowledge-center/create-access-key" target="_blank" className="text-primary hover:underline">
+              Read more
+            </Link>
+            {")"} 
           </p>
+          
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)} disabled={isLoading}>
           <Plus className="w-4 h-4 mr-2" />

@@ -203,7 +203,7 @@ export interface RegisterDaoCandidateVariables {
   stackId: string;
   amount: number;
   memo: string;
-  nameInfo: string;
+  nameInfo?: string;
 }
 
 export const useRegisterDaoCandidateMutation = (options?: {

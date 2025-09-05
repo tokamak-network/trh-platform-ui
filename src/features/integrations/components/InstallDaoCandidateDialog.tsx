@@ -32,7 +32,7 @@ const daoCandidateSchema = z.object({
     .refine((val) => !Number.isNaN(val), { message: "Enter a valid number" })
     .gt(1000, { message: "Amount must be greater than 1000 TON" }),
   memo: z.string().min(1, { message: "Memo is required" }),
-  nameInfo: z.string().min(1, { message: "Name is required" }),
+  nameInfo: z.string().optional(),
 });
 
 export type DaoCandidateFormData = z.infer<typeof daoCandidateSchema>;

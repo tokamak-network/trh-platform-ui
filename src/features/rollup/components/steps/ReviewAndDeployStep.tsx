@@ -13,12 +13,23 @@ import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 
+interface DataItem {
+  label: string;
+  value: string | undefined;
+  action?: React.ReactElement;
+}
+
+interface Section {
+  title: string;
+  data: DataItem[];
+}
+
 export function ReviewAndDeployStep() {
   const { watch } = useFormContext<CreateRollupFormData>();
   const formData = watch();
   const [showSecretKey, setShowSecretKey] = useState(false);
 
-  const sections = [
+  const sections: (Section | false)[] = [
     {
       title: "Network & Chain",
       data: [
@@ -70,14 +81,14 @@ export function ReviewAndDeployStep() {
         { label: "AWS Region", value: formData.accountAndAws.awsRegion },
       ],
     },
-    formData.daoCandidate && {
+    formData.daoCandidate ? {
       title: "DAO Candidate",
       data: [
         { label: "Amount", value: `${formData.daoCandidate.amount} TON` },
         { label: "Memo", value: formData.daoCandidate.memo },
         { label: "Name Information", value: formData.daoCandidate.nameInfo },
       ],
-    },
+    } : false,
   ];
 
   return (

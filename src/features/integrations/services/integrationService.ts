@@ -72,7 +72,7 @@ export const installMonitoringIntegration = async (
 export interface RegisterDaoCandidateRequestBody {
   amount: number;
   memo: string;
-  nameInfo: string;
+  nameInfo?: string;
 }
 
 export const registerDaoCandidateIntegration = async (

@@ -74,7 +74,7 @@ export function DaoCandidateStep() {
 
           <div className="space-y-2">
             <Label htmlFor="nameInfo" className="flex items-center gap-1">
-              Name Information <span className="text-red-500">*</span>
+              Name Information
             </Label>
             <Input
               id="nameInfo"

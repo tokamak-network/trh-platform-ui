@@ -142,7 +142,7 @@ export const daoCandidateSchema = z
         "Amount must be at least 1000.1 TON"
       ),
     memo: z.string().min(1, "Memo is required"),
-    nameInfo: z.string().min(1, "Name information is required"),
+    nameInfo: z.string().optional(),
   })
   .optional();
 
@@ -177,7 +177,7 @@ export const rollupDeploymentSchema = z.object({
     .object({
       amount: z.number().min(1000.1),
       memo: z.string(),
-      nameInfo: z.string(),
+      nameInfo: z.string().optional(),
     })
     .optional(),
 });

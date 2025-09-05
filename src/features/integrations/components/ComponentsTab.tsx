@@ -287,7 +287,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                         {isInstalled ? (
                           <Badge className="bg-green-100 text-green-800 border-green-200">
                             <CheckCircle className="w-3 h-3 mr-1" />
-                            Installed
+                            Integrated
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-slate-600">

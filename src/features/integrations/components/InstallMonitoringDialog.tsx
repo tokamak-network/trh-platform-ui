@@ -79,7 +79,7 @@ export default function InstallMonitoringDialog({
         },
         email: {
           enabled: false,
-          smtpSmarthost: "",
+          smtpSmarthost: "smtp.gmail.com:587",
           smtpFrom: "",
           smtpAuthPassword: "",
           alertReceivers: []
