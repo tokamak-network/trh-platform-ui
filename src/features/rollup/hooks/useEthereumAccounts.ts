@@ -110,10 +110,57 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } else {
       setAccounts([]);
     }
-  }, [seedPhraseStr]);
+  }, [seedPhraseStr, generateAccounts]);
+
+  // Function to refresh balances only
+  const refreshBalances = useCallback(async () => {
+    if (accounts.length === 0 || !rpcUrl) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Ensure RPC URL has protocol
+      const formattedRpcUrl = rpcUrl.startsWith("http")
+        ? rpcUrl
+        : `https://${rpcUrl}`;
+      const provider = new ethers.JsonRpcProvider(formattedRpcUrl);
+
+      // Update balances for existing accounts
+      const updatedAccounts = await Promise.all(
+        accounts.map(async (account) => {
+          try {
+            const balance = await provider.getBalance(account.address);
+            const formattedBalance = ethers.formatEther(balance);
+            return {
+              ...account,
+              balance: `${Number(formattedBalance).toFixed(4)} ETH`,
+            };
+          } catch (balanceError) {
+            console.error(
+              `Error fetching balance for account ${account.address}:`,
+              balanceError
+            );
+            return {
+              ...account,
+              balance: "Error fetching balance",
+            };
+          }
+        })
+      );
+
+      setAccounts(updatedAccounts);
+      setError(null);
+    } catch (err) {
+      console.error("Error refreshing balances:", err);
+      setError("Failed to refresh balances. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [accounts, rpcUrl]);
 
   const privateKeys = accounts.map((account) => account.privateKey);
-  return { accounts, privateKeys, isLoading, error };
+  return { accounts, privateKeys, isLoading, error, refreshBalances };
 }
 
 // Export the word list from bip39

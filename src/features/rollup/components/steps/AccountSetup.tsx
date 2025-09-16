@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ArrowRight,
-  ArrowLeft,
   Eye,
   EyeOff,
   Shuffle,
   AlertTriangle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useFormContext, useController } from "react-hook-form";
@@ -29,15 +28,9 @@ import { useEthereumAccounts, wordList } from "../../hooks/useEthereumAccounts";
 import * as bip39 from "bip39";
 import { THANOS_STACK_PREREQUISITE_GUIDE_URL } from "../../const";
 
-type AccountRole =
-  | "adminAccount"
-  | "proposerAccount"
-  | "batchAccount"
-  | "sequencerAccount";
 
 export function AccountSetup() {
   const {
-    register,
     setValue,
     control,
     formState: { errors },
@@ -82,7 +75,7 @@ export function AccountSetup() {
     defaultValue: "",
   });
 
-  const { accounts, isLoading, error } = useEthereumAccounts(
+  const { accounts, isLoading, error, refreshBalances } = useEthereumAccounts(
     seedPhraseField.value,
     l1RpcUrlField.value
   );
@@ -289,6 +282,27 @@ export function AccountSetup() {
 
         {!isLoading && !error && (
           <>
+            {/* Refresh Balance Button */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">Account Selection</h3>
+                <p className="text-sm text-slate-600">
+                  Select different accounts for each role. Balances are fetched automatically.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={refreshBalances}
+                disabled={accounts.length === 0 || isLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh Balances
+              </Button>
+            </div>
+
             {/* Admin Account */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
