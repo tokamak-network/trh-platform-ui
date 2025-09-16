@@ -109,7 +109,7 @@ export function AccountSetup() {
         const newSeedPhrase = [...seedPhraseField.value];
         words.forEach((word, i) => {
           if (i < 12) {
-            // Only accept valid BIP39 words
+            // Only accept valid BIP39 words for paste operations
             if (wordList.includes(word)) {
               newSeedPhrase[i] = word;
             }
@@ -123,20 +123,20 @@ export function AccountSetup() {
         batchAccountField.onChange(undefined);
         sequencerAccountField.onChange(undefined);
       } else {
-        // Single word update
+        // Single word update - allow partial words for manual typing
         const word = value.trim().toLowerCase();
-        // Only accept valid BIP39 words or empty string (for deletion)
-        if (word === "" || wordList.includes(word)) {
-          const newSeedPhrase = [...seedPhraseField.value];
-          newSeedPhrase[index] = word;
-          seedPhraseField.onChange(newSeedPhrase);
+        
+        // Allow empty string (for deletion) or any input for manual typing
+        // We'll validate complete words later when generating accounts
+        const newSeedPhrase = [...seedPhraseField.value];
+        newSeedPhrase[index] = word;
+        seedPhraseField.onChange(newSeedPhrase);
 
-          // Reset account selections when seed phrase changes
-          adminAccountField.onChange(undefined);
-          proposerAccountField.onChange(undefined);
-          batchAccountField.onChange(undefined);
-          sequencerAccountField.onChange(undefined);
-        }
+        // Reset account selections when seed phrase changes
+        adminAccountField.onChange(undefined);
+        proposerAccountField.onChange(undefined);
+        batchAccountField.onChange(undefined);
+        sequencerAccountField.onChange(undefined);
       }
     },
     [
@@ -199,30 +199,40 @@ export function AccountSetup() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            {seedPhraseField.value.map((word: string, index: number) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="text-sm text-slate-500 w-6">{index + 1}</span>
-                <Input
-                  type={showSeedPhrase ? "text" : "password"}
-                  value={word}
-                  onChange={(e) =>
-                    handleSeedPhraseChange(index, e.target.value)
-                  }
-                  placeholder="•••••"
-                  className="text-sm"
-                  list={`wordlist-${index}`}
-                />
-                <datalist id={`wordlist-${index}`}>
-                  {wordList
-                    .filter((w) => w.startsWith(word.toLowerCase()))
-                    .slice(0, 10)
-                    .map((suggestion) => (
-                      <option key={suggestion} value={suggestion} />
-                    ))}
-                </datalist>
-              </div>
-            ))}
+          <div className="space-y-3">
+            <p className="text-xs text-slate-500">
+              Enter your 12-word seed phrase. You can type manually or paste the entire phrase. 
+              Words highlighted in yellow are not valid BIP39 words.
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {seedPhraseField.value.map((word: string, index: number) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500 w-6">{index + 1}</span>
+                  <Input
+                    type={showSeedPhrase ? "text" : "password"}
+                    value={word}
+                    onChange={(e) =>
+                      handleSeedPhraseChange(index, e.target.value)
+                    }
+                    placeholder="•••••"
+                    className={`text-sm ${
+                      word && !wordList.includes(word) && word.length > 2
+                        ? "border-yellow-300 bg-yellow-50"
+                        : ""
+                    }`}
+                    list={`wordlist-${index}`}
+                  />
+                  <datalist id={`wordlist-${index}`}>
+                    {word && wordList
+                      .filter((w) => w.startsWith(word.toLowerCase()))
+                      .slice(0, 10)
+                      .map((suggestion) => (
+                        <option key={suggestion} value={suggestion} />
+                      ))}
+                  </datalist>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Confirmation Checkbox */}
