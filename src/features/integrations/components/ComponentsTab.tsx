@@ -385,15 +385,31 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         isPending={installMonitoringMutation.isPending}
         onSubmit={(data: MonitoringFormData) => {
           if (!stack) return;
-          installMonitoringMutation.mutate(
-            {
-              stackId: stack.id,
-              grafanaPassword: data.grafanaPassword,
-              loggingEnabled: data.loggingEnabled,
-              alertManager: data.alertManager,
-            },
-            { onSettled: () => setInstallType(null) }
-          );
+          
+          // Transform form data to match API expectations
+          const apiData = {
+            stackId: stack.id,
+            grafanaPassword: data.grafanaPassword,
+            loggingEnabled: data.loggingEnabled,
+            alertManager: {
+              telegram: {
+                enabled: data.alertManager.telegram.enabled,
+                apiToken: data.alertManager.telegram.apiToken || "",
+                criticalReceivers: (data.alertManager.telegram.criticalReceivers || []).map(receiver => ({
+                  chatId: receiver.chatId || ""
+                }))
+              },
+              email: {
+                enabled: data.alertManager.email.enabled,
+                smtpSmarthost: data.alertManager.email.smtpSmarthost || "",
+                smtpFrom: data.alertManager.email.smtpFrom || "",
+                smtpAuthPassword: data.alertManager.email.smtpAuthPassword || "",
+                alertReceivers: data.alertManager.email.alertReceivers || []
+              }
+            }
+          };
+          
+          installMonitoringMutation.mutate(apiData, { onSettled: () => setInstallType(null) });
         }}
       />
 

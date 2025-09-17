@@ -36,19 +36,68 @@ const monitoringSchema = z.object({
   alertManager: z.object({
     telegram: z.object({
       enabled: z.boolean(),
-      apiToken: z.string().min(1, { message: "Telegram API token is required" }),
+      apiToken: z.string().optional(),
       criticalReceivers: z.array(z.object({
         chatId: z.string().min(1, { message: "Chat ID is required" })
-      }))
+      })).optional()
     }),
     email: z.object({
       enabled: z.boolean(),
-      smtpSmarthost: z.string().min(1, { message: "SMTP server is required" }),
-      smtpFrom: z.string().email("Valid email address is required"),
-      smtpAuthPassword: z.string().min(1, { message: "SMTP password is required" }),
-      alertReceivers: z.array(z.string().email("Valid email address is required"))
+      smtpSmarthost: z.string().optional(),
+      smtpFrom: z.string().optional(),
+      smtpAuthPassword: z.string().optional(),
+      alertReceivers: z.array(z.string().email({ message: "Invalid email address" })).optional()
     })
   })
+}).refine((data) => {
+  // If telegram is enabled, validate API token
+  if (data.alertManager.telegram.enabled) {
+    if (!data.alertManager.telegram.apiToken || data.alertManager.telegram.apiToken.trim() === "") {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "Telegram API token is required when Telegram alerts are enabled",
+  path: ["alertManager", "telegram", "apiToken"]
+}).refine((data) => {
+  // If email is enabled, validate SMTP server
+  if (data.alertManager.email.enabled) {
+    if (!data.alertManager.email.smtpSmarthost || data.alertManager.email.smtpSmarthost.trim() === "") {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "SMTP server is required when Email alerts are enabled",
+  path: ["alertManager", "email", "smtpSmarthost"]
+}).refine((data) => {
+  // If email is enabled, validate from email
+  if (data.alertManager.email.enabled) {
+    if (!data.alertManager.email.smtpFrom || data.alertManager.email.smtpFrom.trim() === "") {
+      return false;
+    }
+    // Validate email format for smtpFrom
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.alertManager.email.smtpFrom)) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "Valid from email address is required when Email alerts are enabled",
+  path: ["alertManager", "email", "smtpFrom"]
+}).refine((data) => {
+  // If email is enabled, validate SMTP password
+  if (data.alertManager.email.enabled) {
+    if (!data.alertManager.email.smtpAuthPassword || data.alertManager.email.smtpAuthPassword.trim() === "") {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "SMTP password is required when Email alerts are enabled",
+  path: ["alertManager", "email", "smtpAuthPassword"]
 });
 
 export type MonitoringFormData = z.infer<typeof monitoringSchema>;
@@ -93,6 +142,15 @@ export default function InstallMonitoringDialog({
     React.useState<MonitoringFormData | null>(null);
 
   const handleSubmit = form.handleSubmit((data) => {
+    // Check for custom validation errors before proceeding
+    const telegramError = getTelegramReceiversError();
+    const emailError = getEmailReceiversError();
+    
+    if (telegramError || emailError) {
+      // Don't proceed if there are validation errors
+      return;
+    }
+    
     setPendingData(data);
     setConfirmOpen(true);
   });
@@ -110,30 +168,55 @@ export default function InstallMonitoringDialog({
   };
 
   const addTelegramReceiver = () => {
-    const currentReceivers = form.getValues("alertManager.telegram.criticalReceivers");
+    const currentReceivers = form.getValues("alertManager.telegram.criticalReceivers") || [];
     form.setValue("alertManager.telegram.criticalReceivers", [
       ...currentReceivers,
       { chatId: "" }
     ]);
+    // Clear any array-level error when adding a receiver
+    form.clearErrors("alertManager.telegram.criticalReceivers");
   };
 
   const removeTelegramReceiver = (index: number) => {
-    const currentReceivers = form.getValues("alertManager.telegram.criticalReceivers");
+    const currentReceivers = form.getValues("alertManager.telegram.criticalReceivers") || [];
     form.setValue("alertManager.telegram.criticalReceivers", 
       currentReceivers.filter((_, i) => i !== index)
     );
   };
 
   const addEmailReceiver = () => {
-    const currentReceivers = form.getValues("alertManager.email.alertReceivers");
+    const currentReceivers = form.getValues("alertManager.email.alertReceivers") || [];
     form.setValue("alertManager.email.alertReceivers", [...currentReceivers, ""]);
+    // Clear any array-level error when adding a receiver
+    form.clearErrors("alertManager.email.alertReceivers");
   };
 
   const removeEmailReceiver = (index: number) => {
-    const currentReceivers = form.getValues("alertManager.email.alertReceivers");
+    const currentReceivers = form.getValues("alertManager.email.alertReceivers") || [];
     form.setValue("alertManager.email.alertReceivers", 
       currentReceivers.filter((_, i) => i !== index)
     );
+  };
+
+  // Custom validation helpers
+  const getTelegramReceiversError = () => {
+    const telegramEnabled = form.watch("alertManager.telegram.enabled");
+    const receivers = form.watch("alertManager.telegram.criticalReceivers");
+    
+    if (telegramEnabled && (!receivers || receivers.length === 0)) {
+      return "At least one chat ID is required when Telegram alerts are enabled";
+    }
+    return null;
+  };
+
+  const getEmailReceiversError = () => {
+    const emailEnabled = form.watch("alertManager.email.enabled");
+    const receivers = form.watch("alertManager.email.alertReceivers");
+    
+    if (emailEnabled && (!receivers || receivers.length === 0)) {
+      return "At least one email receiver is required when Email alerts are enabled";
+    }
+    return null;
   };
 
   return (
@@ -231,27 +314,34 @@ export default function InstallMonitoringDialog({
 
                     <div className="space-y-2">
                       <Label>Critical Receivers (Chat IDs)</Label>
-                      {form.watch("alertManager.telegram.criticalReceivers").map((receiver, index) => (
-                        <div key={`telegram-${index}`} className="flex items-center space-x-2">
-                          <Input
-                            placeholder="123456789"
-                            disabled={isPending}
-                            {...form.register(`alertManager.telegram.criticalReceivers.${index}.chatId`)}
-                            className={
-                              form.formState.errors.alertManager?.telegram?.criticalReceivers?.[index]?.chatId
-                                ? "border-destructive"
-                                : ""
-                            }
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeTelegramReceiver(index)}
-                            disabled={isPending}
-                          >
-                            Remove
-                          </Button>
+                      {(form.watch("alertManager.telegram.criticalReceivers") || []).map((receiver, index) => (
+                        <div key={`telegram-${index}`} className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              placeholder="123456789"
+                              disabled={isPending}
+                              {...form.register(`alertManager.telegram.criticalReceivers.${index}.chatId`)}
+                              className={
+                                form.formState.errors.alertManager?.telegram?.criticalReceivers?.[index]?.chatId
+                                  ? "border-destructive"
+                                  : ""
+                              }
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeTelegramReceiver(index)}
+                              disabled={isPending}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                          {form.formState.errors.alertManager?.telegram?.criticalReceivers?.[index]?.chatId && (
+                            <p className="text-sm text-destructive">
+                              {form.formState.errors.alertManager.telegram.criticalReceivers[index]?.chatId?.message}
+                            </p>
+                          )}
                         </div>
                       ))}
                       <Button
@@ -263,6 +353,11 @@ export default function InstallMonitoringDialog({
                       >
                         Add Receiver
                       </Button>
+                      {getTelegramReceiversError() && (
+                        <p className="text-sm text-destructive">
+                          {getTelegramReceiversError()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -348,28 +443,35 @@ export default function InstallMonitoringDialog({
 
                     <div className="space-y-2">
                       <Label>Alert Receivers</Label>
-                      {form.watch("alertManager.email.alertReceivers").map((email, index) => (
-                        <div key={`email-${index}`} className="flex items-center space-x-2">
-                          <Input
-                            type="email"
-                            placeholder="user@company.com"
-                            disabled={isPending}
-                            {...form.register(`alertManager.email.alertReceivers.${index}`)}
-                            className={
-                              form.formState.errors.alertManager?.email?.alertReceivers?.[index]
-                                ? "border-destructive"
-                                : ""
-                            }
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeEmailReceiver(index)}
-                            disabled={isPending}
-                          >
-                            Remove
-                          </Button>
+                      {(form.watch("alertManager.email.alertReceivers") || []).map((email, index) => (
+                        <div key={`email-${index}`} className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="email"
+                              placeholder="user@company.com"
+                              disabled={isPending}
+                              {...form.register(`alertManager.email.alertReceivers.${index}`)}
+                              className={
+                                form.formState.errors.alertManager?.email?.alertReceivers?.[index]
+                                  ? "border-destructive"
+                                  : ""
+                              }
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeEmailReceiver(index)}
+                              disabled={isPending}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                          {form.formState.errors.alertManager?.email?.alertReceivers?.[index] && (
+                            <p className="text-sm text-destructive">
+                              {form.formState.errors.alertManager.email.alertReceivers[index]?.message}
+                            </p>
+                          )}
                         </div>
                       ))}
                       <Button
@@ -381,6 +483,11 @@ export default function InstallMonitoringDialog({
                       >
                         Add Receiver
                       </Button>
+                      {getEmailReceiversError() && (
+                        <p className="text-sm text-destructive">
+                          {getEmailReceiversError()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
