@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { Integration, GetIntegrationsResponse } from "../schemas/integration";
+import { BackupStatusData, BackupCheckpoint } from "../schemas/backup";
 
 export const getIntegrations = async (
   stackId: string
@@ -83,4 +84,41 @@ export const registerDaoCandidateIntegration = async (
     `stacks/thanos/${stackId}/integrations/register-candidate`,
     body
   );
+};
+
+export const getBackupStatus = async (
+  stackId: string
+): Promise<BackupStatusData> => {
+  const response = await apiGet<BackupStatusData>(
+    `stacks/thanos/${stackId}/integrations/backup/status/db`
+  );
+  return response.data;
+};
+
+export const getBackupCheckpoints = async (
+  stackId: string,
+  limit: number = 3
+): Promise<BackupCheckpoint[]> => {
+  const response = await apiGet<BackupCheckpoint[]>(
+    `stacks/thanos/${stackId}/integrations/backup/checkpoints/db?limit=${limit}`
+  );
+  return response.data;
+};
+
+export const createBackupSnapshot = async (
+  stackId: string
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/backup/snapshot`);
+};
+
+export interface ConfigureBackupRequestBody {
+  daily: string;
+  keep: string;
+}
+
+export const configureBackup = async (
+  stackId: string,
+  body: ConfigureBackupRequestBody
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/backup/configure`, body);
 };

@@ -7,6 +7,9 @@ import {
   installMonitoringIntegration,
   registerDaoCandidateIntegration,
   uninstallMonitoringIntegration,
+  createBackupSnapshot,
+  configureBackup,
+  ConfigureBackupRequestBody,
 } from "../services/integrationService";
 import { queryClient } from "@/providers/query-provider";
 import { integrationKeys } from "./queries";
@@ -234,6 +237,80 @@ export const useRegisterDaoCandidateMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to register DAO Candidate", {
         id: "register-dao-candidate",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useCreateBackupSnapshotMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ stackId }: { stackId: string }) =>
+      createBackupSnapshot(stackId),
+    onMutate: () => {
+      toast.loading("Creating backup snapshot...", {
+        id: "create-snapshot",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Backup snapshot creation initiated", {
+        id: "create-snapshot",
+      });
+      // Invalidate both backup status and checkpoints to refresh the data
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.backupStatus(variables.stackId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.backupCheckpoints(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create backup snapshot", {
+        id: "create-snapshot",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export interface ConfigureBackupVariables {
+  stackId: string;
+  daily: string;
+  keep: string;
+}
+
+export const useConfigureBackupMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: ConfigureBackupVariables) =>
+      configureBackup(variables.stackId, {
+        daily: variables.daily,
+        keep: variables.keep,
+      }),
+    onMutate: () => {
+      toast.loading("Updating backup configuration...", {
+        id: "configure-backup",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Backup configuration updated successfully", {
+        id: "configure-backup",
+      });
+      // Invalidate backup status to refresh the configuration data
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.backupStatus(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update backup configuration", {
+        id: "configure-backup",
       });
       options?.onError?.(error);
     },

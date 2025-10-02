@@ -10,5 +10,8 @@ export { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard
 export { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 export { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
 
+// Backup components
+export * from "./backup";
+
 // Shared types
 export * from "./types";

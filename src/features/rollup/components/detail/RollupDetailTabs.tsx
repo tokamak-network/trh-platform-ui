@@ -12,6 +12,7 @@ import {
   LogsTab,
   DeploymentsTab,
   MetadataTab,
+  BackupTab,
 } from "./tabs";
 import { ComponentsTab } from "@/features/integrations";
 
@@ -44,7 +45,7 @@ export function RollupDetailTabs({
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-5 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+      <TabsList className="grid w-full grid-cols-6 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
         <TabsTrigger
           value="overview"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -74,6 +75,12 @@ export function RollupDetailTabs({
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
           Metadata
+        </TabsTrigger>
+        <TabsTrigger
+          value="backup"
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+        >
+          Backup
         </TabsTrigger>
         <TabsTrigger
           value="settings"
@@ -122,6 +129,11 @@ export function RollupDetailTabs({
       {/* Logs Tab */}
       <TabsContent value="logs" className="space-y-6">
         <LogsTab stack={stack} />
+      </TabsContent>
+
+      {/* Backup Tab */}
+      <TabsContent value="backup" className="space-y-6">
+        <BackupTab stack={stack} />
       </TabsContent>
     </Tabs>
   );
