@@ -36,9 +36,10 @@ import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterC
 
 interface IntegrationCardProps {
   integration: Integration;
+  stackId: string;
 }
 
-export function IntegrationCard({ integration }: IntegrationCardProps) {
+export function IntegrationCard({ integration, stackId }: IntegrationCardProps) {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
@@ -132,7 +133,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
       case "block-explorer":
         return <BlockExplorerCard {...commonProps} />;
       case "monitoring":
-        return <MonitoringCard {...commonProps} />;
+        return <MonitoringCard {...commonProps} stackId={stackId} />;
       case "register-candidate":
         return <RegisterCandidateCard {...commonProps} />;
       default:

@@ -84,3 +84,11 @@ export const registerDaoCandidateIntegration = async (
     body
   );
 };
+
+export const disableEmailAlert = async (stackId: string): Promise<void> => {
+  await apiDelete(`stacks/thanos/${stackId}/integrations/monitoring/disable-email`);
+};
+
+export const disableTelegramAlert = async (stackId: string): Promise<void> => {
+  await apiDelete(`stacks/thanos/${stackId}/integrations/monitoring/disable-telegram`);
+};

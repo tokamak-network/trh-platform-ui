@@ -7,6 +7,8 @@ import {
   installMonitoringIntegration,
   registerDaoCandidateIntegration,
   uninstallMonitoringIntegration,
+  disableEmailAlert,
+  disableTelegramAlert,
 } from "../services/integrationService";
 import { queryClient } from "@/providers/query-provider";
 import { integrationKeys } from "./queries";
@@ -234,6 +236,66 @@ export const useRegisterDaoCandidateMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to register DAO Candidate", {
         id: "register-dao-candidate",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useDisableEmailAlertMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ stackId }: { stackId: string }) =>
+      disableEmailAlert(stackId),
+    onMutate: () => {
+      toast.loading("Disabling email alerts...", {
+        id: "disable-email-alert",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Email alerts disabled successfully", {
+        id: "disable-email-alert",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to disable email alerts", {
+        id: "disable-email-alert",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useDisableTelegramAlertMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ stackId }: { stackId: string }) =>
+      disableTelegramAlert(stackId),
+    onMutate: () => {
+      toast.loading("Disabling telegram alerts...", {
+        id: "disable-telegram-alert",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Telegram alerts disabled successfully", {
+        id: "disable-telegram-alert",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to disable telegram alerts", {
+        id: "disable-telegram-alert",
       });
       options?.onError?.(error);
     },
