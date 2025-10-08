@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, CheckCircle, ExternalLink, Trash2 } from "lucide-react";
+import { Copy, CheckCircle, ExternalLink, Trash2, Settings } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +13,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useDisableEmailAlertMutation, useDisableTelegramAlertMutation } from "../api/mutations";
+import { 
+  useDisableEmailAlertMutation, 
+  useDisableTelegramAlertMutation,
+  useConfigureTelegramAlertMutation,
+  useConfigureEmailAlertMutation,
+} from "../api/mutations";
+import ConfigureTelegramAlertDialog, { TelegramAlertFormData } from "./ConfigureTelegramAlertDialog";
+import ConfigureEmailAlertDialog, { EmailAlertFormData } from "./ConfigureEmailAlertDialog";
 
 interface MonitoringCardProps {
   integration: {
@@ -51,6 +58,8 @@ interface MonitoringCardProps {
 export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboard }: MonitoringCardProps) {
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [showTelegramConfirm, setShowTelegramConfirm] = useState(false);
+  const [showConfigureTelegram, setShowConfigureTelegram] = useState(false);
+  const [showConfigureEmail, setShowConfigureEmail] = useState(false);
   
   const disableEmailMutation = useDisableEmailAlertMutation({
     onSuccess: () => setShowEmailConfirm(false),
@@ -60,6 +69,14 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
     onSuccess: () => setShowTelegramConfirm(false),
     onError: () => setShowTelegramConfirm(false),
   });
+  const configureTelegramMutation = useConfigureTelegramAlertMutation({
+    onSuccess: () => setShowConfigureTelegram(false),
+    onError: () => setShowConfigureTelegram(false),
+  });
+  const configureEmailMutation = useConfigureEmailAlertMutation({
+    onSuccess: () => setShowConfigureEmail(false),
+    onError: () => setShowConfigureEmail(false),
+  });
 
   const handleDisableEmail = () => {
     disableEmailMutation.mutate({ stackId });
@@ -67,6 +84,24 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
 
   const handleDisableTelegram = () => {
     disableTelegramMutation.mutate({ stackId });
+  };
+
+  const handleConfigureTelegram = (data: TelegramAlertFormData) => {
+    configureTelegramMutation.mutate({
+      stackId,
+      apiToken: data.apiToken,
+      criticalReceivers: data.criticalReceivers,
+    });
+  };
+
+  const handleConfigureEmail = (data: EmailAlertFormData) => {
+    configureEmailMutation.mutate({
+      stackId,
+      smtpSmarthost: data.smtpSmarthost,
+      smtpFrom: data.smtpFrom,
+      smtpAuthPassword: data.smtpAuthPassword,
+      alertReceivers: data.alertReceivers,
+    });
   };
 
   return (
@@ -170,26 +205,38 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
         )}
       </div>
 
-      {integration.info?.alert_manager && (
-        <div className="border-t pt-3">
-          <h4 className="font-medium text-gray-900 mb-2">Alert Manager</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      {/* Alert Manager Section */}
+      <div className="border-t pt-3">
+        <h4 className="font-medium text-gray-900 mb-2">Alert Manager</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             {integration.info?.alert_manager?.email && (
               <div className="p-3 rounded-lg bg-gray-50 border">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-medium text-gray-700">Email Alerts</div>
-                  {integration.info?.alert_manager?.email?.enabled && (
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowEmailConfirm(true)}
-                      disabled={disableEmailMutation.isPending}
-                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Disable email alerts"
+                      onClick={() => setShowConfigureEmail(true)}
+                      disabled={configureEmailMutation.isPending}
+                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      title="Configure email alerts"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Settings className="w-3 h-3" />
                     </Button>
-                  )}
+                    {integration.info?.alert_manager?.email?.enabled && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowEmailConfirm(true)}
+                        disabled={disableEmailMutation.isPending}
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Disable email alerts"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div>
@@ -240,18 +287,30 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
               <div className="p-3 rounded-lg bg-gray-50 border">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-medium text-gray-700">Telegram Alerts</div>
-                  {integration.info?.alert_manager?.telegram?.enabled && (
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowTelegramConfirm(true)}
-                      disabled={disableTelegramMutation.isPending}
-                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Disable telegram alerts"
+                      onClick={() => setShowConfigureTelegram(true)}
+                      disabled={configureTelegramMutation.isPending}
+                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      title="Configure telegram alerts"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Settings className="w-3 h-3" />
                     </Button>
-                  )}
+                    {integration.info?.alert_manager?.telegram?.enabled && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowTelegramConfirm(true)}
+                        disabled={disableTelegramMutation.isPending}
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Disable telegram alerts"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div>
@@ -284,9 +343,9 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
                 </div>
               </div>
             )}
-          </div>
+
         </div>
-      )}
+      </div>
 
       {integration.log_path && (
         <div className="border-t pt-3">
@@ -358,6 +417,32 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Configure Telegram Alert Dialog */}
+      <ConfigureTelegramAlertDialog
+        open={showConfigureTelegram}
+        onOpenChange={setShowConfigureTelegram}
+        onSubmit={handleConfigureTelegram}
+        isPending={configureTelegramMutation.isPending}
+        initialData={{
+          apiToken: integration.info?.alert_manager?.telegram?.apiToken,
+          criticalReceivers: integration.info?.alert_manager?.telegram?.criticalReceivers,
+        }}
+      />
+
+      {/* Configure Email Alert Dialog */}
+      <ConfigureEmailAlertDialog
+        open={showConfigureEmail}
+        onOpenChange={setShowConfigureEmail}
+        onSubmit={handleConfigureEmail}
+        isPending={configureEmailMutation.isPending}
+        initialData={{
+          smtpSmarthost: integration.info?.alert_manager?.email?.smtpSmarthost,
+          smtpFrom: integration.info?.alert_manager?.email?.smtpFrom,
+          smtpAuthPassword: integration.info?.alert_manager?.email?.smtpAuthPassword,
+          alertReceivers: integration.info?.alert_manager?.email?.alertReceivers,
+        }}
+      />
     </div>
   );
 }
