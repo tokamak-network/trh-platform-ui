@@ -247,7 +247,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {integrations.map((integration) => (
-              <IntegrationCard key={integration.id} integration={integration} />
+              <IntegrationCard key={integration.id} integration={integration} stackId={stack?.id || ""} />
             ))}
           </div>
         )}

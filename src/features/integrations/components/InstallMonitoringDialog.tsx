@@ -37,9 +37,9 @@ const monitoringSchema = z.object({
     telegram: z.object({
       enabled: z.boolean(),
       apiToken: z.string().optional(),
-      criticalReceivers: z.array(z.object({
+      criticalReceiver: z.object({
         chatId: z.string().min(1, { message: "Chat ID is required" })
-      })).optional()
+      }).optional()
     }),
     email: z.object({
       enabled: z.boolean(),
@@ -100,7 +100,24 @@ const monitoringSchema = z.object({
   path: ["alertManager", "email", "smtpAuthPassword"]
 });
 
-export type MonitoringFormData = z.infer<typeof monitoringSchema>;
+type InternalMonitoringFormData = z.infer<typeof monitoringSchema>;
+
+export type MonitoringFormData = Omit<InternalMonitoringFormData, 'alertManager'> & {
+  alertManager: {
+    telegram: {
+      enabled: boolean;
+      apiToken?: string;
+      criticalReceivers: Array<{ chatId: string }>;
+    };
+    email: {
+      enabled: boolean;
+      smtpSmarthost?: string;
+      smtpFrom?: string;
+      smtpAuthPassword?: string;
+      alertReceivers?: string[];
+    };
+  };
+};
 
 interface InstallMonitoringDialogProps {
   readonly open: boolean;
@@ -115,7 +132,7 @@ export default function InstallMonitoringDialog({
   onSubmit,
   isPending = false,
 }: InstallMonitoringDialogProps) {
-  const form = useForm<MonitoringFormData>({
+  const form = useForm<InternalMonitoringFormData>({
     resolver: zodResolver(monitoringSchema),
     defaultValues: {
       grafanaPassword: "",
@@ -124,7 +141,7 @@ export default function InstallMonitoringDialog({
         telegram: {
           enabled: false,
           apiToken: "",
-          criticalReceivers: []
+          criticalReceiver: { chatId: "" }
         },
         email: {
           enabled: false,
@@ -143,15 +160,28 @@ export default function InstallMonitoringDialog({
 
   const handleSubmit = form.handleSubmit((data) => {
     // Check for custom validation errors before proceeding
-    const telegramError = getTelegramReceiversError();
     const emailError = getEmailReceiversError();
     
-    if (telegramError || emailError) {
+    if (emailError) {
       // Don't proceed if there are validation errors
       return;
     }
     
-    setPendingData(data);
+    // Convert single telegram receiver to array format for API compatibility
+    const apiData = {
+      ...data,
+      alertManager: {
+        ...data.alertManager,
+        telegram: {
+          ...data.alertManager.telegram,
+          criticalReceivers: data.alertManager.telegram.criticalReceiver?.chatId 
+            ? [{ chatId: data.alertManager.telegram.criticalReceiver.chatId }]
+            : []
+        }
+      }
+    };
+    
+    setPendingData(apiData);
     setConfirmOpen(true);
   });
 
@@ -167,22 +197,6 @@ export default function InstallMonitoringDialog({
     onOpenChange(next);
   };
 
-  const addTelegramReceiver = () => {
-    const currentReceivers = form.getValues("alertManager.telegram.criticalReceivers") || [];
-    form.setValue("alertManager.telegram.criticalReceivers", [
-      ...currentReceivers,
-      { chatId: "" }
-    ]);
-    // Clear any array-level error when adding a receiver
-    form.clearErrors("alertManager.telegram.criticalReceivers");
-  };
-
-  const removeTelegramReceiver = (index: number) => {
-    const currentReceivers = form.getValues("alertManager.telegram.criticalReceivers") || [];
-    form.setValue("alertManager.telegram.criticalReceivers", 
-      currentReceivers.filter((_, i) => i !== index)
-    );
-  };
 
   const addEmailReceiver = () => {
     const currentReceivers = form.getValues("alertManager.email.alertReceivers") || [];
@@ -199,15 +213,6 @@ export default function InstallMonitoringDialog({
   };
 
   // Custom validation helpers
-  const getTelegramReceiversError = () => {
-    const telegramEnabled = form.watch("alertManager.telegram.enabled");
-    const receivers = form.watch("alertManager.telegram.criticalReceivers");
-    
-    if (telegramEnabled && (!receivers || receivers.length === 0)) {
-      return "At least one chat ID is required when Telegram alerts are enabled";
-    }
-    return null;
-  };
 
   const getEmailReceiversError = () => {
     const emailEnabled = form.watch("alertManager.email.enabled");
@@ -313,49 +318,20 @@ export default function InstallMonitoringDialog({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Critical Receivers (Chat IDs)</Label>
-                      {(form.watch("alertManager.telegram.criticalReceivers") || []).map((receiver, index) => (
-                        <div key={`telegram-${index}`} className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              placeholder="123456789"
-                              disabled={isPending}
-                              {...form.register(`alertManager.telegram.criticalReceivers.${index}.chatId`)}
-                              className={
-                                form.formState.errors.alertManager?.telegram?.criticalReceivers?.[index]?.chatId
-                                  ? "border-destructive"
-                                  : ""
-                              }
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeTelegramReceiver(index)}
-                              disabled={isPending}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                          {form.formState.errors.alertManager?.telegram?.criticalReceivers?.[index]?.chatId && (
-                            <p className="text-sm text-destructive">
-                              {form.formState.errors.alertManager.telegram.criticalReceivers[index]?.chatId?.message}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addTelegramReceiver}
+                      <Label>Critical Receiver (Chat ID)</Label>
+                      <Input
+                        placeholder="123456789"
                         disabled={isPending}
-                      >
-                        Add Receiver
-                      </Button>
-                      {getTelegramReceiversError() && (
+                        {...form.register("alertManager.telegram.criticalReceiver.chatId")}
+                        className={
+                          form.formState.errors.alertManager?.telegram?.criticalReceiver?.chatId
+                            ? "border-destructive"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.alertManager?.telegram?.criticalReceiver?.chatId && (
                         <p className="text-sm text-destructive">
-                          {getTelegramReceiversError()}
+                          {form.formState.errors.alertManager.telegram.criticalReceiver.chatId.message}
                         </p>
                       )}
                     </div>
