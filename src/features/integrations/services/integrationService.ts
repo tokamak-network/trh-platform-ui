@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { Integration, GetIntegrationsResponse } from "../schemas/integration";
 
 export const getIntegrations = async (
@@ -83,4 +83,38 @@ export const registerDaoCandidateIntegration = async (
     `stacks/thanos/${stackId}/integrations/register-candidate`,
     body
   );
+};
+
+export const disableEmailAlert = async (stackId: string): Promise<void> => {
+  await apiDelete(`stacks/thanos/${stackId}/integrations/monitoring/disable-email`);
+};
+
+export const disableTelegramAlert = async (stackId: string): Promise<void> => {
+  await apiDelete(`stacks/thanos/${stackId}/integrations/monitoring/disable-telegram`);
+};
+
+export interface ConfigureTelegramAlertRequestBody {
+  apiToken: string;
+  criticalReceivers: Array<{ ChatId: string }>;
+}
+
+export const configureTelegramAlert = async (
+  stackId: string,
+  body: ConfigureTelegramAlertRequestBody
+): Promise<void> => {
+  await apiPut(`stacks/thanos/${stackId}/integrations/monitoring/telegram`, body);
+};
+
+export interface ConfigureEmailAlertRequestBody {
+  smtpSmarthost: string;
+  smtpFrom: string;
+  smtpAuthPassword: string;
+  alertReceivers: string[];
+}
+
+export const configureEmailAlert = async (
+  stackId: string,
+  body: ConfigureEmailAlertRequestBody
+): Promise<void> => {
+  await apiPut(`stacks/thanos/${stackId}/integrations/monitoring/email`, body);
 };

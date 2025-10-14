@@ -7,6 +7,10 @@ import {
   installMonitoringIntegration,
   registerDaoCandidateIntegration,
   uninstallMonitoringIntegration,
+  disableEmailAlert,
+  disableTelegramAlert,
+  configureTelegramAlert,
+  configureEmailAlert,
 } from "../services/integrationService";
 import { queryClient } from "@/providers/query-provider";
 import { integrationKeys } from "./queries";
@@ -234,6 +238,148 @@ export const useRegisterDaoCandidateMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to register DAO Candidate", {
         id: "register-dao-candidate",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useDisableEmailAlertMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ stackId }: { stackId: string }) =>
+      disableEmailAlert(stackId),
+    onMutate: () => {
+      toast.loading("Disabling email alerts...", {
+        id: "disable-email-alert",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Email alerts disabled successfully", {
+        id: "disable-email-alert",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to disable email alerts", {
+        id: "disable-email-alert",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useDisableTelegramAlertMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ stackId }: { stackId: string }) =>
+      disableTelegramAlert(stackId),
+    onMutate: () => {
+      toast.loading("Disabling telegram alerts...", {
+        id: "disable-telegram-alert",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Telegram alerts disabled successfully", {
+        id: "disable-telegram-alert",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to disable telegram alerts", {
+        id: "disable-telegram-alert",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export interface ConfigureTelegramAlertVariables {
+  stackId: string;
+  apiToken: string;
+  criticalReceivers: Array<{ ChatId: string }>;
+}
+
+export const useConfigureTelegramAlertMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: ConfigureTelegramAlertVariables) =>
+      configureTelegramAlert(variables.stackId, {
+        apiToken: variables.apiToken,
+        criticalReceivers: variables.criticalReceivers,
+      }),
+    onMutate: () => {
+      toast.loading("Configuring Telegram alerts...", {
+        id: "configure-telegram-alert",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Telegram alerts configured successfully", {
+        id: "configure-telegram-alert",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to configure Telegram alerts", {
+        id: "configure-telegram-alert",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export interface ConfigureEmailAlertVariables {
+  stackId: string;
+  smtpSmarthost: string;
+  smtpFrom: string;
+  smtpAuthPassword: string;
+  alertReceivers: string[];
+}
+
+export const useConfigureEmailAlertMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: ConfigureEmailAlertVariables) =>
+      configureEmailAlert(variables.stackId, {
+        smtpSmarthost: variables.smtpSmarthost,
+        smtpFrom: variables.smtpFrom,
+        smtpAuthPassword: variables.smtpAuthPassword,
+        alertReceivers: variables.alertReceivers,
+      }),
+    onMutate: () => {
+      toast.loading("Configuring email alerts...", {
+        id: "configure-email-alert",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Email alerts configured successfully", {
+        id: "configure-email-alert",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to configure email alerts", {
+        id: "configure-email-alert",
       });
       options?.onError?.(error);
     },

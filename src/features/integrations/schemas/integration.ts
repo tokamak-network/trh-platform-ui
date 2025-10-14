@@ -5,17 +5,17 @@ export interface IntegrationInfo {
   password?: string;
   // AlertManager configuration snapshot returned by API
   alert_manager?: {
-    Email?: {
-      Enabled: boolean;
-      SmtpFrom: string;
-      SmtpSmarthost: string;
-      AlertReceivers: string[];
-      SmtpAuthPassword: string;
+    email?: {
+      enabled: boolean;
+      smtpFrom: string;
+      smtpSmarthost: string;
+      alertReceivers: string[];
+      smtpAuthPassword: string;
     };
-    Telegram?: {
-      Enabled: boolean;
-      ApiToken: string;
-      CriticalReceivers: {
+    telegram?: {
+      enabled: boolean;
+      apiToken: string;
+      criticalReceivers: {
         ChatId: string;
       }[];
     };
