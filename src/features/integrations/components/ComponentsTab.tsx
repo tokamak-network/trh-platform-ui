@@ -280,7 +280,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                   </div>
                   {(() => {
                     const isInstalled = integrations.some(
-                      (i) => i.type === type
+                      (i) => i.type === type && i.status === "Completed"
                     );
                     return (
                       <div className="flex items-center justify-between gap-2">
