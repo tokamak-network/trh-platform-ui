@@ -27,6 +27,9 @@ import {
   useInstallBlockExplorerMutation,
   useInstallMonitoringMutation,
   useRegisterDaoCandidateMutation,
+  useInstallCrossChainBridgeMutation,
+  useInstallCrossTradeL2ToL1Mutation,
+  useInstallCrossTradeL2ToL2Mutation,
 } from "../api";
 import InstallBridgeDialog from "./InstallBridgeDialog";
 import InstallBlockExplorerDialog, {
@@ -38,6 +41,10 @@ import InstallMonitoringDialog, {
 import InstallDaoCandidateDialog, {
   DaoCandidateFormData,
 } from "./InstallDaoCandidateDialog";
+import InstallCrossTradeDialog, {
+  InstallCrossChainBridgeFormData,
+} from "./InstallCrossTradeDialog";
+import { InstallCrossChainBridgeRequestBody } from "../services/integrationService";
 
 export function ComponentsTab({ stack }: RollupDetailTabProps) {
   const {
@@ -53,11 +60,17 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
   const installBlockExplorerMutation = useInstallBlockExplorerMutation();
   const installMonitoringMutation = useInstallMonitoringMutation();
   const installDaoCandidateMutation = useRegisterDaoCandidateMutation();
+  const installCrossChainBridgeMutation = useInstallCrossChainBridgeMutation();
+  const installCrossTradeL2ToL1Mutation = useInstallCrossTradeL2ToL1Mutation();
+  const installCrossTradeL2ToL2Mutation = useInstallCrossTradeL2ToL2Mutation();
   const isAnyInstallPending =
     installBridgeMutation.isPending ||
     installBlockExplorerMutation.isPending ||
     installMonitoringMutation.isPending ||
-    installDaoCandidateMutation.isPending;
+    installDaoCandidateMutation.isPending ||
+    installCrossChainBridgeMutation.isPending ||
+    installCrossTradeL2ToL1Mutation.isPending ||
+    installCrossTradeL2ToL2Mutation.isPending;
   const [installType, setInstallType] = useState<Integration["type"] | null>(
     null
   );
@@ -322,6 +335,14 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                                       setInstallType(
                                         type as Integration["type"]
                                       );
+                                    } else if (type === "cross-trade-l2-to-l1") {
+                                      setInstallType(
+                                        type as Integration["type"]
+                                      );
+                                    } else if (type === "cross-trade-l2-to-l2") {
+                                      setInstallType(
+                                        type as Integration["type"]
+                                      );
                                     } else {
                                       console.log(
                                         "Install integration (coming soon)",
@@ -425,6 +446,50 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
               amount: data.amount,
               memo: data.memo,
               nameInfo: data.nameInfo,
+            },
+            { onSettled: () => setInstallType(null) }
+          );
+        }}
+      />
+
+    
+
+      <InstallCrossTradeDialog
+        open={installType === "cross-trade-l2-to-l1"}
+        onOpenChange={(open) => !open && setInstallType(null)}
+        isPending={installCrossTradeL2ToL1Mutation.isPending}
+        mode="l2_to_l1"
+        currentChainRpcUrl={stack?.metadata?.l2RpcUrl}
+        currentChainId={stack?.metadata?.l2ChainId}
+        onSubmit={(data: InstallCrossChainBridgeRequestBody) => {
+          if (!stack) return;
+          installCrossTradeL2ToL1Mutation.mutate(
+            {
+              stackId: stack.id,
+              projectId: data.projectId,
+              l1ChainConfig: data.l1ChainConfig,
+              l2ChainConfig: data.l2ChainConfig,
+            },
+            { onSettled: () => setInstallType(null) }
+          );
+        }}
+      />
+
+      <InstallCrossTradeDialog
+        open={installType === "cross-trade-l2-to-l2"}
+        onOpenChange={(open) => !open && setInstallType(null)}
+        isPending={installCrossTradeL2ToL2Mutation.isPending}
+        mode="l2_to_l2"
+        currentChainRpcUrl={stack?.metadata?.l2RpcUrl}
+        currentChainId={stack?.metadata?.l2ChainId}
+        onSubmit={(data: InstallCrossChainBridgeRequestBody) => {
+          if (!stack) return;
+          installCrossTradeL2ToL2Mutation.mutate(
+            {
+              stackId: stack.id,
+              projectId: data.projectId,
+              l1ChainConfig: data.l1ChainConfig,
+              l2ChainConfig: data.l2ChainConfig,
             },
             { onSettled: () => setInstallType(null) }
           );
