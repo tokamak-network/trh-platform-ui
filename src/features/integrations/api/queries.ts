@@ -10,6 +10,6 @@ export const useIntegrationsQuery = (stackId: string) => {
     queryKey: integrationKeys.list(stackId),
     queryFn: () => getIntegrations(stackId),
     enabled: !!stackId,
-    refetchInterval: 120000, // 2 minutes
+    refetchInterval: 10000, // 10 seconds
   });
 };

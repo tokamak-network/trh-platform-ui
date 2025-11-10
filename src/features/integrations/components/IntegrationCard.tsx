@@ -34,6 +34,8 @@ import { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
+import { CrossTradeCard } from "./CrossTrade";
+import { CrossTradeCompactInfo } from "./CrossTradeCard";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -44,7 +46,30 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
-  const integrationType = INTEGRATION_TYPES[integration.type];
+  
+  // Normalize integration type - handle old "cross-trade" type from API
+  const normalizedType: Exclude<Integration["type"], "cross-trade"> = (() => {
+    if (integration.type === "cross-trade") {
+      // If it's the old "cross-trade" type, determine the mode from contracts
+      const mode = integration.info?.contracts?.mode;
+      if (mode === "l2_to_l1") {
+        return "cross-trade-l2-to-l1";
+      } else if (mode === "l2_to_l2") {
+        return "cross-trade-l2-to-l2";
+      }
+      // Default to l2_to_l1 if mode is not available
+      return "cross-trade-l2-to-l1";
+    }
+    return integration.type as Exclude<Integration["type"], "cross-trade">;
+  })();
+  
+  const integrationType = INTEGRATION_TYPES[normalizedType] || {
+    label: integration.type,
+    description: "Unknown integration type",
+    icon: "❓",
+    color: "from-gray-500 to-gray-400",
+  };
+  
   const uninstallMutation = useUninstallIntegrationMutation({
     onSuccess: () => setShowUninstallConfirm(false),
     onError: () => setShowUninstallConfirm(false),
@@ -128,7 +153,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
       copyToClipboard,
     };
 
-    switch (integration.type) {
+    switch (normalizedType) {
       case "bridge":
         return <BridgeCard {...commonProps} />;
       case "system-pulse":
@@ -139,6 +164,9 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <MonitoringCard {...commonProps} stackId={stackId} />;
       case "register-candidate":
         return <RegisterCandidateCard {...commonProps} />;
+      case "cross-trade-l2-to-l1":
+      case "cross-trade-l2-to-l2":
+        return <CrossTradeCard {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -151,7 +179,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
   const renderCompactInfo = () => {
     const commonProps = { integration };
 
-    switch (integration.type) {
+    switch (normalizedType) {
       case "bridge":
         return <BridgeCompactInfo {...commonProps} />;
       case "system-pulse":
@@ -162,6 +190,9 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <MonitoringCompactInfo {...commonProps} />;
       case "register-candidate":
         return <RegisterCandidateCompactInfo {...commonProps} />;
+      case "cross-trade-l2-to-l1":
+      case "cross-trade-l2-to-l2":
+        return <CrossTradeCompactInfo {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -196,7 +227,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                 {getStatusIcon()}
                 {StatusText()}
               </Badge>
-              {integration.type !== "register-candidate" && (
+              {normalizedType !== "register-candidate" && (
                 <Button
                   aria-label="Uninstall"
                   variant="destructive"
@@ -238,8 +269,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
             <AlertDialogDescription>
               {`Are you sure you want to uninstall ${
                 INTEGRATION_TYPES_CONST[
-                  integration.type as keyof typeof INTEGRATION_TYPES_CONST
-                ].label
+                  normalizedType as keyof typeof INTEGRATION_TYPES_CONST
+                ]?.label || integrationType.label
               }? This will initiate the uninstall process.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -250,12 +281,13 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700 text-white"
               disabled={uninstallMutation.isPending}
-              onClick={() =>
+              onClick={() => {
                 uninstallMutation.mutate({
                   stackId: integration.stack_id,
-                  type: integration.type,
-                })
-              }
+                  type: normalizedType,
+                  id: integration.id,
+                });
+              }}
             >
               Uninstall
             </AlertDialogAction>

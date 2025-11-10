@@ -12,9 +12,26 @@ export const getIntegrations = async (
 
 export const uninstallIntegration = async (
   stackId: string,
-  type: Integration["type"]
+  type: Integration["type"],
+  id?: string
 ): Promise<void> => {
-  await apiDelete(`stacks/thanos/${stackId}/integrations/${type}`);
+  // Map cross-trade types (old and new) to the same API endpoint
+  let apiType: string = type;
+  let url: string;
+  
+  if (type === "cross-trade-l2-to-l1" || type === "cross-trade-l2-to-l2") {
+    apiType = "cross-trade";
+    // Include id in URL for cross-trade uninstall
+    if (id) {
+      url = `stacks/thanos/${stackId}/integrations/${apiType}/${id}`;
+    } else {
+      url = `stacks/thanos/${stackId}/integrations/${apiType}`;
+    }
+  } else {
+    url = `stacks/thanos/${stackId}/integrations/${apiType}`;
+  }
+  
+  await apiDelete(url);
 };
 
 export const uninstallMonitoringIntegration = async (
@@ -89,6 +106,75 @@ export const registerDaoCandidateIntegration = async (
     `stacks/thanos/${stackId}/integrations/register-candidate`,
     body
   );
+};
+
+export interface InstallCrossChainBridgeRequestBody {
+  mode: "l2_to_l1" | "l2_to_l2";
+  projectId: string;
+  l1ChainConfig: {
+    rpc: string;
+    chainId: number;
+    privateKey: string;
+    isDeployedNew: boolean;
+    deploymentScriptPath?: string;
+    contractName?: string;
+    blockExplorerConfig?: {
+      apiKey?: string;
+      url: string;
+      type: string;
+    } | null;
+    crossTradeProxyAddress?: string;
+    crossTradeAddress?: string;
+  };
+  l2ChainConfig: Array<{
+    rpc: string;
+    chainId: number;
+    privateKey: string;
+    isDeployedNew: boolean;
+    deploymentScriptPath?: string;
+    contractName?: string;
+    blockExplorerConfig?: {
+      apiKey?: string;
+      url: string;
+      type: string;
+    } | null;
+    crossDomainMessenger: string; // required
+    crossTradeProxyAddress?: string;
+    crossTradeAddress?: string;
+    nativeTokenAddress: string; // required
+    l1StandardBridgeAddress: string; // required
+    l1UsdcBridgeAddress: string; // required
+    l1CrossDomainMessenger: string; // required
+    l1Tokens?: Record<string, string>; // token name -> L1 address
+    l2Tokens?: Record<string, string>; // token name -> L2 address
+  }>;
+}
+
+export const installCrossChainBridgeIntegration = async (
+  stackId: string,
+  body: InstallCrossChainBridgeRequestBody
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/cross-trade`, body);
+};
+
+export const installCrossTradeL2ToL1Integration = async (
+  stackId: string,
+  body: Omit<InstallCrossChainBridgeRequestBody, "mode">
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/cross-trade`, {
+    ...body,
+    mode: "l2_to_l1" as const,
+  });
+};
+
+export const installCrossTradeL2ToL2Integration = async (
+  stackId: string,
+  body: Omit<InstallCrossChainBridgeRequestBody, "mode">
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/cross-trade`, {
+    ...body,
+    mode: "l2_to_l2" as const,
+  });
 };
 
 export const disableEmailAlert = async (stackId: string): Promise<void> => {
