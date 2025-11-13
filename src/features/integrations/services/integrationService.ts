@@ -32,7 +32,7 @@ export const installBridgeIntegration = async (
 export const installUptimeIntegration = async (
   stackId: string
 ): Promise<void> => {
-  await apiPost(`stacks/thanos/${stackId}/integrations/uptime`);
+  await apiPost(`stacks/thanos/${stackId}/integrations/uptime-service`);
 };
 
 export interface InstallBlockExplorerRequestBody {

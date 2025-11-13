@@ -37,7 +37,7 @@ export interface IntegrationInfo {
 export interface Integration {
   id: string;
   stack_id: string;
-  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate";
+  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "uptime-service";
   status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
@@ -73,5 +73,11 @@ export const INTEGRATION_TYPES = {
     description: "Staking/DAO candidate registration",
     icon: "🏛️",
     color: "from-orange-500 to-red-400",
+  },
+  "uptime-service": {
+    label: "Uptime",
+    description: "Uptime monitoring service",
+    icon: "⏱️",
+    color: "from-indigo-500 to-blue-400",
   },
 } as const;

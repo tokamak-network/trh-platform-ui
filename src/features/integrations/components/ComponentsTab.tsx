@@ -24,11 +24,13 @@ import { IntegrationCard } from "./IntegrationCard";
 import { INTEGRATION_TYPES, Integration } from "../schemas";
 import {
   useInstallBridgeMutation,
+  useInstallUptimeMutation,
   useInstallBlockExplorerMutation,
   useInstallMonitoringMutation,
   useRegisterDaoCandidateMutation,
 } from "../api";
 import InstallBridgeDialog from "./InstallBridgeDialog";
+import InstallUptimeDialog from "./InstallUptimeDialog";
 import InstallBlockExplorerDialog, {
   BlockExplorerFormData,
 } from "./InstallBlockExplorerDialog";
@@ -50,11 +52,13 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
   } = useIntegrationsQuery(stack?.id || "");
 
   const installBridgeMutation = useInstallBridgeMutation();
+  const installUptimeMutation = useInstallUptimeMutation();
   const installBlockExplorerMutation = useInstallBlockExplorerMutation();
   const installMonitoringMutation = useInstallMonitoringMutation();
   const installDaoCandidateMutation = useRegisterDaoCandidateMutation();
   const isAnyInstallPending =
     installBridgeMutation.isPending ||
+    installUptimeMutation.isPending ||
     installBlockExplorerMutation.isPending ||
     installMonitoringMutation.isPending ||
     installDaoCandidateMutation.isPending;
@@ -310,6 +314,10 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                                       setInstallType(
                                         type as Integration["type"]
                                       );
+                                    } else if (type === "uptime-service") {
+                                      setInstallType(
+                                        type as Integration["type"]
+                                      );
                                     } else if (type === "block-explorer") {
                                       setInstallType(
                                         type as Integration["type"]
@@ -354,6 +362,19 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         onConfirm={() => {
           if (!stack) return;
           installBridgeMutation.mutate(
+            { stackId: stack.id },
+            { onSettled: () => setInstallType(null) }
+          );
+        }}
+      />
+
+      <InstallUptimeDialog
+        open={installType === "uptime-service"}
+        onOpenChange={(open) => !open && setInstallType(null)}
+        isPending={installUptimeMutation.isPending}
+        onConfirm={() => {
+          if (!stack) return;
+          installUptimeMutation.mutate(
             { stackId: stack.id },
             { onSettled: () => setInstallType(null) }
           );

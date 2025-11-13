@@ -26,7 +26,7 @@ export const useUninstallIntegrationMutation = (options?: {
       type,
     }: {
       stackId: string;
-      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate";
+      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "uptime-service";
     }) => uninstallIntegration(stackId, type),
     onMutate: () => {
       toast.loading("Uninstalling component...", {
