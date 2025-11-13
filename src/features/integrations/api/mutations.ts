@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import {
   uninstallIntegration,
   installBridgeIntegration,
+  installUptimeIntegration,
   installBlockExplorerIntegration,
   installMonitoringIntegration,
   registerDaoCandidateIntegration,
@@ -70,6 +71,32 @@ export const useInstallBridgeMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to install bridge", {
         id: "install-bridge",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useInstallUptimeMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ stackId }: { stackId: string }) =>
+      installUptimeIntegration(stackId),
+    onMutate: () => {
+      toast.loading("Installing Uptime...", { id: "install-uptime" });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Uptime installation initiated", { id: "install-uptime" });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to install uptime", {
+        id: "install-uptime",
       });
       options?.onError?.(error);
     },
