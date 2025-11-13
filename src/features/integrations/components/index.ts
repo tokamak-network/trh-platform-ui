@@ -7,6 +7,7 @@ export { ComponentsTab } from "./ComponentsTab";
 
 // Plugin-specific card components
 export { BridgeCard, BridgeCompactInfo } from "./BridgeCard";
+export { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 export { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 export { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 export { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";

@@ -30,6 +30,7 @@ import { INTEGRATION_TYPES as INTEGRATION_TYPES_CONST } from "../schemas";
 
 // Import plugin-specific components
 import { BridgeCard, BridgeCompactInfo } from "./BridgeCard";
+import { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
@@ -132,6 +133,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     switch (integration.type) {
       case "bridge":
         return <BridgeCard {...commonProps} />;
+      case "uptime-service":
+        return <UptimeCard {...commonProps} />;
       case "block-explorer":
         return <BlockExplorerCard {...commonProps} />;
       case "monitoring":
@@ -153,6 +156,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     switch (integration.type) {
       case "bridge":
         return <BridgeCompactInfo {...commonProps} />;
+      case "uptime-service":
+        return <UptimeCompactInfo {...commonProps} />;
       case "block-explorer":
         return <BlockExplorerCompactInfo {...commonProps} />;
       case "monitoring":
