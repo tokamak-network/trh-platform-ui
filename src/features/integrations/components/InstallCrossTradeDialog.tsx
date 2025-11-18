@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { InstallCrossChainBridgeRequestBody } from "../services/integrationService";
+import { getThanosStackById, getThanosDeployConfig, getThanosL1Contracts } from "../../rollup/services/rollupService";
 
 // Block Explorer Types
 type BlockExplorerType = "etherscan" | "blockscout";
@@ -269,6 +270,7 @@ interface InstallCrossTradeDialogProps {
   mode?: "l2_to_l1" | "l2_to_l2";
   currentChainRpcUrl?: string;
   currentChainId?: number;
+  stackId?: string;
 }
 
 const defaultL1Config = {
@@ -309,8 +311,12 @@ export default function InstallCrossTradeDialog({
   mode: propMode,
   currentChainRpcUrl,
   currentChainId,
+  stackId,
 }: InstallCrossTradeDialogProps) {
   const defaultMode = propMode || "l2_to_l1";
+  
+  // State for loading stack data
+  const [isLoadingStack, setIsLoadingStack] = React.useState(false);
   
   // Create the first L2 config with current chain defaults if available
   const firstL2Config = currentChainRpcUrl || currentChainId
@@ -335,16 +341,84 @@ export default function InstallCrossTradeDialog({
     },
   });
 
+  // Fetch L1 configuration from stack when dialog opens
+  React.useEffect(() => {
+    if (open && stackId) {
+      setIsLoadingStack(true);
+      Promise.all([
+        getThanosStackById(stackId),
+        getThanosDeployConfig(stackId).catch((error) => {
+          console.error("Failed to fetch deploy config:", error);
+          return null;
+        }),
+        getThanosL1Contracts(stackId).catch((error) => {
+          console.error("Failed to fetch L1 contracts:", error);
+          return null;
+        }),
+      ])
+        .then(([stack, deployConfig, l1Contracts]) => {
+          // Fill L1 RPC from stack config
+          if (stack.config?.l1RpcUrl) {
+            form.setValue("l1ChainConfig.rpc", stack.config.l1RpcUrl);
+          }
+          
+          // Fill L1 private key from adminAccount
+          if (stack.config?.adminAccount) {
+            form.setValue("l1ChainConfig.privateKey", stack.config.adminAccount);
+          }
+
+          // Fill L2 chain configuration (first chain only)
+          const currentL2Configs = form.getValues("l2ChainConfig");
+          if (currentL2Configs.length > 0) {
+            const firstL2Config = { ...currentL2Configs[0] };
+            
+            // Set CrossDomainMessenger to hardcoded value
+            firstL2Config.crossDomainMessenger = "0x4200000000000000000000000000000000000007";
+            
+            // Set Native Token Address from deploy config
+            if (deployConfig?.nativeTokenAddress) {
+              firstL2Config.nativeTokenAddress = deployConfig.nativeTokenAddress;
+            }
+            
+            // Set L1 contract addresses from contracts API
+            if (l1Contracts) {
+              if (l1Contracts.L1CrossDomainMessengerProxy) {
+                firstL2Config.l1CrossDomainMessenger = l1Contracts.L1CrossDomainMessengerProxy;
+              }
+              if (l1Contracts.L1StandardBridgeProxy) {
+                firstL2Config.l1StandardBridgeAddress = l1Contracts.L1StandardBridgeProxy;
+              }
+              if (l1Contracts.L1UsdcBridge) {
+                firstL2Config.l1UsdcBridgeAddress = l1Contracts.L1UsdcBridge;
+              }
+            }
+            
+            // Update the first L2 chain config
+            const updatedConfigs = [firstL2Config, ...currentL2Configs.slice(1)];
+            form.setValue("l2ChainConfig", updatedConfigs);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch stack data:", error);
+        })
+        .finally(() => {
+          setIsLoadingStack(false);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, stackId]);
+
   // Update first L2 chain with current chain values when dialog opens
   React.useEffect(() => {
     if (open && (currentChainRpcUrl || currentChainId !== undefined)) {
-      const updatedFirstConfig = {
-        ...defaultL2Config,
-        rpc: currentChainRpcUrl || "",
-        chainId: currentChainId || 0,
-      };
       const currentL2Configs = form.getValues("l2ChainConfig");
       if (currentL2Configs.length > 0) {
+        // Preserve existing values and only update RPC and chainId
+        const updatedFirstConfig = {
+          ...currentL2Configs[0],
+          rpc: currentChainRpcUrl || currentL2Configs[0].rpc || "",
+          chainId: currentChainId !== undefined ? currentChainId : currentL2Configs[0].chainId || 0,
+        };
         // Update the first L2 chain config
         const updatedConfigs = [
           updatedFirstConfig,
