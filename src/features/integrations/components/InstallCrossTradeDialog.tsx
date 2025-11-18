@@ -388,8 +388,8 @@ export default function InstallCrossTradeDialog({
               if (l1Contracts.L1StandardBridgeProxy) {
                 firstL2Config.l1StandardBridgeAddress = l1Contracts.L1StandardBridgeProxy;
               }
-              if (l1Contracts.L1UsdcBridge) {
-                firstL2Config.l1UsdcBridgeAddress = l1Contracts.L1UsdcBridge;
+              if (l1Contracts.L1UsdcBridgeProxy) {
+                firstL2Config.l1UsdcBridgeAddress = l1Contracts.L1UsdcBridgeProxy;
               }
             }
             
