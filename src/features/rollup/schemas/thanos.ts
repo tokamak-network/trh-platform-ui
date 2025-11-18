@@ -11,6 +11,8 @@ export interface ThanosStackMetadata {
   layer2?: string;
   l2RpcUrl?: string;
   bridgeUrl?: string;
+  l2L1CrossTradeUrl?: string;
+  l2L2CrossTradeUrl?: string;
   l1ChainId?: number;
   l2ChainId?: number;
   grafanaUrl?: string;
