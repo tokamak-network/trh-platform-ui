@@ -27,7 +27,6 @@ import {
   useInstallBlockExplorerMutation,
   useInstallMonitoringMutation,
   useRegisterDaoCandidateMutation,
-  useInstallCrossChainBridgeMutation,
   useInstallCrossTradeL2ToL1Mutation,
   useInstallCrossTradeL2ToL2Mutation,
 } from "../api";
@@ -60,7 +59,6 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
   const installBlockExplorerMutation = useInstallBlockExplorerMutation();
   const installMonitoringMutation = useInstallMonitoringMutation();
   const installDaoCandidateMutation = useRegisterDaoCandidateMutation();
-  const installCrossChainBridgeMutation = useInstallCrossChainBridgeMutation();
   const installCrossTradeL2ToL1Mutation = useInstallCrossTradeL2ToL1Mutation();
   const installCrossTradeL2ToL2Mutation = useInstallCrossTradeL2ToL2Mutation();
   const isAnyInstallPending =
@@ -68,7 +66,6 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
     installBlockExplorerMutation.isPending ||
     installMonitoringMutation.isPending ||
     installDaoCandidateMutation.isPending ||
-    installCrossChainBridgeMutation.isPending ||
     installCrossTradeL2ToL1Mutation.isPending ||
     installCrossTradeL2ToL2Mutation.isPending;
   const [installType, setInstallType] = useState<Integration["type"] | null>(
