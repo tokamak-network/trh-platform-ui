@@ -501,6 +501,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         mode="l2_to_l1"
         currentChainRpcUrl={stack?.metadata?.l2RpcUrl}
         currentChainId={stack?.metadata?.l2ChainId}
+        stackId={stack?.id}
         onSubmit={(data: InstallCrossChainBridgeRequestBody) => {
           if (!stack) return;
           installCrossTradeL2ToL1Mutation.mutate(
@@ -522,6 +523,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         mode="l2_to_l2"
         currentChainRpcUrl={stack?.metadata?.l2RpcUrl}
         currentChainId={stack?.metadata?.l2ChainId}
+        stackId={stack?.id}
         onSubmit={(data: InstallCrossChainBridgeRequestBody) => {
           if (!stack) return;
           installCrossTradeL2ToL2Mutation.mutate(
