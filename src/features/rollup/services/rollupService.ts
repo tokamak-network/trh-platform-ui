@@ -18,6 +18,8 @@ import {
   CreateRegisterMetadataDAORequest,
   RegisterMetadataDAOData,
 } from "../schemas/register-metadata-dao";
+import { DeployConfigResponse } from "../schemas/deploy-config";
+import { L1ContractsResponse } from "../schemas/contracts";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
   const response = await apiPost<{ id: string }>("stacks/thanos", request, {
@@ -351,6 +353,28 @@ export const createRegisterMetadataDAO = async (
   const response = await apiPost<RegisterMetadataDAOData>(
     `stacks/thanos/${id}/integrations/register-metadata-dao`,
     request
+  );
+  return response.data;
+};
+
+
+// Get deploy config for a Thanos stack
+export const getThanosDeployConfig = async (
+  id: string
+): Promise<DeployConfigResponse> => {
+  const response = await apiGet<DeployConfigResponse>(
+    `stacks/thanos/${id}/deployconfig`
+  );
+
+  return response.data;
+};
+
+// Get L1 contracts for a Thanos stack
+export const getThanosL1Contracts = async (
+  id: string
+): Promise<L1ContractsResponse> => {
+  const response = await apiGet<L1ContractsResponse>(
+    `stacks/thanos/${id}/contracts`
   );
   return response.data;
 };
