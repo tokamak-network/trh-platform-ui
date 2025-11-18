@@ -289,41 +289,6 @@ export interface InstallCrossChainBridgeVariables {
   l2ChainConfig: InstallCrossChainBridgeRequestBody["l2ChainConfig"];
 }
 
-export const useInstallCrossChainBridgeMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: (variables: InstallCrossChainBridgeVariables) =>
-      installCrossChainBridgeIntegration(variables.stackId, {
-        mode: variables.mode,
-        projectId: variables.projectId,
-        l1ChainConfig: variables.l1ChainConfig,
-        l2ChainConfig: variables.l2ChainConfig,
-      }),
-    onMutate: () => {
-      toast.loading("Installing Cross-Chain Bridge...", {
-        id: "install-cross-trade",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Cross-Chain Bridge installation initiated", {
-        id: "install-cross-trade",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to install Cross-Chain Bridge", {
-        id: "install-cross-trade",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
-
 export interface InstallCrossTradeL2ToL1Variables {
   stackId: string;
   projectId: string;
