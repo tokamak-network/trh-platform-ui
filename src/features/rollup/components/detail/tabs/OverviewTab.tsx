@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Link, Network, Zap, GitPullRequest } from "lucide-react";
+import { Download, Eye, Link, Network, Zap, GitPullRequest, ArrowLeftRight } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { TabsContent } from "@/components/ui/tabs";
 import { formatDate } from "../../../utils/dateUtils";
@@ -25,6 +25,8 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
     created: formatDate(stack.created_at),
     explorerUrl: stack.metadata?.explorerUrl || "#",
     bridgeUrl: stack.metadata?.bridgeUrl || "#",
+    l2L1CrossTradeUrl: stack.metadata?.l2L1CrossTradeUrl || "#",
+    l2L2CrossTradeUrl: stack.metadata?.l2L2CrossTradeUrl || "#",
     grafanaUrl: stack.metadata?.grafanaUrl || "#",
     layer1: stack.metadata?.layer1 || "Not available",
     layer2: stack.metadata?.layer2 || "Not available",
@@ -40,6 +42,14 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
       console.error("Failed to download rollup config:", error);
       toast.error("Failed to download rollup config");
     }
+  };
+
+  // Helper function to build explorer URL with contract address
+  const getContractExplorerUrl = (address: string) => {
+    if (rollup.explorerUrl === "#" || !address) return "#";
+    // Remove trailing slash if present and append address path
+    const baseUrl = rollup.explorerUrl.replace(/\/$/, "");
+    return `${baseUrl}/address/${address}`;
   };
 
   return (
@@ -131,6 +141,38 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
                 </a>
               </Button>
             )}
+            {rollup.l2L1CrossTradeUrl !== "#" && (
+              <Button
+                variant="outline"
+                className="w-full justify-start bg-white/60 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-200"
+                asChild
+              >
+                <a
+                  href={rollup.l2L1CrossTradeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  L2-L1 Cross Trade
+                </a>
+              </Button>
+            )}
+            {rollup.l2L2CrossTradeUrl !== "#" && (
+              <Button
+                variant="outline"
+                className="w-full justify-start bg-white/60 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-200"
+                asChild
+              >
+                <a
+                  href={rollup.l2L2CrossTradeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  L2-L2 Cross Trade
+                </a>
+              </Button>
+            )}
             {rollup.grafanaUrl !== "#" && (
               <Button
                 variant="outline"
@@ -173,6 +215,8 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
             </Button>
             {rollup.explorerUrl === "#" &&
               rollup.bridgeUrl === "#" &&
+              rollup.l2L1CrossTradeUrl === "#" &&
+              rollup.l2L2CrossTradeUrl === "#" &&
               rollup.grafanaUrl === "#" &&
               rollup.metadataPrUrl === "#" && (
                 <div className="text-center py-4 text-slate-600">
