@@ -7,6 +7,7 @@ import {
   getThanosDeployments,
   getThanosDeploymentLogs,
   getRegisterMetadataDAO,
+  getThanosL1Contracts,
 } from "../services/rollupService";
 import { getIntegrations } from "@/features/integrations/services/integrationService";
 
@@ -20,6 +21,8 @@ export const rollupKeys = {
     [...rollupKeys.thanosStack(stackId), "integrations"] as const,
   registerMetadataDAO: (stackId: string) =>
     [...rollupKeys.thanosStack(stackId), "register-metadata-dao"] as const,
+  l1Contracts: (stackId: string) =>
+    [...rollupKeys.thanosStack(stackId), "l1-contracts"] as const,
   lists: () => [...rollupKeys.all, "list"] as const,
   list: (filters: string) => [...rollupKeys.lists(), { filters }] as const,
   details: () => [...rollupKeys.all, "detail"] as const,
@@ -108,6 +111,17 @@ export const useRegisterMetadataDAOQuery = (id?: string) => {
       ? rollupKeys.registerMetadataDAO(id)
       : (["thanosStacks", "register-metadata-dao", "disabled"] as const),
     queryFn: () => getRegisterMetadataDAO(id as string),
+    enabled: Boolean(id),
+    refetchInterval: 120000, // 2 minutes
+  });
+};
+
+export const useThanosL1ContractsQuery = (id?: string) => {
+  return useQuery({
+    queryKey: id
+      ? rollupKeys.l1Contracts(id)
+      : (["thanosStacks", "l1-contracts", "disabled"] as const),
+    queryFn: () => getThanosL1Contracts(id as string),
     enabled: Boolean(id),
     refetchInterval: 120000, // 2 minutes
   });
