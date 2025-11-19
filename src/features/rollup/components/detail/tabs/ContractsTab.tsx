@@ -17,11 +17,39 @@ export function ContractsTab({ stack }: RollupDetailTabProps) {
 
   if (!stack) return null;
 
-  const handleCopyAddress = (address: string, contractName: string) => {
-    navigator.clipboard.writeText(address);
-    setCopiedAddress(address);
-    toast.success(`Copied ${contractName} address`);
-    setTimeout(() => setCopiedAddress(null), 2000);
+  const handleCopyAddress = async (address: string, contractName: string) => {
+    try {
+      // Check if clipboard API is available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(address);
+        setCopiedAddress(address);
+        toast.success(`Copied ${contractName} address`);
+        setTimeout(() => setCopiedAddress(null), 2000);
+      } else {
+        // Fallback for older browsers or non-HTTPS contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = address;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand("copy");
+          setCopiedAddress(address);
+          toast.success(`Copied ${contractName} address`);
+          setTimeout(() => setCopiedAddress(null), 2000);
+        } catch (err) {
+          toast.error("Failed to copy address");
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to copy address:", err);
+      toast.error("Failed to copy address");
+    }
   };
 
   // Helper function to build explorer URL with contract address
