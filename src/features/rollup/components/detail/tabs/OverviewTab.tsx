@@ -141,6 +141,22 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
                 </a>
               </Button>
             )}
+            {rollup.explorerUrl !== "#" && (
+              <Button
+                variant="outline"
+                className="w-full justify-start bg-white/60 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400 hover:text-white transition-all duration-200"
+                asChild
+              >
+                <a
+                  href={rollup.explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  Block Explorer
+                </a>
+              </Button>
+            )}
             {rollup.l2L1CrossTradeUrl !== "#" && (
               <Button
                 variant="outline"
