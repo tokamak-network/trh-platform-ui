@@ -29,9 +29,9 @@ export function InstallUptimeDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Install Uptime</AlertDialogTitle>
+          <AlertDialogTitle>Install System Pulse</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to install the Uptime component?
+            Are you sure you want to install the System Pulse component?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

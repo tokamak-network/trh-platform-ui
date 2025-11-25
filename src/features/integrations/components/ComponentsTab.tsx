@@ -314,7 +314,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                                       setInstallType(
                                         type as Integration["type"]
                                       );
-                                    } else if (type === "uptime-service") {
+                                    } else if (type === "system-pulse") {
                                       setInstallType(
                                         type as Integration["type"]
                                       );
@@ -369,7 +369,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
       />
 
       <InstallUptimeDialog
-        open={installType === "uptime-service"}
+        open={installType === "system-pulse"}
         onOpenChange={(open) => !open && setInstallType(null)}
         isPending={installUptimeMutation.isPending}
         onConfirm={() => {

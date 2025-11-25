@@ -26,7 +26,7 @@ export const useUninstallIntegrationMutation = (options?: {
       type,
     }: {
       stackId: string;
-      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "uptime-service";
+      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
     }) => uninstallIntegration(stackId, type),
     onMutate: () => {
       toast.loading("Uninstalling component...", {
@@ -85,18 +85,18 @@ export const useInstallUptimeMutation = (options?: {
     mutationFn: ({ stackId }: { stackId: string }) =>
       installUptimeIntegration(stackId),
     onMutate: () => {
-      toast.loading("Installing Uptime...", { id: "install-uptime" });
+      toast.loading("Installing System Pulse...", { id: "install-system-pulse" });
     },
     onSuccess: (_data, variables) => {
-      toast.success("Uptime installation initiated", { id: "install-uptime" });
+      toast.success("System Pulse installation initiated", { id: "install-system-pulse" });
       queryClient.invalidateQueries({
         queryKey: integrationKeys.list(variables.stackId),
       });
       options?.onSuccess?.();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to install uptime", {
-        id: "install-uptime",
+      toast.error(error.message || "Failed to install System Pulse", {
+        id: "install-system-pulse",
       });
       options?.onError?.(error);
     },

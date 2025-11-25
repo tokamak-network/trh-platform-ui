@@ -133,7 +133,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     switch (integration.type) {
       case "bridge":
         return <BridgeCard {...commonProps} />;
-      case "uptime-service":
+      case "system-pulse":
         return <UptimeCard {...commonProps} />;
       case "block-explorer":
         return <BlockExplorerCard {...commonProps} />;
@@ -156,7 +156,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     switch (integration.type) {
       case "bridge":
         return <BridgeCompactInfo {...commonProps} />;
-      case "uptime-service":
+      case "system-pulse":
         return <UptimeCompactInfo {...commonProps} />;
       case "block-explorer":
         return <BlockExplorerCompactInfo {...commonProps} />;
