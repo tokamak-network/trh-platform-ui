@@ -29,6 +29,12 @@ export const installBridgeIntegration = async (
   await apiPost(`stacks/thanos/${stackId}/integrations/bridge`);
 };
 
+export const installUptimeIntegration = async (
+  stackId: string
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/system-pulse`);
+};
+
 export interface InstallBlockExplorerRequestBody {
   databaseUsername: string;
   databasePassword: string;

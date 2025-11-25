@@ -37,7 +37,7 @@ export interface IntegrationInfo {
 export interface Integration {
   id: string;
   stack_id: string;
-  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate";
+  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
   status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
@@ -73,5 +73,11 @@ export const INTEGRATION_TYPES = {
     description: "Staking/DAO candidate registration",
     icon: "🏛️",
     color: "from-orange-500 to-red-400",
+  },
+  "system-pulse": {
+    label: "System Pulse",
+    description: "System Pulse provides real-time visibility into platform health and service availability",
+    icon: "⏱️",
+    color: "from-indigo-500 to-blue-400",
   },
 } as const;
