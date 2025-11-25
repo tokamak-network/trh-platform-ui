@@ -37,7 +37,6 @@ export function InstallUptimeDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-blue-600 hover:bg-blue-700 text-white"
             disabled={isPending}
             onClick={onConfirm}
           >

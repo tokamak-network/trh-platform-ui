@@ -50,8 +50,6 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     onError: () => setShowUninstallConfirm(false),
   });
 
-  console.log(integration);
-
   const getStatusIcon = () => {
     switch (integration.status) {
       case "Completed":

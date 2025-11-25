@@ -15,6 +15,14 @@ interface UptimeCardProps {
   copyToClipboard: (text: string, itemId: string) => void;
 }
 
+interface UptimeCompactInfoProps {
+  integration: {
+    info?: {
+      url?: string;
+    };
+  };
+}
+
 export function UptimeCard({ integration, copiedItem, copyToClipboard }: UptimeCardProps) {
   if (integration.info?.url) {
     return (
@@ -83,7 +91,7 @@ export function UptimeCard({ integration, copiedItem, copyToClipboard }: UptimeC
   );
 }
 
-export function UptimeCompactInfo({ integration }: { integration: { info?: { url?: string } } }) {
+export function UptimeCompactInfo({ integration }: UptimeCompactInfoProps) {
   if (integration.info?.url) {
     return (
       <div className="text-sm text-gray-600">
