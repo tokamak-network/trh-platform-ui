@@ -215,15 +215,15 @@ export function RegisterCandidateCard({ integration, copiedItem, copyToClipboard
   );
 }
 
-export function RegisterCandidateCompactInfo({ integration }: { 
-  integration: { 
-    info?: { 
+export function RegisterCandidateCompactInfo({ integration }: {
+  integration: {
+    info?: {
       candidate_registration?: {
         candidate_name: string;
         staking_amount: number;
       };
-    }; 
-  }; 
+    };
+  };
 }) {
   if (
     integration.info?.candidate_registration
@@ -231,10 +231,10 @@ export function RegisterCandidateCompactInfo({ integration }: {
     const reg = integration.info?.candidate_registration;
     return (
       <div className="text-sm text-gray-600">
-        <p>
+        <p className="truncate">
           <span className="font-medium">Candidate:</span> {reg.candidate_name}
         </p>
-        <p>
+        <p className="truncate">
           <span className="font-medium">Stake:</span> {reg.staking_amount} TON
         </p>
       </div>

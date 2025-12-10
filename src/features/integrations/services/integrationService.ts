@@ -124,3 +124,17 @@ export const configureEmailAlert = async (
 ): Promise<void> => {
   await apiPut(`stacks/thanos/${stackId}/integrations/monitoring/email`, body);
 };
+
+export const cancelIntegration = async (
+  stackId: string,
+  integrationId: string
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/${integrationId}/cancel`);
+};
+
+export const retryIntegration = async (
+  stackId: string,
+  integrationId: string
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/integrations/${integrationId}/retry`);
+};

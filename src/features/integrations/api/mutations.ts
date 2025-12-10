@@ -12,6 +12,8 @@ import {
   disableTelegramAlert,
   configureTelegramAlert,
   configureEmailAlert,
+  cancelIntegration,
+  retryIntegration,
 } from "../services/integrationService";
 import { queryClient } from "@/providers/query-provider";
 import { integrationKeys } from "./queries";
@@ -407,6 +409,76 @@ export const useConfigureEmailAlertMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to configure email alerts", {
         id: "configure-email-alert",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useCancelIntegrationMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      stackId,
+      integrationId,
+    }: {
+      stackId: string;
+      integrationId: string;
+    }) => cancelIntegration(stackId, integrationId),
+    onMutate: () => {
+      toast.loading("Cancelling installation...", {
+        id: "cancel-integration",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Installation cancelled successfully", {
+        id: "cancel-integration",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to cancel installation", {
+        id: "cancel-integration",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useRetryIntegrationMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      stackId,
+      integrationId,
+    }: {
+      stackId: string;
+      integrationId: string;
+    }) => retryIntegration(stackId, integrationId),
+    onMutate: () => {
+      toast.loading("Retrying installation...", {
+        id: "retry-integration",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Installation retry initiated successfully", {
+        id: "retry-integration",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to retry installation", {
+        id: "retry-integration",
       });
       options?.onError?.(error);
     },
