@@ -78,6 +78,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <div className="w-4 h-4 bg-orange-500 rounded-full animate-pulse" />;
       case "Terminated":
         return <div className="w-4 h-4 bg-red-900 rounded-full" />;
+      case "Cancelled":
+        return <div className="w-4 h-4 bg-gray-600 rounded-full" />;
       case "Unknown":
         return <div className="w-4 h-4 bg-gray-500 rounded-full" />;
       default:
@@ -101,6 +103,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return "Uninstalling";
       case "Terminated":
         return "Uninstalled";
+      case "Cancelled":
+        return "Cancelled";
       case "Unknown":
         return "Unknown";
       default:
@@ -118,6 +122,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Failed":
         return "bg-red-100 text-red-800 border-red-200";
+      case "Cancelled":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -225,7 +231,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                       </span>
                     </Button>
                   )}
-                  {integration.status === "Failed" && (
+                  {(integration.status === "Failed" || integration.status === "Cancelled") && (
                     <Button
                       aria-label="Retry"
                       variant="outline"
@@ -240,7 +246,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                       </span>
                     </Button>
                   )}
-                  {(integration.status === "Completed" || integration.status === "Failed") && (
+                  {(integration.status === "Completed" || integration.status === "Failed" || integration.status === "Cancelled") && (
                     <Button
                       aria-label="Remove"
                       variant="destructive"
