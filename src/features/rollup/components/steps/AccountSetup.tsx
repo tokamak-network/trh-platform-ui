@@ -244,7 +244,7 @@ export function AccountSetup() {
                 onCheckedChange={(checked) =>
                   setSeedPhraseConfirmed(checked === true)
                 }
-                className="mt-1"
+                className="mt-1 border-2 border-gray-500"
               />
               <div className="flex-1">
                 <label
