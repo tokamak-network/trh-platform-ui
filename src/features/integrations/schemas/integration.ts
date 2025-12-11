@@ -37,8 +37,16 @@ export interface IntegrationInfo {
     l1_cross_trade_proxy_address: string;
     l1_cross_trade_address: string;
     l2_cross_trade_proxy_addresses: Record<number, string>;
-    l2_l2_cross_trade_addresses: Record<number, string>;
+    l2_cross_trade_addresses: Record<number, string>;
   };
+  registered_tokens?: Array<{
+    token_name: string;
+    l1_token_address: string;
+    l2_token_inputs: Array<{
+      rpc: string;
+      chain_id: number;
+    }>;
+  }>;
 }
 
 export interface Integration {

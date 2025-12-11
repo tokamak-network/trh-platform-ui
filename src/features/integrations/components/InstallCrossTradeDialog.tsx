@@ -44,6 +44,7 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { InstallCrossChainBridgeRequestBody } from "../services/integrationService";
 import { getThanosStackById, getThanosDeployConfig, getThanosL1Contracts } from "../../rollup/services/rollupService";
+import { apiGet } from "@/lib/api";
 
 // Block Explorer Types
 type BlockExplorerType = "etherscan" | "blockscout";
@@ -93,6 +94,7 @@ const l1CrossTradeChainInputSchema = z.object({
     .number({ message: "Chain ID must be a number" })
     .int({ message: "Chain ID must be an integer" })
     .min(1, { message: "Chain ID must be greater than 0" }),
+  chain_name: z.string().min(1, { message: "Chain name is required" }),
   privateKey: z.string().min(1, { message: "Private key is required" }),
   isDeployedNew: z.boolean(),
   deploymentScriptPath: z.string().optional(),
@@ -118,19 +120,6 @@ const l1CrossTradeChainInputSchema = z.object({
   path: ["crossTradeAddress"],
 });
 
-// Token mapping schema: token name -> { l1Token: address, l2Token: address }
-const tokenMappingSchema = z.record(
-  z.string(), // token name
-  z.object({
-    l1Token: z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
-      message: "Invalid L1 token address format",
-    }),
-    l2Token: z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
-      message: "Invalid L2 token address format",
-    }),
-  })
-);
-
 const l2CrossTradeChainInputSchema = z.object({
   rpc: z.string().min(1, { message: "RPC URL is required" }).refine(
     (val) => {
@@ -147,6 +136,7 @@ const l2CrossTradeChainInputSchema = z.object({
     .number({ message: "Chain ID must be a number" })
     .int({ message: "Chain ID must be an integer" })
     .min(1, { message: "Chain ID must be greater than 0" }),
+  chain_name: z.string().min(1, { message: "Chain name is required" }),
   privateKey: z.string().min(1, { message: "Private key is required" }),
   isDeployedNew: z.boolean(),
   deploymentScriptPath: z.string().optional(),
@@ -160,8 +150,6 @@ const l2CrossTradeChainInputSchema = z.object({
   l1StandardBridgeAddress: ethAddressSchema,
   l1UsdcBridgeAddress: ethAddressSchema,
   l1CrossDomainMessenger: ethAddressSchema,
-  // Token mappings: token name -> { l1Token, l2Token }
-  tokens: tokenMappingSchema.optional(),
 }).refine((data) => {
   if (!data.isDeployedNew) {
     return !!data.crossTradeProxyAddress && data.crossTradeProxyAddress.length > 0;
@@ -178,14 +166,6 @@ const l2CrossTradeChainInputSchema = z.object({
 }, {
   message: "Trade address is required when using existing contract",
   path: ["crossTradeAddress"],
-}).refine((data) => {
-  // Require at least one token mapping (excluding temporary keys)
-  if (!data.tokens) return false;
-  const validTokens = Object.keys(data.tokens).filter(key => !key.startsWith('__temp_'));
-  return validTokens.length > 0;
-}, {
-  message: "At least one token mapping is required",
-  path: ["tokens"],
 });
 
 const installCrossChainBridgeSchema = z
@@ -224,38 +204,6 @@ const installCrossChainBridgeSchema = z
         path: ["l2ChainConfig"],
       });
     }
-    
-    // Validate that all token names exist across all L2 chains
-    if (data.l2ChainConfig.length > 1) {
-      const allTokenNames = new Set<string>();
-      const chainTokenNames: string[][] = [];
-      
-      // Collect all token names from each chain (excluding temp keys)
-      data.l2ChainConfig.forEach((chainConfig, chainIndex) => {
-        if (chainConfig.tokens) {
-          const validTokens = Object.keys(chainConfig.tokens).filter(
-            key => !key.startsWith('__temp_')
-          );
-          chainTokenNames.push(validTokens);
-          validTokens.forEach(token => allTokenNames.add(token));
-        } else {
-          chainTokenNames.push([]);
-        }
-      });
-      
-      // Check that all chains have the same token names
-      allTokenNames.forEach(tokenName => {
-        chainTokenNames.forEach((chainTokens, chainIndex) => {
-          if (!chainTokens.includes(tokenName)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: `Token "${tokenName}" must exist in all L2 chains`,
-              path: ["l2ChainConfig", chainIndex, "tokens"],
-            });
-          }
-        });
-      });
-    }
   });
 
 export type InstallCrossChainBridgeFormData = z.infer<
@@ -276,6 +224,7 @@ interface InstallCrossTradeDialogProps {
 const defaultL1Config = {
   rpc: "",
   chainId: 0,
+  chain_name: "",
   privateKey: "",
   isDeployedNew: true,
   deploymentScriptPath: "",
@@ -288,6 +237,7 @@ const defaultL1Config = {
 const defaultL2Config = {
   rpc: "",
   chainId: 0,
+  chain_name: "",
   privateKey: "",
   isDeployedNew: true,
   deploymentScriptPath: "",
@@ -300,7 +250,6 @@ const defaultL2Config = {
   l1StandardBridgeAddress: "",
   l1UsdcBridgeAddress: "",
   l1CrossDomainMessenger: "",
-  tokens: {} as Record<string, { l1Token: string; l2Token: string }>,
 };
 
 export default function InstallCrossTradeDialog({
@@ -371,31 +320,95 @@ export default function InstallCrossTradeDialog({
           const currentL2Configs = form.getValues("l2ChainConfig");
           if (currentL2Configs.length > 0) {
             const firstL2Config = { ...currentL2Configs[0] };
-            
-            // Set CrossDomainMessenger to hardcoded value
-            firstL2Config.crossDomainMessenger = "0x4200000000000000000000000000000000000007";
+            const autoFilledFields = new Set<string>();
             
             // Set Native Token Address from deploy config
             if (deployConfig?.nativeTokenAddress) {
               firstL2Config.nativeTokenAddress = deployConfig.nativeTokenAddress;
+              autoFilledFields.add('nativeTokenAddress');
             }
             
             // Set L1 contract addresses from contracts API
             if (l1Contracts) {
+              if (l1Contracts.L2CrossDomainMessengerProxy) {
+                firstL2Config.crossDomainMessenger = l1Contracts.L2CrossDomainMessengerProxy;
+                autoFilledFields.add('crossDomainMessenger');
+              }
               if (l1Contracts.L1CrossDomainMessengerProxy) {
                 firstL2Config.l1CrossDomainMessenger = l1Contracts.L1CrossDomainMessengerProxy;
+                autoFilledFields.add('l1CrossDomainMessenger');
               }
               if (l1Contracts.L1StandardBridgeProxy) {
                 firstL2Config.l1StandardBridgeAddress = l1Contracts.L1StandardBridgeProxy;
+                autoFilledFields.add('l1StandardBridgeAddress');
               }
               if (l1Contracts.L1UsdcBridgeProxy) {
                 firstL2Config.l1UsdcBridgeAddress = l1Contracts.L1UsdcBridgeProxy;
+                autoFilledFields.add('l1UsdcBridgeAddress');
               }
             }
             
             // Update the first L2 chain config
             const updatedConfigs = [firstL2Config, ...currentL2Configs.slice(1)];
             form.setValue("l2ChainConfig", updatedConfigs);
+            
+            // Get chainId from deployConfig, currentChainId, or firstL2Config
+            const chainId = deployConfig?.l2ChainID || currentChainId || firstL2Config.chainId || 0;
+            
+            // Fetch crossDomainMessenger from default-contract-addresses API if chainId is available
+            if (chainId > 0) {
+              fetchDefaultContractAddresses(chainId)
+                .then((contractAddresses) => {
+                  if (contractAddresses) {
+                    const updatedConfigs = form.getValues("l2ChainConfig");
+                    if (updatedConfigs.length > 0) {
+                      const updatedFirstConfig = { ...updatedConfigs[0] };
+                      const updatedAutoFilledFields = new Set(autoFilledFields);
+                      
+                      // Set crossDomainMessenger from API
+                      updatedFirstConfig.crossDomainMessenger = contractAddresses.l2CrossDomainMessenger;
+                      updatedAutoFilledFields.add('crossDomainMessenger');
+                      
+                      // Also update other fields if they weren't set from stack config
+                      if (!updatedFirstConfig.nativeTokenAddress && contractAddresses.nativeTokenAddress) {
+                        updatedFirstConfig.nativeTokenAddress = contractAddresses.nativeTokenAddress;
+                        updatedAutoFilledFields.add('nativeTokenAddress');
+                      }
+                      if (!updatedFirstConfig.l1StandardBridgeAddress && contractAddresses.l1StandardBridgeAddress) {
+                        updatedFirstConfig.l1StandardBridgeAddress = contractAddresses.l1StandardBridgeAddress;
+                        updatedAutoFilledFields.add('l1StandardBridgeAddress');
+                      }
+                      if (!updatedFirstConfig.l1UsdcBridgeAddress && contractAddresses.l1UsdcBridgeAddress) {
+                        updatedFirstConfig.l1UsdcBridgeAddress = contractAddresses.l1UsdcBridgeAddress;
+                        updatedAutoFilledFields.add('l1UsdcBridgeAddress');
+                      }
+                      if (!updatedFirstConfig.l1CrossDomainMessenger && contractAddresses.l1CrossDomainMessenger) {
+                        updatedFirstConfig.l1CrossDomainMessenger = contractAddresses.l1CrossDomainMessenger;
+                        updatedAutoFilledFields.add('l1CrossDomainMessenger');
+                      }
+                      
+                      form.setValue("l2ChainConfig", [updatedFirstConfig, ...updatedConfigs.slice(1)]);
+                      
+                      // Update auto-filled fields state
+                      setL2AutoFilledFields(prev => ({
+                        ...prev,
+                        0: updatedAutoFilledFields,
+                      }));
+                    }
+                  }
+                })
+                .catch((error) => {
+                  console.error("Failed to fetch default contract addresses for first chain:", error);
+                });
+            }
+            
+            // Mark fields as auto-filled for the first chain (index 0) - will be updated when API call completes
+            if (autoFilledFields.size > 0) {
+              setL2AutoFilledFields(prev => ({
+                ...prev,
+                0: autoFilledFields,
+              }));
+            }
           }
         })
         .catch((error) => {
@@ -508,6 +521,11 @@ export default function InstallCrossTradeDialog({
     (string | null)[]
   >([]);
 
+  // State to track which fields are auto-filled for each L2 chain (for index >= 1)
+  const [l2AutoFilledFields, setL2AutoFilledFields] = React.useState<
+    Record<number, Set<string>>
+  >({});
+
   React.useEffect(() => {
     if (l2Fields.length !== l2ExplorerEnabled.length) {
       setL2ExplorerEnabled(new Array(l2Fields.length).fill(false));
@@ -584,6 +602,59 @@ export default function InstallCrossTradeDialog({
     }
   };
 
+  // Function to fetch default contract addresses by chain ID
+  const fetchDefaultContractAddresses = async (chainId: number) => {
+    try {
+      // The API returns: { status: 200, message: "Success", data: { "10": {...}, "11155420": {...} } }
+      // apiGet wraps it: { data: { status, message, data }, success, message? }
+      const response = await apiGet<any>("stacks/thanos/default-contract-addresses");
+
+      console.log("Default Contract Addresses API Full Response:", JSON.stringify(response, null, 2));
+      console.log("Looking for chain ID:", chainId);
+
+      // Extract the actual data object from the response
+      // The backend returns: { status: 200, message: "Success", data: {...} }
+      // apiGet wraps it, so response.data contains the backend response
+      let apiData: Record<string, any> | undefined;
+      
+      // Try to find the data object in various possible locations
+      if (response.data?.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+        // Case: response.data = { status: 200, message: "Success", data: {...} }
+        apiData = response.data.data;
+      } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !response.data.status) {
+        // Case: response.data is directly the data object
+        apiData = response.data;
+      } else if (response && typeof response === 'object' && !Array.isArray(response) && response.data) {
+        // Case: response itself has the structure
+        apiData = response.data;
+      }
+
+      const chainIdStr = chainId.toString();
+      
+      console.log("Extracted API Data:", apiData);
+      console.log("Chain ID string:", chainIdStr);
+      console.log("Available chain IDs in data:", apiData ? Object.keys(apiData) : 'none');
+      console.log("Matching data for chain ID", chainIdStr, ":", apiData?.[chainIdStr]);
+      
+      if (apiData && apiData[chainIdStr]) {
+        const contractData = apiData[chainIdStr];
+        console.log("✓ Found contract data for chain ID", chainIdStr, ":", contractData);
+        return {
+          l2CrossDomainMessenger: contractData.l2_cross_domain_messenger_address,
+          nativeTokenAddress: contractData.native_token_address,
+          l1StandardBridgeAddress: contractData.l1_standard_bridge_address,
+          l1UsdcBridgeAddress: contractData.l1_usdc_bridge_address,
+          l1CrossDomainMessenger: contractData.l1_cross_domain_messenger_address,
+        };
+      }
+      console.warn("✗ No contract data found for chain ID:", chainIdStr);
+      return null;
+    } catch (error) {
+      console.error("Error fetching default contract addresses:", error);
+      return null;
+    }
+  };
+
   // Watch L1 RPC and fetch chainId
   const l1Rpc = form.watch("l1ChainConfig.rpc");
   const l1ChainId = form.watch("l1ChainConfig.chainId");
@@ -643,7 +714,47 @@ export default function InstallCrossTradeDialog({
                 return newFetching;
               });
             },
-            (chainId) => form.setValue(`l2ChainConfig.${index}.chainId`, chainId),
+            async (chainId) => {
+              form.setValue(`l2ChainConfig.${index}.chainId`, chainId);
+              
+              // For chains from the second one onwards (index >= 1), fetch and fill default contract addresses
+              if (index >= 1 && chainId > 0) {
+                console.log(`Fetching default contract addresses for L2 chain ${index} with chain ID:`, chainId);
+                const contractAddresses = await fetchDefaultContractAddresses(chainId);
+                if (contractAddresses) {
+                  console.log(`Setting default contract addresses for L2 chain ${index}:`, contractAddresses);
+                  form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, contractAddresses.l2CrossDomainMessenger);
+                  form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, contractAddresses.nativeTokenAddress);
+                  form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, contractAddresses.l1StandardBridgeAddress);
+                  form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, contractAddresses.l1UsdcBridgeAddress);
+                  form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, contractAddresses.l1CrossDomainMessenger);
+                  
+                  // Mark these fields as auto-filled
+                  setL2AutoFilledFields(prev => ({
+                    ...prev,
+                    [index]: new Set([
+                      'crossDomainMessenger',
+                      'nativeTokenAddress',
+                      'l1StandardBridgeAddress',
+                      'l1UsdcBridgeAddress',
+                      'l1CrossDomainMessenger',
+                    ]),
+                  }));
+                  
+                  // Verify the values were set
+                  const updatedConfig = form.getValues(`l2ChainConfig.${index}`);
+                  console.log(`Verified L2 chain ${index} config after setting:`, {
+                    crossDomainMessenger: updatedConfig.crossDomainMessenger,
+                    nativeTokenAddress: updatedConfig.nativeTokenAddress,
+                    l1StandardBridgeAddress: updatedConfig.l1StandardBridgeAddress,
+                    l1UsdcBridgeAddress: updatedConfig.l1UsdcBridgeAddress,
+                    l1CrossDomainMessenger: updatedConfig.l1CrossDomainMessenger,
+                  });
+                } else {
+                  console.warn(`No contract addresses found for chain ID ${chainId}`);
+                }
+              }
+            },
             (error) => {
               setL2ChainIdErrors(prev => {
                 const newErrors = [...prev];
@@ -717,6 +828,7 @@ export default function InstallCrossTradeDialog({
       l1ChainConfig: {
         rpc: data.l1ChainConfig.rpc,
         chainId: data.l1ChainConfig.chainId,
+        chainName: data.l1ChainConfig.chain_name,
         privateKey: data.l1ChainConfig.privateKey,
         isDeployedNew: data.l1ChainConfig.isDeployedNew,
         ...(data.l1ChainConfig.deploymentScriptPath && {
@@ -741,61 +853,39 @@ export default function InstallCrossTradeDialog({
           crossTradeAddress: data.l1ChainConfig.crossTradeAddress,
         }),
       },
-      l2ChainConfig: data.l2ChainConfig.map((config) => {
-        // Transform tokens to l1_tokens and l2_tokens maps
-        const l1Tokens: Record<string, string> = {};
-        const l2Tokens: Record<string, string> = {};
-        
-        if (config.tokens) {
-          Object.entries(config.tokens).forEach(([tokenName, tokenData]) => {
-            // Skip temporary keys (keys starting with __temp_)
-            if (tokenName.startsWith('__temp_')) {
-              return;
-            }
-            if (tokenData.l1Token) {
-              l1Tokens[tokenName] = tokenData.l1Token;
-            }
-            if (tokenData.l2Token) {
-              l2Tokens[tokenName] = tokenData.l2Token;
-            }
-          });
-        }
-
-        return {
-          rpc: config.rpc,
-          chainId: config.chainId,
-          privateKey: config.privateKey,
-          isDeployedNew: config.isDeployedNew,
-          ...(config.deploymentScriptPath && {
-            deploymentScriptPath: config.deploymentScriptPath,
-          }),
-          ...(config.contractName && {
-            contractName: config.contractName,
-          }),
-          ...(config.blockExplorerConfig && {
-            blockExplorerConfig: {
-              url: config.blockExplorerConfig.url,
-              type: config.blockExplorerConfig.type,
-              ...(config.blockExplorerConfig.apiKey && {
-                apiKey: config.blockExplorerConfig.apiKey,
-              }),
-            },
-          }),
-          crossDomainMessenger: config.crossDomainMessenger, // required
-          ...(config.crossTradeProxyAddress && {
-            crossTradeProxyAddress: config.crossTradeProxyAddress,
-          }),
-          ...(config.crossTradeAddress && {
-            crossTradeAddress: config.crossTradeAddress,
-          }),
-          nativeTokenAddress: config.nativeTokenAddress, // required
-          l1StandardBridgeAddress: config.l1StandardBridgeAddress, // required
-          l1UsdcBridgeAddress: config.l1UsdcBridgeAddress, // required
-          l1CrossDomainMessenger: config.l1CrossDomainMessenger, // required
-          ...(Object.keys(l1Tokens).length > 0 && { l1Tokens: l1Tokens }),
-          ...(Object.keys(l2Tokens).length > 0 && { l2Tokens: l2Tokens }),
-        };
-      }),
+      l2ChainConfig: data.l2ChainConfig.map((config) => ({
+        rpc: config.rpc,
+        chainId: config.chainId,
+        chainName: config.chain_name,
+        privateKey: config.privateKey,
+        isDeployedNew: config.isDeployedNew,
+        ...(config.deploymentScriptPath && {
+          deploymentScriptPath: config.deploymentScriptPath,
+        }),
+        ...(config.contractName && {
+          contractName: config.contractName,
+        }),
+        ...(config.blockExplorerConfig && {
+          blockExplorerConfig: {
+            url: config.blockExplorerConfig.url,
+            type: config.blockExplorerConfig.type,
+            ...(config.blockExplorerConfig.apiKey && {
+              apiKey: config.blockExplorerConfig.apiKey,
+            }),
+          },
+        }),
+        crossDomainMessenger: config.crossDomainMessenger, // required
+        ...(config.crossTradeProxyAddress && {
+          crossTradeProxyAddress: config.crossTradeProxyAddress,
+        }),
+        ...(config.crossTradeAddress && {
+          crossTradeAddress: config.crossTradeAddress,
+        }),
+        nativeTokenAddress: config.nativeTokenAddress, // required
+        l1StandardBridgeAddress: config.l1StandardBridgeAddress, // required
+        l1UsdcBridgeAddress: config.l1UsdcBridgeAddress, // required
+        l1CrossDomainMessenger: config.l1CrossDomainMessenger, // required
+      })),
     };
     
     setPendingData(transformedData);
@@ -871,6 +961,7 @@ export default function InstallCrossTradeDialog({
       setL2ChainIdErrors(resetMode === "l2_to_l2" ? [false, false] : [false]);
       setL2BalanceErrors(resetMode === "l2_to_l2" ? [null, null] : [null]);
       setL1ChainIdError(false);
+      setL2AutoFilledFields({});
     }
     onOpenChange(next);
   };
@@ -1025,6 +1116,26 @@ export default function InstallCrossTradeDialog({
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">L1 Chain Configuration</h3>
 
+                <div className="space-y-2">
+                  <Label htmlFor="l1ChainName">Chain Name</Label>
+                  <Input
+                    id="l1ChainName"
+                    placeholder="Enter chain name"
+                    disabled={isPending}
+                    {...form.register("l1ChainConfig.chain_name")}
+                    className={
+                      form.formState.errors.l1ChainConfig?.chain_name
+                        ? "border-destructive"
+                        : ""
+                    }
+                  />
+                  {form.formState.errors.l1ChainConfig?.chain_name && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.l1ChainConfig.chain_name.message}
+                    </p>
+                  )}
+                </div>
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="l1Rpc">RPC URL</Label>
@@ -1046,7 +1157,7 @@ export default function InstallCrossTradeDialog({
                   )}
                 </div>
 
-            <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="l1ChainId">
                     Chain ID {l1FetchingChainId && "(Fetching...)"}
                   </Label>
@@ -1073,6 +1184,8 @@ export default function InstallCrossTradeDialog({
                     </p>
                   )}
                 </div>
+
+                
 
                 <div className="space-y-2">
                   <Label htmlFor="l1PrivateKey">Private Key</Label>
@@ -1311,6 +1424,8 @@ export default function InstallCrossTradeDialog({
                             const newErrors = [...l2BalanceErrors];
                             newErrors.splice(index, 1);
                             setL2BalanceErrors(newErrors);
+                            // Clear all auto-filled fields since indices will shift
+                            setL2AutoFilledFields({});
                           }}
                           disabled={isPending}
                         >
@@ -1318,6 +1433,31 @@ export default function InstallCrossTradeDialog({
                         </Button>
                       )}
                   </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`l2ChainName-${index}`}>
+                        Chain Name
+                      </Label>
+                      <Input
+                        id={`l2ChainName-${index}`}
+                        placeholder="Enter chain name"
+                        disabled={isPending}
+                        {...form.register(`l2ChainConfig.${index}.chain_name`)}
+                        className={
+                          form.formState.errors.l2ChainConfig?.[index]?.chain_name
+                            ? "border-destructive"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.l2ChainConfig?.[index]?.chain_name && (
+                        <p className="text-sm text-destructive">
+                          {
+                            form.formState.errors.l2ChainConfig[index]?.chain_name
+                              ?.message
+                          }
+                        </p>
+                      )}
+                    </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -1374,6 +1514,8 @@ export default function InstallCrossTradeDialog({
                         </p>
                       )}
                     </div>
+
+                    
 
                     <div className="space-y-2">
                       <Label htmlFor={`l2PrivateKey-${index}`}>
@@ -1499,7 +1641,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2CrossDomainMessenger-${index}`}
                         placeholder="0x..."
-                        disabled={isPending}
+                        disabled={isPending || l2AutoFilledFields[index]?.has('crossDomainMessenger')}
                         {...form.register(`l2ChainConfig.${index}.crossDomainMessenger`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1526,7 +1668,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2NativeTokenAddress-${index}`}
                         placeholder="0x..."
-                        disabled={isPending}
+                        disabled={isPending || l2AutoFilledFields[index]?.has('nativeTokenAddress')}
                         {...form.register(`l2ChainConfig.${index}.nativeTokenAddress`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1553,7 +1695,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2L1StandardBridgeAddress-${index}`}
                         placeholder="0x..."
-                        disabled={isPending}
+                        disabled={isPending || l2AutoFilledFields[index]?.has('l1StandardBridgeAddress')}
                         {...form.register(`l2ChainConfig.${index}.l1StandardBridgeAddress`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1580,7 +1722,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2L1UsdcBridgeAddress-${index}`}
                         placeholder="0x..."
-                        disabled={isPending}
+                        disabled={isPending || l2AutoFilledFields[index]?.has('l1UsdcBridgeAddress')}
                         {...form.register(`l2ChainConfig.${index}.l1UsdcBridgeAddress`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1607,7 +1749,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2L1CrossDomainMessenger-${index}`}
                         placeholder="0x..."
-                        disabled={isPending}
+                        disabled={isPending || l2AutoFilledFields[index]?.has('l1CrossDomainMessenger')}
                         {...form.register(`l2ChainConfig.${index}.l1CrossDomainMessenger`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1627,170 +1769,7 @@ export default function InstallCrossTradeDialog({
                       )}
                     </div>
 
-                    {/* Token Mappings Section */}
-                    <div className="space-y-4 rounded-md border p-4">
-                      <div className="flex items-center justify-between">
-                        <Label>
-                          Token Mappings <span className="text-destructive">*</span>
-                        </Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const currentTokens = form.getValues(`l2ChainConfig.${index}.tokens`) || {};
-                            // Use a temporary unique key that won't conflict
-                            const tempKey = `__temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                            form.setValue(`l2ChainConfig.${index}.tokens`, {
-                              ...currentTokens,
-                              [tempKey]: { l1Token: "", l2Token: "" },
-                            }, { shouldValidate: false, shouldDirty: true });
-                          }}
-                          disabled={isPending}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Token
-                        </Button>
-                      </div>
-                      {form.formState.errors.l2ChainConfig?.[index]?.tokens && (
-                        <div className="space-y-1">
-                          {typeof form.formState.errors.l2ChainConfig[index]?.tokens === 'object' && 
-                           'message' in (form.formState.errors.l2ChainConfig[index]?.tokens as any) ? (
-                            <p className="text-sm text-destructive">
-                              {(form.formState.errors.l2ChainConfig[index]?.tokens as any).message}
-                            </p>
-                          ) : (
-                            <p className="text-sm text-destructive">
-                              At least one token mapping is required
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {Object.entries(form.watch(`l2ChainConfig.${index}.tokens`) || {}).map(([tokenName, tokenData], tokenIndex) => {
-                        // Use a stable key based on index to prevent remounting when token name changes
-                        const tokenKey = `token-${index}-${tokenIndex}`;
-                        return (
-                        <div key={tokenKey} className="space-y-3 rounded-md border p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1 space-y-2">
-                              <Label htmlFor={`l2TokenName-${tokenKey}`}>
-                                Token Name
-                              </Label>
-                              <Input
-                                id={`l2TokenName-${tokenKey}`}
-                                placeholder="e.g., USDC, USDT"
-                                disabled={isPending}
-                                defaultValue={tokenName.startsWith('__temp_') ? '' : tokenName.toUpperCase()}
-                                onBlur={(e) => {
-                                  const currentTokens = form.getValues(`l2ChainConfig.${index}.tokens`) || {};
-                                  const newName = e.target.value.trim().toUpperCase();
-                                  const isTempKey = tokenName.startsWith('__temp_');
-                                  
-                                  if (newName) {
-                                    if (newName !== tokenName && !currentTokens[newName]) {
-                                      // Rename the token
-                                      const { [tokenName]: oldData, ...rest } = currentTokens;
-                                      form.setValue(`l2ChainConfig.${index}.tokens`, {
-                                        ...rest,
-                                        [newName]: oldData,
-                                      }, { shouldValidate: true, shouldDirty: true });
-                                      
-                                      // Update the input value to show uppercase
-                                      e.target.value = newName;
-                                    } else if (newName === tokenName && !isTempKey) {
-                                      // Name unchanged, but ensure it's uppercase
-                                      if (e.target.value !== newName) {
-                                        e.target.value = newName;
-                                      }
-                                      return;
-                                    }
-                                  } else if (!isTempKey) {
-                                    // If empty and not a temp key, restore original name
-                                    e.target.value = tokenName.toUpperCase();
-                                  } else {
-                                    // If empty and it's a temp key, remove the token
-                                    const { [tokenName]: _, ...rest } = currentTokens;
-                                    form.setValue(`l2ChainConfig.${index}.tokens`, rest, { shouldValidate: true, shouldDirty: true });
-                                  }
-                                }}
-                                onChange={(e) => {
-                                  // Convert to uppercase as user types
-                                  const cursorPos = e.target.selectionStart;
-                                  const upperValue = e.target.value.toUpperCase();
-                                  if (e.target.value !== upperValue) {
-                                    e.target.value = upperValue;
-                                    e.target.setSelectionRange(cursorPos, cursorPos);
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                              />
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="mt-6"
-                              onClick={() => {
-                                const currentTokens = form.getValues(`l2ChainConfig.${index}.tokens`) || {};
-                                const { [tokenName]: _, ...rest } = currentTokens;
-                                form.setValue(`l2ChainConfig.${index}.tokens`, rest);
-                                form.trigger(`l2ChainConfig.${index}.tokens`);
-                              }}
-                              disabled={isPending}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`l2TokenL1-${index}-${tokenName}`}>
-                              L1 Token Address
-                            </Label>
-                            <Input
-                              id={`l2TokenL1-${index}-${tokenName}`}
-                              placeholder="0x..."
-                              disabled={isPending}
-                              value={tokenData?.l1Token || ""}
-                              onChange={(e) => {
-                                const currentTokens = form.getValues(`l2ChainConfig.${index}.tokens`) || {};
-                                form.setValue(`l2ChainConfig.${index}.tokens`, {
-                                  ...currentTokens,
-                                  [tokenName]: {
-                                    ...currentTokens[tokenName],
-                                    l1Token: e.target.value,
-                                  },
-                                }, { shouldValidate: false, shouldDirty: true });
-                              }}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`l2TokenL2-${index}-${tokenName}`}>
-                              L2 Token Address
-                            </Label>
-                            <Input
-                              id={`l2TokenL2-${index}-${tokenName}`}
-                              placeholder="0x..."
-                              disabled={isPending}
-                              value={tokenData?.l2Token || ""}
-                              onChange={(e) => {
-                                const currentTokens = form.getValues(`l2ChainConfig.${index}.tokens`) || {};
-                                form.setValue(`l2ChainConfig.${index}.tokens`, {
-                                  ...currentTokens,
-                                  [tokenName]: {
-                                    ...currentTokens[tokenName],
-                                    l2Token: e.target.value,
-                                  },
-                                }, { shouldValidate: false, shouldDirty: true });
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                      })}
-                    </div>
+                    
 
                     {/* Block Explorer Config for L2 */}
                     <div className="flex items-center space-x-2">

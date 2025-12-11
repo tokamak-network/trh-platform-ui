@@ -5,6 +5,7 @@ export interface L1ContractsResponse {
   DelayedWETHProxy: string;
   DisputeGameFactoryProxy: string;
   L1CrossDomainMessengerProxy: string;
+  L2CrossDomainMessengerProxy: string;
   L1ERC721BridgeProxy: string;
   L1StandardBridgeProxy: string;
   L1UsdcBridge: string;

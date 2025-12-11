@@ -148,6 +148,14 @@ export interface InstallCrossChainBridgeRequestBody {
     l1Tokens?: Record<string, string>; // token name -> L1 address
     l2Tokens?: Record<string, string>; // token name -> L2 address
   }>;
+  tokens?: Array<{
+    tokenName: string;
+    l1TokenAddress: string;
+    l2TokenInputs: Array<{
+      chainId: number;
+      tokenAddress: string;
+    }>;
+  }>;
 }
 
 export const installCrossChainBridgeIntegration = async (
@@ -223,4 +231,93 @@ export const retryIntegration = async (
   integrationId: string
 ): Promise<void> => {
   await apiPost(`stacks/thanos/${stackId}/integrations/${integrationId}/retry`);
+};
+
+export interface L2ChainConfig {
+  rpc: string;
+  chain_id: number;
+  private_key: string;
+  is_deployed_new: boolean;
+  chain_name: string;
+  block_explorer_config?: {
+    api_key?: string;
+    url: string;
+    type: string;
+  };
+  cross_domain_messenger: string;
+  deployment_script_path?: string;
+  contract_name?: string;
+  native_token_address: string;
+  l1_standard_bridge_address: string;
+  l1_usdc_bridge_address: string;
+  l1_cross_domain_messenger: string;
+  cross_trade_proxy_address?: string;
+  cross_trade_address?: string;
+}
+
+export const getL2ChainConfigs = async (
+  stackId: string,
+  mode: "l2_to_l1" | "l2_to_l2"
+): Promise<L2ChainConfig[]> => {
+  const response = await apiGet<L2ChainConfig[]>(
+    `stacks/thanos/${stackId}/cross-trade/l2-chain-config?mode=${mode}`
+  );
+  return response.data;
+};
+
+export interface RegisterTokensRequest {
+  tokenName: string;
+  l1TokenAddress: string;
+  l2TokenInputs: Array<{
+    chainId: number;
+    tokenAddress: string;
+  }>;
+}
+
+export interface RegisterTokensAPIRequest {
+  mode: "l2_to_l1" | "l2_to_l2";
+  tokens: RegisterTokensRequest[];
+}
+
+export const registerTokens = async (
+  stackId: string,
+  body: RegisterTokensAPIRequest
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/cross-trade/register-tokens`, body);
+};
+
+export interface BlockExplorerConfig {
+  apiKey?: string;
+  url: string;
+  type: string;
+}
+
+export interface L2CrossTradeChainInput {
+  rpc: string;
+  chainId: number;
+  privateKey: string;
+  isDeployedNew: boolean;
+  chainName: string;
+  blockExplorerConfig?: BlockExplorerConfig | null;
+  crossDomainMessenger: string;
+  crossTradeProxyAddress?: string;
+  nativeTokenAddress: string;
+  crossTradeAddress?: string;
+  l2Tokens?: Record<string, string>;
+  l1Tokens?: Record<string, string>;
+  l1StandardBridgeAddress: string;
+  l1USDCBridgeAddress: string; // Note: capital USDC to match backend
+  l1CrossDomainMessenger: string;
+}
+
+export interface DeployNewL2ChainRequest {
+  mode: "l2_to_l1" | "l2_to_l2";
+  l2ChainConfig: L2CrossTradeChainInput;
+}
+
+export const deployNewL2Chain = async (
+  stackId: string,
+  body: DeployNewL2ChainRequest
+): Promise<void> => {
+  await apiPost(`stacks/thanos/${stackId}/cross-trade/deploy-l2-chain`, body);
 };

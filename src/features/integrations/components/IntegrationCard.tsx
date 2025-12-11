@@ -26,6 +26,8 @@ import {
   Trash2,
   X,
   RotateCw,
+  Plus,
+  Coins,
 } from "lucide-react";
 import { useUninstallIntegrationMutation, useCancelIntegrationMutation, useRetryIntegrationMutation } from "../api";
 import { INTEGRATION_TYPES as INTEGRATION_TYPES_CONST } from "../schemas";
@@ -36,6 +38,12 @@ import { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
+import { CrossTradeCard } from "./CrossTrade";
+import { CrossTradeCompactInfo } from "./CrossTradeCard";
+import AddChainDialog from "./AddChainDialog";
+import RegisterTokensDialog from "./RegisterTokensDialog";
+import { useRegisterTokensMutation, useDeployNewL2ChainMutation } from "../api";
+import { DeployNewL2ChainRequest } from "../services/integrationService";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -48,7 +56,31 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showRetryConfirm, setShowRetryConfirm] = useState(false);
-  const integrationType = INTEGRATION_TYPES[integration.type];
+  const [showAddChainDialog, setShowAddChainDialog] = useState(false);
+  const [showRegisterTokensDialog, setShowRegisterTokensDialog] = useState(false);
+  
+  // Normalize integration type - handle old "cross-trade" type from API
+  const normalizedType: Exclude<Integration["type"], "cross-trade"> = (() => {
+    if ((integration.type as string) === "cross-trade") {
+      // If it's the old "cross-trade" type, determine the mode from contracts
+      const mode = integration.info?.contracts?.mode;
+      if (mode === "l2_to_l1") {
+        return "cross-trade-l2-to-l1";
+      } else if (mode === "l2_to_l2") {
+        return "cross-trade-l2-to-l2";
+      }
+      // Default to l2_to_l1 if mode is not available
+      return "cross-trade-l2-to-l1";
+    }
+    return integration.type as Exclude<Integration["type"], "cross-trade">;
+  })();
+  
+  const integrationType = INTEGRATION_TYPES[normalizedType] || {
+    label: integration.type,
+    description: "Unknown integration type",
+    icon: "❓",
+    color: "from-gray-500 to-gray-400",
+  };
   const uninstallMutation = useUninstallIntegrationMutation({
     onSuccess: () => setShowUninstallConfirm(false),
     onError: () => setShowUninstallConfirm(false),
@@ -61,6 +93,40 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     onSuccess: () => setShowRetryConfirm(false),
     onError: () => setShowRetryConfirm(false),
   });
+
+  // Determine mode from integration
+  const mode = integration.info?.contracts?.mode || "l2_to_l1";
+  const isCrossTrade = normalizedType === "cross-trade-l2-to-l1" || normalizedType === "cross-trade-l2-to-l2";
+  const isCompleted = integration.status === "Completed";
+
+
+  const deployL2ChainMutation = useDeployNewL2ChainMutation({
+    onSuccess: () => {
+      setShowAddChainDialog(false);
+    },
+  });
+
+  const registerTokensMutation = useRegisterTokensMutation({
+    onSuccess: () => {
+      setShowRegisterTokensDialog(false);
+    },
+  });
+
+  const handleAddChain = (data: DeployNewL2ChainRequest) => {
+    deployL2ChainMutation.mutate({
+      stackId,
+      mode: data.mode,
+      l2ChainConfig: data.l2ChainConfig,
+    });
+  };
+
+  const handleRegisterTokens = (data: { mode: "l2_to_l1" | "l2_to_l2"; tokens: Array<{ tokenName: string; l1TokenAddress: string; l2TokenInputs: Array<{ chainId: number; tokenAddress: string }> }> }) => {
+    registerTokensMutation.mutate({
+      stackId,
+      mode: data.mode,
+      tokens: data.tokens,
+    });
+  };
 
   const getStatusIcon = () => {
     switch (integration.status) {
@@ -281,16 +347,42 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
           </div>
         </CardHeader>
         <CardContent className="pb-10">{renderCompactInfo()}</CardContent>
-        <Button
-          variant="link"
-          size="sm"
-          onClick={() => setShowModal(true)}
-          className="absolute bottom-3 right-3 h-auto p-0 text-xs hover:underline underline-offset-2"
-          aria-label="View details"
-        >
-          <Eye className="w-3 h-3 mr-1" />
-          View details
-        </Button>
+        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+          {isCrossTrade && isCompleted && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddChainDialog(true)}
+                className="h-8 px-3 text-xs font-medium border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                aria-label="Add Chain"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Add Chain
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRegisterTokensDialog(true)}
+                className="h-8 px-3 text-xs font-medium border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                aria-label="Register Tokens"
+              >
+                <Coins className="w-3.5 h-3.5 mr-1.5" />
+                Register Tokens
+              </Button>
+            </>
+          )}
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="h-auto p-0 text-xs hover:underline underline-offset-2 text-gray-600 hover:text-gray-900 transition-colors"
+            aria-label="View details"
+          >
+            <Eye className="w-3.5 h-3.5 mr-1.5" />
+            View details
+          </Button>
+        </div>
       </Card>
 
       <AlertDialog
@@ -444,6 +536,27 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
           </div>
         </DialogContent>
       </Dialog>
+
+      {isCrossTrade && isCompleted && (
+        <>
+          <AddChainDialog
+            open={showAddChainDialog}
+            onOpenChange={setShowAddChainDialog}
+            onSubmit={handleAddChain}
+            isPending={deployL2ChainMutation.isPending}
+            mode={mode}
+            stackId={stackId}
+          />
+          <RegisterTokensDialog
+            open={showRegisterTokensDialog}
+            onOpenChange={setShowRegisterTokensDialog}
+            onSubmit={handleRegisterTokens}
+            isPending={registerTokensMutation.isPending}
+            mode={mode}
+            integration={integration}
+          />
+        </>
+      )}
     </>
   );
 }

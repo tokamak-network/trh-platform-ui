@@ -507,6 +507,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
               projectId: data.projectId,
               l1ChainConfig: data.l1ChainConfig,
               l2ChainConfig: data.l2ChainConfig,
+              ...(data.tokens && { tokens: data.tokens }),
             },
             { onSettled: () => setInstallType(null) }
           );
@@ -529,6 +530,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
               projectId: data.projectId,
               l1ChainConfig: data.l1ChainConfig,
               l2ChainConfig: data.l2ChainConfig,
+              ...(data.tokens && { tokens: data.tokens }),
             },
             { onSettled: () => setInstallType(null) }
           );
