@@ -38,7 +38,7 @@ const monitoringSchema = z.object({
       enabled: z.boolean(),
       apiToken: z.string().optional(),
       criticalReceiver: z.object({
-        chatId: z.string().min(1, { message: "Chat ID is required" })
+        chatId: z.string()
       }).optional()
     }),
     email: z.object({
@@ -60,6 +60,18 @@ const monitoringSchema = z.object({
 }, {
   message: "Telegram API token is required when Telegram alerts are enabled",
   path: ["alertManager", "telegram", "apiToken"]
+}).refine((data) => {
+  // If telegram is enabled, validate critical receiver chat ID
+  if (data.alertManager.telegram.enabled) {
+    if (!data.alertManager.telegram.criticalReceiver?.chatId || 
+        data.alertManager.telegram.criticalReceiver.chatId.trim() === "") {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "Chat ID is required when Telegram alerts are enabled",
+  path: ["alertManager", "telegram", "criticalReceiver", "chatId"]
 }).refine((data) => {
   // If email is enabled, validate SMTP server
   if (data.alertManager.email.enabled) {
@@ -272,6 +284,7 @@ export default function InstallMonitoringDialog({
                   checked={form.watch("loggingEnabled")}
                   onCheckedChange={(checked) => form.setValue("loggingEnabled", checked)}
                   disabled={isPending}
+                  className="border border-gray-400 data-[state=checked]:border-blue-600"
                 />
                 <Label htmlFor="loggingEnabled">Enable logging</Label>
               </div>
@@ -291,6 +304,7 @@ export default function InstallMonitoringDialog({
                     checked={form.watch("alertManager.telegram.enabled")}
                     onCheckedChange={(checked) => form.setValue("alertManager.telegram.enabled", checked)}
                     disabled={isPending}
+                    className="border border-gray-400 data-[state=checked]:border-blue-600"
                   />
                   <Label htmlFor="telegramEnabled" className="text-base font-medium">Telegram Alerts</Label>
                 </div>
@@ -347,6 +361,7 @@ export default function InstallMonitoringDialog({
                     checked={form.watch("alertManager.email.enabled")}
                     onCheckedChange={(checked) => form.setValue("alertManager.email.enabled", checked)}
                     disabled={isPending}
+                    className="border border-gray-400 data-[state=checked]:border-blue-600"
                   />
                   <Label htmlFor="emailEnabled" className="text-base font-medium">Email Alerts</Label>
                 </div>
