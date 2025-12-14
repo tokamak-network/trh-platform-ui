@@ -67,24 +67,32 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
   );
 
   const getStatusCounts = () => {
+    // Define which statuses are "active" should be counted
+    // this exclude: Cancelled, Cancelling, Terminated, Stopped, Unknown 
+    const activeStatuses = ["Completed", "InProgress", "Pending"];
+
     const counts = {
       completed: 0,
       inProgress: 0,
-      pending: 0,
       failed: 0,
-      total: integrations.length,
+      total: 0,  //calculate from active statuses
     };
 
     integrations.forEach((integration) => {
+      // Only counts active integrations (exclude Cancelled, Cancelling, Terminated, etc)
+      if (!activeStatuses.includes(integration.status)) {
+        return; // skip this integration
+      }
+
+      counts.total++; // Increment total for active integrations only
+
       switch (integration.status) {
         case "Completed":
           counts.completed++;
           break;
         case "InProgress":
-          counts.inProgress++;
-          break;
         case "Pending":
-          counts.pending++;
+          counts.inProgress++; // groups all "in progress" states
           break;
         case "Failed":
           counts.failed++;
@@ -225,7 +233,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
           </CardContent>
         </Card>
 
-        {integrations.length === 0 ? (
+        {integrations.filter((i) =>
+          i.status === "Completed" || i.status === "InProgress" || i.status === "Pending" || i.status === "Cancelling"
+        ).length === 0 ? (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-gray-50 to-slate-100">
             <CardContent>
               <div className="text-center py-12">
@@ -250,9 +260,17 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {integrations.map((integration) => (
-              <IntegrationCard key={integration.id} integration={integration} stackId={stack?.id || ""} />
-            ))}
+            {integrations
+              .filter((integration) =>
+                // Show active integrations: Completed, InProgress, Pending
+                // and hide: failed, Cancelled, Cancelling, terminated, Stopped 
+                integration.status === "Completed" ||
+                integration.status === "InProgress" ||
+                integration.status === "Pending"
+              )
+              .map((integration) => (
+                <IntegrationCard key={integration.id} integration={integration} stackId={stack?.id || ""} />
+              ))}
           </div>
         )}
 

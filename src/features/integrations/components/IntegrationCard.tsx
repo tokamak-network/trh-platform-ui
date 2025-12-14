@@ -78,6 +78,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <div className="w-4 h-4 bg-orange-500 rounded-full animate-pulse" />;
       case "Terminated":
         return <div className="w-4 h-4 bg-red-900 rounded-full" />;
+      case "Cancelling":
+        return <div className="w-4 h-4 bg-orange-500 rounded-full animate-pulse" />;
       case "Cancelled":
         return <div className="w-4 h-4 bg-gray-600 rounded-full" />;
       case "Unknown":
@@ -103,6 +105,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return "Uninstalling";
       case "Terminated":
         return "Uninstalled";
+      case "Cancelling":
+        return "Cancelling...";
       case "Cancelled":
         return "Cancelled";
       case "Unknown":
@@ -122,6 +126,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Failed":
         return "bg-red-100 text-red-800 border-red-200";
+      case "Cancelling":
+        return "bg-orange-100 text-orange-800 border-orange-200";
       case "Cancelled":
         return "bg-gray-100 text-gray-800 border-gray-200";
       default:
@@ -209,14 +215,16 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Badge className={`${getStatusColor()} flex items-center gap-1 text-xs px-2.5 py-1`}>
-                <span className="scale-90">{getStatusIcon()}</span>
-                <span className="font-medium">{StatusText()}</span>
-              </Badge>
-              {integration.type !== "register-candidate" && (
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <Badge className={`${getStatusColor()} flex items-center gap-1 text-xs px-2.5 py-1`}>
+                  <span className="scale-90">{getStatusIcon()}</span>
+                  <span className="font-medium">{StatusText()}</span>
+                </Badge>
+                {/* Removed register candidate exclusion now cancel should work for all integration types */}
+                {/* {integration.type !== "register-candidate" && ( */}
                 <>
-                  {(integration.status === "InProgress" || integration.status === "Pending") && (
+                {(integration.status === "InProgress" || integration.status === "Pending") && (
                     <Button
                       aria-label="Cancel"
                       variant="outline"
@@ -231,7 +239,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                       </span>
                     </Button>
                   )}
-                  {(integration.status === "Failed" || integration.status === "Cancelled") && (
+                  {/* {(integration.status === "Failed" || integration.status === "Cancelled") && ( */}
+                  {integration.status === "Cancelled" && (
                     <Button
                       aria-label="Retry"
                       variant="outline"
@@ -262,6 +271,11 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                     </Button>
                   )}
                 </>
+              </div>
+              {integration.status === "Cancelling" && integration.reason && (
+                <p className="text-xs text-orange-700 text-right max-w-md mt-0.5">
+                  {integration.reason}
+                </p>
               )}
             </div>
           </div>
@@ -321,12 +335,17 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Installation</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Are you sure you want to cancel the installation of ${
-                INTEGRATION_TYPES_CONST[
-                  integration.type as keyof typeof INTEGRATION_TYPES_CONST
-                ].label
-              }? This will stop the current installation process.`}
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                {`Are you sure you want to cancel the installation of ${
+                  INTEGRATION_TYPES_CONST[
+                    integration.type as keyof typeof INTEGRATION_TYPES_CONST
+                  ].label
+                }?`}
+              </p>
+              <p className="text-sm text-orange-600 font-medium">
+                This will stop the installation and clean up any AWS resources that were created. This may take several minutes to complete safely.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

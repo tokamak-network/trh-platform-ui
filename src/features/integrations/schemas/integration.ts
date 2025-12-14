@@ -38,7 +38,7 @@ export interface Integration {
   id: string;
   stack_id: string;
   type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
-  status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Cancelled" | "Unknown";
+  status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
   log_path: string;
