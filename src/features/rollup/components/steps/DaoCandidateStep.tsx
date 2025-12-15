@@ -68,7 +68,7 @@ export function DaoCandidateStep() {
               </p>
             )}
             <p className="text-xs text-gray-500">
-              Additional information or memo for the registration
+              The memo for the registration
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export function DaoCandidateStep() {
               </p>
             )}
             <p className="text-xs text-gray-500">
-              Name or identifier information for the candidate
+              The information for the candidate
             </p>
           </div>
         </div>
