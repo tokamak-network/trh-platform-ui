@@ -73,6 +73,10 @@ const StatusBadge = ({ status }: { status: ThanosDeployment["status"] }) => {
       className: "bg-gray-100 text-gray-700 border-gray-200",
       icon: <Pause className="w-3 h-3" />,
     },
+    Cancelled: {
+      className: "bg-orange-100 text-orange-700 border-orange-200",
+      icon: <AlertCircle className="w-3 h-3" />,
+    },
   } as const;
   const { className, icon } = config[status] || config.InProgress;
   return (

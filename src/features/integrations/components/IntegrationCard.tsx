@@ -24,8 +24,10 @@ import { Integration, INTEGRATION_TYPES } from "../schemas";
 import {
   Eye,
   Trash2,
+  X,
+  RotateCw,
 } from "lucide-react";
-import { useUninstallIntegrationMutation } from "../api";
+import { useUninstallIntegrationMutation, useCancelIntegrationMutation, useRetryIntegrationMutation } from "../api";
 import { INTEGRATION_TYPES as INTEGRATION_TYPES_CONST } from "../schemas";
 
 // Import plugin-specific components
@@ -44,10 +46,20 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showRetryConfirm, setShowRetryConfirm] = useState(false);
   const integrationType = INTEGRATION_TYPES[integration.type];
   const uninstallMutation = useUninstallIntegrationMutation({
     onSuccess: () => setShowUninstallConfirm(false),
     onError: () => setShowUninstallConfirm(false),
+  });
+  const cancelMutation = useCancelIntegrationMutation({
+    onSuccess: () => setShowCancelConfirm(false),
+    onError: () => setShowCancelConfirm(false),
+  });
+  const retryMutation = useRetryIntegrationMutation({
+    onSuccess: () => setShowRetryConfirm(false),
+    onError: () => setShowRetryConfirm(false),
   });
 
   const getStatusIcon = () => {
@@ -66,6 +78,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <div className="w-4 h-4 bg-orange-500 rounded-full animate-pulse" />;
       case "Terminated":
         return <div className="w-4 h-4 bg-red-900 rounded-full" />;
+      case "Cancelling":
+        return <div className="w-4 h-4 bg-orange-500 rounded-full animate-pulse" />;
+      case "Cancelled":
+        return <div className="w-4 h-4 bg-gray-600 rounded-full" />;
       case "Unknown":
         return <div className="w-4 h-4 bg-gray-500 rounded-full" />;
       default:
@@ -89,6 +105,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return "Uninstalling";
       case "Terminated":
         return "Uninstalled";
+      case "Cancelling":
+        return "Cancelling...";
+      case "Cancelled":
+        return "Cancelled";
       case "Unknown":
         return "Unknown";
       default:
@@ -106,6 +126,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Failed":
         return "bg-red-100 text-red-800 border-red-200";
+      case "Cancelling":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "Cancelled":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -173,44 +197,85 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
 
   return (
     <>
-      <Card className="relative border-0 shadow-xl bg-white/60 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+      <Card className="relative border-0 shadow-xl bg-white/60 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 overflow-visible">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
               <div
-                className={`w-10 h-10 bg-gradient-to-r ${integrationType.color} rounded-lg flex items-center justify-center text-white text-lg`}
+                className={`w-10 h-10 shrink-0 bg-gradient-to-r ${integrationType.color} rounded-lg flex items-center justify-center text-white text-lg`}
               >
                 {integrationType.icon}
               </div>
-              <div>
-                <CardTitle className="text-lg">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base font-semibold">
                   {integrationType.label}
                 </CardTitle>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 mt-1">
                   {integrationType.description}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge className={`${getStatusColor()} flex items-center gap-1`}>
-                {getStatusIcon()}
-                {StatusText()}
-              </Badge>
-              {integration.type !== "register-candidate" && (
-                <Button
-                  aria-label="Uninstall"
-                  variant="destructive"
-                  size="icon"
-                  className="h-7 w-7"
-                  disabled={
-                    uninstallMutation.isPending ||
-                    (integration.status !== "Completed" &&
-                      integration.status !== "Failed")
-                  }
-                  onClick={() => setShowUninstallConfirm(true)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <Badge className={`${getStatusColor()} flex items-center gap-1 text-xs px-2.5 py-1`}>
+                  <span className="scale-90">{getStatusIcon()}</span>
+                  <span className="font-medium">{StatusText()}</span>
+                </Badge>
+                {/* Removed register candidate exclusion now cancel should work for all integration types */}
+                {/* {integration.type !== "register-candidate" && ( */}
+                <>
+                {(integration.status === "InProgress" || integration.status === "Pending") && (
+                    <Button
+                      aria-label="Cancel"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 group relative"
+                      disabled={cancelMutation.isPending}
+                      onClick={() => setShowCancelConfirm(true)}
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                        Cancel
+                      </span>
+                    </Button>
+                  )}
+                  {/* {(integration.status === "Failed" || integration.status === "Cancelled") && ( */}
+                  {integration.status === "Cancelled" && (
+                    <Button
+                      aria-label="Retry"
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 group relative"
+                      disabled={retryMutation.isPending}
+                      onClick={() => setShowRetryConfirm(true)}
+                    >
+                      <RotateCw className="w-4 h-4" />
+                      <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                        Retry
+                      </span>
+                    </Button>
+                  )}
+                  {(integration.status === "Completed" || integration.status === "Failed" || integration.status === "Cancelled") && (
+                    <Button
+                      aria-label="Remove"
+                      variant="destructive"
+                      size="icon"
+                      className="h-8 w-8 group relative"
+                      disabled={uninstallMutation.isPending}
+                      onClick={() => setShowUninstallConfirm(true)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                        Remove
+                      </span>
+                    </Button>
+                  )}
+                </>
+              </div>
+              {integration.status === "Cancelling" && integration.reason && (
+                <p className="text-xs text-orange-700 text-right max-w-md mt-0.5">
+                  {integration.reason}
+                </p>
               )}
             </div>
           </div>
@@ -258,6 +323,81 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
               }
             >
               Uninstall
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={showCancelConfirm}
+        onOpenChange={(open) => !open && setShowCancelConfirm(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Installation</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                {`Are you sure you want to cancel the installation of ${
+                  INTEGRATION_TYPES_CONST[
+                    integration.type as keyof typeof INTEGRATION_TYPES_CONST
+                  ].label
+                }?`}
+              </p>
+              <p className="text-sm text-orange-600 font-medium">
+                This will stop the installation and clean up any AWS resources that were created. This may take several minutes to complete safely.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelMutation.isPending}>
+              No
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+              disabled={cancelMutation.isPending}
+              onClick={() =>
+                cancelMutation.mutate({
+                  stackId: integration.stack_id,
+                  integrationId: integration.id,
+                })
+              }
+            >
+              Yes, Cancel
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={showRetryConfirm}
+        onOpenChange={(open) => !open && setShowRetryConfirm(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retry Installation</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Are you sure you want to retry the installation of ${
+                INTEGRATION_TYPES_CONST[
+                  integration.type as keyof typeof INTEGRATION_TYPES_CONST
+                ].label
+              }? This will start a new installation attempt.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={retryMutation.isPending}>
+              No
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={retryMutation.isPending}
+              onClick={() =>
+                retryMutation.mutate({
+                  stackId: integration.stack_id,
+                  integrationId: integration.id,
+                })
+              }
+            >
+              Yes, Retry
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
