@@ -7,9 +7,9 @@ export const networkAndChainSchema = z
     chainName: z
       .string()
       .min(1, "Chain name is required")
-      .max(15, "Chain name must be less than 15 characters")
+      .max(14, "Chain name must be 14 characters or less")
       .regex(
-        /^[a-zA-Z][a-zA-Z0-9\s]*$/,
+        /^[a-zA-Z][a-zA-Z0-9 ]{0,13}$/,
         "Must start with a letter and can only contain letters, numbers and spaces"
       ),
     l1RpcUrl: z
