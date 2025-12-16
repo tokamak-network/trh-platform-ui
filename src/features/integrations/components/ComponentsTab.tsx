@@ -266,7 +266,8 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                 // and hide: failed, Cancelled, Cancelling, terminated, Stopped 
                 integration.status === "Completed" ||
                 integration.status === "InProgress" ||
-                integration.status === "Pending"
+                integration.status === "Pending" ||
+                integration.status === "Cancelling"
               )
               .map((integration) => (
                 <IntegrationCard key={integration.id} integration={integration} stackId={stack?.id || ""} />
