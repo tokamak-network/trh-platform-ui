@@ -90,7 +90,7 @@ export default function InstallDaoCandidateDialog({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (TON)</Label>
+              <Label htmlFor="amount">Amount (TON) <span className="text-red-500">*</span></Label>
               <Input
                 id="amount"
                 type="number"
@@ -110,6 +110,24 @@ export default function InstallDaoCandidateDialog({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="memo">Memo <span className="text-red-500">*</span></Label>
+              <Input
+                id="memo"
+                placeholder="Purpose or reference"
+                disabled={isPending}
+                {...form.register("memo")}
+                className={
+                  form.formState.errors.memo ? "border-destructive" : ""
+                }
+              />
+              {form.formState.errors.memo && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.memo.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="nameInfo">Candidate Name</Label>
               <Input
                 id="nameInfo"
@@ -123,24 +141,6 @@ export default function InstallDaoCandidateDialog({
               {form.formState.errors.nameInfo && (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.nameInfo.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="memo">Memo</Label>
-              <Input
-                id="memo"
-                placeholder="Purpose or reference"
-                disabled={isPending}
-                {...form.register("memo")}
-                className={
-                  form.formState.errors.memo ? "border-destructive" : ""
-                }
-              />
-              {form.formState.errors.memo && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.memo.message}
                 </p>
               )}
             </div>
