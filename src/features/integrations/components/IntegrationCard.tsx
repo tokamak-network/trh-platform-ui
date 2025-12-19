@@ -252,12 +252,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
               {canRemove && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span>
-                      <BinButton
-                        onClick={() => setShowUninstallConfirm(true)}
-                        disabled={uninstallMutation.isPending}
-                      />
-                    </span>
+                    <BinButton
+                      onClick={() => setShowUninstallConfirm(true)}
+                      disabled={uninstallMutation.isPending}
+                    />
                   </TooltipTrigger>
                   <TooltipContent>Remove</TooltipContent>
                 </Tooltip>
@@ -409,7 +407,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <StatusIndicator
-                    status={integration.status as "Completed" | "InProgress" | "Pending" | "Failed" | "Stopped" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown"}
+                    status={integration.status}
                     label={integration.status}
                   />
                 </div>

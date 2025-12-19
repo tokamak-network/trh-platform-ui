@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import type { Integration } from "../schemas";
 
-type Status = "Completed" | "InProgress" | "Pending" | "Failed" | "Stopped" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown";
+type Status = Integration["status"];
 
 interface StatusIndicatorProps {
   status: Status;
