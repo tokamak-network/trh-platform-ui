@@ -90,7 +90,7 @@ export default function InstallDaoCandidateDialog({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (TON)</Label>
+              <Label htmlFor="amount">Amount (TON) <span className="text-red-500">*</span></Label>
               <Input
                 id="amount"
                 type="number"
@@ -98,13 +98,25 @@ export default function InstallDaoCandidateDialog({
                 placeholder="1000.1"
                 disabled={isPending}
                 {...form.register("amount", { valueAsNumber: true })}
-                className={
-                  form.formState.errors.amount ? "border-destructive" : ""
-                }
               />
               {form.formState.errors.amount && (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.amount.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="memo">Memo <span className="text-red-500">*</span></Label>
+              <Input
+                id="memo"
+                placeholder="Purpose or reference"
+                disabled={isPending}
+                {...form.register("memo")}
+              />
+              {form.formState.errors.memo && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.memo.message}
                 </p>
               )}
             </div>
@@ -116,31 +128,10 @@ export default function InstallDaoCandidateDialog({
                 placeholder="Your candidate name"
                 disabled={isPending}
                 {...form.register("nameInfo")}
-                className={
-                  form.formState.errors.nameInfo ? "border-destructive" : ""
-                }
               />
               {form.formState.errors.nameInfo && (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.nameInfo.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="memo">Memo</Label>
-              <Input
-                id="memo"
-                placeholder="Purpose or reference"
-                disabled={isPending}
-                {...form.register("memo")}
-                className={
-                  form.formState.errors.memo ? "border-destructive" : ""
-                }
-              />
-              {form.formState.errors.memo && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.memo.message}
                 </p>
               )}
             </div>
