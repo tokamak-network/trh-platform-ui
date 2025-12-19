@@ -273,7 +273,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <Button
           variant="ghost"
           size="sm"
-          className="absolute bottom-3 right-3 text-xs text-gray-500 hover:text-gray-900"
+          className="absolute bottom-3 right-3 text-xs text-blue-500 hover:text-blue-700"
           onClick={() => setShowModal(true)}
         >
           <Eye className="w-3.5 h-3.5 mr-1" />
@@ -408,12 +408,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                   {integrationType.label}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge
-                    className={`${getStatusColor()} flex items-center gap-1`}
-                  >
-                    {getStatusIcon()}
-                    {integration.status}
-                  </Badge>
+                  <StatusIndicator
+                    status={integration.status as "Completed" | "InProgress" | "Pending" | "Failed" | "Stopped" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown"}
+                    label={integration.status}
+                  />
                 </div>
               </div>
             </DialogTitle>
