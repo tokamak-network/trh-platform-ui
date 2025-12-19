@@ -98,9 +98,6 @@ export default function InstallDaoCandidateDialog({
                 placeholder="1000.1"
                 disabled={isPending}
                 {...form.register("amount", { valueAsNumber: true })}
-                className={
-                  form.formState.errors.amount ? "border-destructive" : ""
-                }
               />
               {form.formState.errors.amount && (
                 <p className="text-sm text-destructive">
@@ -116,9 +113,6 @@ export default function InstallDaoCandidateDialog({
                 placeholder="Purpose or reference"
                 disabled={isPending}
                 {...form.register("memo")}
-                className={
-                  form.formState.errors.memo ? "border-destructive" : ""
-                }
               />
               {form.formState.errors.memo && (
                 <p className="text-sm text-destructive">
@@ -134,9 +128,6 @@ export default function InstallDaoCandidateDialog({
                 placeholder="Your candidate name"
                 disabled={isPending}
                 {...form.register("nameInfo")}
-                className={
-                  form.formState.errors.nameInfo ? "border-destructive" : ""
-                }
               />
               {form.formState.errors.nameInfo && (
                 <p className="text-sm text-destructive">
