@@ -33,6 +33,9 @@ export const BinButton = forwardRef<HTMLButtonElement, BinButtonProps>(
             strokeLinejoin="round"
           />
         </svg>
+        <span className="absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-gray-800 text-white text-xs font-medium rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap pointer-events-none z-50 shadow-md">
+          Uninstall
+        </span>
       </button>
     );
   }

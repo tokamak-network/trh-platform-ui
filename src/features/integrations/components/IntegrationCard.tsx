@@ -250,15 +250,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                 </Tooltip>
               )}
               {canRemove && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <BinButton
-                      onClick={() => setShowUninstallConfirm(true)}
-                      disabled={uninstallMutation.isPending}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent>Remove</TooltipContent>
-                </Tooltip>
+                <BinButton
+                  onClick={() => setShowUninstallConfirm(true)}
+                  disabled={uninstallMutation.isPending}
+                />
               )}
             </div>
           </div>
