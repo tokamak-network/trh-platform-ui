@@ -26,19 +26,19 @@ export function StatusIndicator({ status, label }: StatusIndicatorProps) {
   const config = statusConfig[status] || statusConfig.Unknown;
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${config.bgColor} border ${config.borderColor}`}>
-      <div className="relative flex items-center justify-center w-4 h-4">
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bgColor} border ${config.borderColor}`}>
+      <div className="relative flex items-center justify-center w-3.5 h-3.5">
         {config.pulse && (
           <span className={`absolute inset-0 rounded-full ${config.dotColor} opacity-30 animate-ping`} />
         )}
         <span
-          className={`relative w-3.5 h-3.5 rounded-full ${config.dotColor}`}
+          className={`relative w-2.5 h-2.5 rounded-full ${config.dotColor}`}
           style={{
-            boxShadow: `inset 0 -3px 6px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.2)`
+            boxShadow: `inset 0 -2px 4px rgba(0,0,0,0.25), inset 0 1px 3px rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.2)`
           }}
         />
       </div>
-      <span className={`text-sm font-medium ${config.textColor}`}>{label}</span>
+      <span className={`text-xs font-medium ${config.textColor}`}>{label}</span>
     </div>
   );
 }

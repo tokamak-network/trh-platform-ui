@@ -13,33 +13,23 @@ export function BinButton({ onClick, disabled }: BinButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="group relative flex flex-col items-center justify-center w-8 h-8 rounded-md bg-red-500 hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed cursor-pointer transition-colors duration-200 overflow-hidden"
+      className="group relative bg-transparent border-none p-1 disabled:cursor-not-allowed cursor-pointer"
     >
       <svg
+        viewBox="0 0 24 24"
+        height="22"
+        width="22"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
-        viewBox="0 0 39 7"
-        className="w-3 origin-right transition-transform duration-200 group-hover:rotate-45"
+        className="transition-transform duration-200 group-hover:scale-125 group-disabled:opacity-50"
       >
-        <line strokeWidth="4" stroke="white" y2="5" x2="39" y1="5" />
-        <line strokeWidth="3" stroke="white" y2="1.5" x2="26.0357" y1="1.5" x1="12" />
-      </svg>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 33 39"
-        className="w-2.5"
-      >
-        <mask fill="white" id="bin-mask">
-          <path d="M0 0H33V35C33 37.2091 31.2091 39 29 39H4C1.79086 39 0 37.2091 0 35V0Z" />
-        </mask>
         <path
-          mask="url(#bin-mask)"
-          fill="white"
-          d="M0 0H33H0ZM37 35C37 39.4183 33.4183 43 29 43H4C-0.418278 43 -4 39.4183 -4 35H4H29H37ZM4 43C-0.418278 43 -4 39.4183 -4 35V0H4V35V43ZM37 0V35C37 39.4183 33.4183 43 29 43V35V0H37Z"
+          d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"
+          className="stroke-red-500 transition-colors duration-200 group-hover:stroke-red-700"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <path strokeWidth="4" stroke="white" d="M12 6L12 29" />
-        <path strokeWidth="4" stroke="white" d="M21 6V29" />
       </svg>
     </button>
   );
