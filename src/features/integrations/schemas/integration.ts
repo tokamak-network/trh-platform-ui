@@ -53,31 +53,26 @@ export const INTEGRATION_TYPES = {
   bridge: {
     label: "Bridge",
     description: "Cross-chain bridge for asset transfers",
-    icon: "🔗",
-    color: "from-blue-500 to-cyan-400",
+    logo: "/icons/integrations/bridge.png",
   },
   "block-explorer": {
     label: "Block Explorer",
     description: "Blockchain explorer for transaction tracking",
-    icon: "🔍",
-    color: "from-purple-500 to-pink-400",
+    logo: "/icons/integrations/explorer.png",
   },
   monitoring: {
     label: "Monitoring",
     description: "System monitoring and analytics",
-    icon: "📊",
-    color: "from-green-500 to-emerald-400",
+    logo: "/icons/integrations/monitor.png",
   },
   "register-candidate": {
     label: "Staking/DAO Candidate Registration",
     description: "Staking/DAO candidate registration",
-    icon: "🏛️",
-    color: "from-orange-500 to-red-400",
+    logo: "/icons/integrations/staking.png",
   },
   "system-pulse": {
     label: "System Pulse",
     description: "System Pulse provides real-time visibility into platform health and service availability",
-    icon: "⏱️",
-    color: "from-indigo-500 to-blue-400",
+    logo: "/icons/integrations/pulse.png",
   },
 } as const;
