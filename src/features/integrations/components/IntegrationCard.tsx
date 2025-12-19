@@ -210,12 +210,12 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     <>
       <Card className="relative border border-gray-200 rounded-xl shadow-sm bg-white hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-4 min-w-0">
-              <Image src={integrationType.logo} alt={integrationType.label} width={48} height={48} className="shrink-0" />
-              <CardTitle className="text-lg font-semibold leading-tight">{integrationType.label}</CardTitle>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Image src={integrationType.logo} alt={integrationType.label} width={44} height={44} className="shrink-0" />
+              <CardTitle className="text-base font-semibold leading-tight">{integrationType.label}</CardTitle>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
               <StatusIndicator status={integration.status} label={StatusText()} />
               {canCancel && (
                 <Tooltip>
@@ -323,17 +323,19 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Installation</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                {`Are you sure you want to cancel the installation of ${
-                  INTEGRATION_TYPES_CONST[
-                    integration.type as keyof typeof INTEGRATION_TYPES_CONST
-                  ].label
-                }?`}
-              </p>
-              <p className="text-sm text-orange-600 font-medium">
-                This will stop the installation and clean up any AWS resources that were created. This may take several minutes to complete safely.
-              </p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  {`Are you sure you want to cancel the installation of ${
+                    INTEGRATION_TYPES_CONST[
+                      integration.type as keyof typeof INTEGRATION_TYPES_CONST
+                    ].label
+                  }?`}
+                </p>
+                <p className="text-sm text-orange-600 font-medium">
+                  This will stop the installation and clean up any AWS resources that were created. This may take several minutes to complete safely.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
