@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -201,11 +202,13 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div
-                className={`w-10 h-10 shrink-0 bg-gradient-to-r ${integrationType.color} rounded-lg flex items-center justify-center text-white text-lg`}
-              >
-                {integrationType.icon}
-              </div>
+              <Image
+                src={integrationType.logo}
+                alt={integrationType.label}
+                width={56}
+                height={56}
+                className="shrink-0"
+              />
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-base font-semibold">
                   {integrationType.label}
@@ -407,11 +410,12 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <DialogContent className="w-auto min-w-[600px] max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 bg-gradient-to-r ${integrationType.color} rounded-lg flex items-center justify-center text-white text-lg`}
-              >
-                {integrationType.icon}
-              </div>
+              <Image
+                src={integrationType.logo}
+                alt={integrationType.label}
+                width={48}
+                height={48}
+              />
               <div>
                 <div className="text-xl font-semibold">
                   {integrationType.label}

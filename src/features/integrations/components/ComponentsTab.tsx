@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -250,8 +251,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {Object.entries(INTEGRATION_TYPES).map(([type, config]) => (
-                    <Badge key={type} variant="outline" className="text-sm">
-                      {config.icon} {config.label}
+                    <Badge key={type} variant="outline" className="text-sm flex items-center gap-1.5 py-1">
+                      <Image src={config.logo} alt={config.label} width={20} height={20} className="object-contain" />
+                      {config.label}
                     </Badge>
                   ))}
                 </div>
@@ -287,11 +289,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                   className="p-4 bg-white/50 rounded-lg border border-gray-200"
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div
-                      className={`w-8 h-8 bg-gradient-to-r ${config.color} rounded-lg flex items-center justify-center text-white text-sm`}
-                    >
-                      {config.icon}
-                    </div>
+                    <Image src={config.logo} alt={config.label} width={48} height={48} />
                     <div>
                       <h4 className="font-semibold text-slate-800">
                         {config.label}
