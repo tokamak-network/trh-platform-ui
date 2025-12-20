@@ -25,12 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,8 +70,6 @@ const ethAddressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
   message: "Invalid Ethereum address format",
 });
 
-// Helper to validate URL
-const urlSchema = z.string().url({ message: "Valid URL is required" });
 
 const l1CrossTradeChainInputSchema = z.object({
   rpc: z.string().min(1, { message: "RPC URL is required" }).refine(
@@ -1641,7 +1634,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2CrossDomainMessenger-${index}`}
                         placeholder="0x..."
-                        disabled={isPending || l2AutoFilledFields[index]?.has('crossDomainMessenger')}
+                        disabled={isPending}
                         {...form.register(`l2ChainConfig.${index}.crossDomainMessenger`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1668,7 +1661,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2NativeTokenAddress-${index}`}
                         placeholder="0x..."
-                        disabled={isPending || l2AutoFilledFields[index]?.has('nativeTokenAddress')}
+                        disabled={isPending}
                         {...form.register(`l2ChainConfig.${index}.nativeTokenAddress`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1695,7 +1688,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2L1StandardBridgeAddress-${index}`}
                         placeholder="0x..."
-                        disabled={isPending || l2AutoFilledFields[index]?.has('l1StandardBridgeAddress')}
+                        disabled={isPending}
                         {...form.register(`l2ChainConfig.${index}.l1StandardBridgeAddress`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1722,7 +1715,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2L1UsdcBridgeAddress-${index}`}
                         placeholder="0x..."
-                        disabled={isPending || l2AutoFilledFields[index]?.has('l1UsdcBridgeAddress')}
+                        disabled={isPending}
                         {...form.register(`l2ChainConfig.${index}.l1UsdcBridgeAddress`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]
@@ -1749,7 +1742,7 @@ export default function InstallCrossTradeDialog({
                       <Input
                         id={`l2L1CrossDomainMessenger-${index}`}
                         placeholder="0x..."
-                        disabled={isPending || l2AutoFilledFields[index]?.has('l1CrossDomainMessenger')}
+                        disabled={isPending}
                         {...form.register(`l2ChainConfig.${index}.l1CrossDomainMessenger`)}
                         className={
                           form.formState.errors.l2ChainConfig?.[index]

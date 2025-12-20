@@ -639,7 +639,7 @@ export default function AddChainDialog({
                 <Input
                   id="l2CrossDomainMessenger"
                   placeholder="0x..."
-                  disabled={isPending || l2AutoFilledFields.has('crossDomainMessenger')}
+                  disabled={isPending}
                   {...form.register("l2ChainConfig.crossDomainMessenger")}
                   className={
                     form.formState.errors.l2ChainConfig?.crossDomainMessenger
@@ -664,7 +664,7 @@ export default function AddChainDialog({
                 <Input
                   id="l2NativeTokenAddress"
                   placeholder="0x..."
-                  disabled={isPending || l2AutoFilledFields.has('nativeTokenAddress')}
+                  disabled={isPending}
                   {...form.register("l2ChainConfig.nativeTokenAddress")}
                   className={
                     form.formState.errors.l2ChainConfig?.nativeTokenAddress
@@ -689,7 +689,7 @@ export default function AddChainDialog({
                 <Input
                   id="l2L1StandardBridgeAddress"
                   placeholder="0x..."
-                  disabled={isPending || l2AutoFilledFields.has('l1StandardBridgeAddress')}
+                  disabled={isPending}
                   {...form.register("l2ChainConfig.l1StandardBridgeAddress")}
                   className={
                     form.formState.errors.l2ChainConfig?.l1StandardBridgeAddress
@@ -714,7 +714,7 @@ export default function AddChainDialog({
                 <Input
                   id="l2L1UsdcBridgeAddress"
                   placeholder="0x..."
-                  disabled={isPending || l2AutoFilledFields.has('l1UsdcBridgeAddress')}
+                  disabled={isPending}
                   {...form.register("l2ChainConfig.l1UsdcBridgeAddress")}
                   className={
                     form.formState.errors.l2ChainConfig?.l1UsdcBridgeAddress
@@ -739,7 +739,7 @@ export default function AddChainDialog({
                 <Input
                   id="l2L1CrossDomainMessenger"
                   placeholder="0x..."
-                  disabled={isPending || l2AutoFilledFields.has('l1CrossDomainMessenger')}
+                  disabled={isPending}
                   {...form.register("l2ChainConfig.l1CrossDomainMessenger")}
                   className={
                     form.formState.errors.l2ChainConfig?.l1CrossDomainMessenger
