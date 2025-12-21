@@ -36,10 +36,29 @@ import {
 import { L2ChainConfig, RegisterTokensAPIRequest } from "../services/integrationService";
 import { Integration } from "../schemas/integration";
 
-// Helper to validate Ethereum address
-const ethAddressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
-  message: "Invalid Ethereum address format",
-});
+// Type for L2 chain config from integration.config.l2ChainConfig (camelCase format)
+interface L2ChainConfigInput {
+  chainId: number;
+  chainName: string;
+  rpc?: string;
+  privateKey?: string;
+  isDeployedNew?: boolean;
+  blockExplorerConfig?: {
+    apiKey?: string;
+    url: string;
+    type: string;
+  } | null;
+  crossDomainMessenger?: string;
+  deploymentScriptPath?: string;
+  contractName?: string;
+  nativeTokenAddress?: string;
+  l1StandardBridgeAddress?: string;
+  l1USDCBridgeAddress?: string;
+  l1CrossDomainMessenger?: string;
+  crossTradeProxyAddress?: string;
+  crossTradeAddress?: string;
+}
+
 
 // Chain selection schema: { chainId, tokenAddress }
 const chainSelectionSchema = z.object({
@@ -50,19 +69,33 @@ const chainSelectionSchema = z.object({
 });
 
 // Token schema: { tokenName, l1TokenAddress, chainSelections }
-const tokenSchema = z.object({
+// Note: This will be refined based on mode in the form component
+const baseTokenSchema = z.object({
   tokenName: z.string().min(1, "Token name is required"),
   l1TokenAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, {
     message: "Invalid L1 token address format",
   }),
-  chainSelections: z.array(chainSelectionSchema).min(2, "At least 2 chains must be registered"),
+  chainSelections: z.array(chainSelectionSchema),
 });
 
-const registerTokensSchema = z.object({
-  tokens: z.array(tokenSchema).min(1, "At least one token is required"),
-});
+// Create schema factory that depends on mode
+const createRegisterTokensSchema = (mode: "l2_to_l1" | "l2_to_l2") => {
+  const minChains = mode === "l2_to_l1" ? 1 : 2;
+  const tokenSchema = baseTokenSchema.extend({
+    chainSelections: z.array(chainSelectionSchema).min(
+      minChains,
+      mode === "l2_to_l1" 
+        ? "At least 1 chain must be registered" 
+        : "At least 2 chains must be registered"
+    ),
+  });
+  
+  return z.object({
+    tokens: z.array(tokenSchema).min(1, "At least one token is required"),
+  });
+};
 
-export type RegisterTokensFormData = z.infer<typeof registerTokensSchema>;
+export type RegisterTokensFormData = z.infer<ReturnType<typeof createRegisterTokensSchema>>;
 
 interface RegisterTokensDialogProps {
   open: boolean;
@@ -84,6 +117,11 @@ export default function RegisterTokensDialog({
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [pendingData, setPendingData] = React.useState<RegisterTokensAPIRequest | null>(null);
 
+  const registerTokensSchema = React.useMemo(
+    () => createRegisterTokensSchema(mode),
+    [mode]
+  );
+
   const form = useForm<RegisterTokensFormData>({
     resolver: zodResolver(registerTokensSchema),
     defaultValues: {
@@ -100,8 +138,8 @@ export default function RegisterTokensDialog({
     
     // Transform from camelCase (chainId, chainName) to snake_case (chain_id, chain_name)
     return l2ChainConfig
-      .filter((config: any) => config.chainId && config.chainName)
-      .map((config: any): L2ChainConfig => ({
+      .filter((config: L2ChainConfigInput) => config.chainId && config.chainName)
+      .map((config: L2ChainConfigInput): L2ChainConfig => ({
         chain_id: config.chainId,
         chain_name: config.chainName,
         rpc: config.rpc || "",
@@ -123,15 +161,27 @@ export default function RegisterTokensDialog({
   // Initialize form when dialog opens and chain configs are available
   React.useEffect(() => {
     if (open && l2ChainConfigs.length > 0) {
+      // For l2_to_l1 mode, only 1 chain selection is needed
+      // For l2_to_l2 mode, at least 2 chain selections are needed
+      const initialChainSelections = mode === "l2_to_l1" 
+        ? [{ chainId: 0, tokenAddress: "" }]
+        : [
+            { chainId: 0, tokenAddress: "" },
+            { chainId: 0, tokenAddress: "" },
+          ];
+      
+      // Auto-select the first chain if there's only one chain and mode is l2_to_l1
+      const autoSelectedChainSelections = 
+        mode === "l2_to_l1" && l2ChainConfigs.length === 1
+          ? [{ chainId: l2ChainConfigs[0].chain_id, tokenAddress: "" }]
+          : initialChainSelections;
+      
       form.reset({
         tokens: [
           {
             tokenName: "",
             l1TokenAddress: "",
-            chainSelections: [
-              { chainId: 0, tokenAddress: "" },
-              { chainId: 0, tokenAddress: "" },
-            ],
+            chainSelections: autoSelectedChainSelections,
           },
         ],
       });
@@ -142,17 +192,20 @@ export default function RegisterTokensDialog({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, l2ChainConfigs.length]);
+  }, [open, l2ChainConfigs.length, mode]);
 
   const handleSubmit = form.handleSubmit((data) => {
     // Transform form data to API format
+    // Filter out any invalid chain selections (chainId === 0) as a safety measure
     const tokens = data.tokens.map((token) => ({
       tokenName: token.tokenName,
       l1TokenAddress: token.l1TokenAddress,
-      l2TokenInputs: token.chainSelections.map((selection) => ({
-        chainId: selection.chainId,
-        tokenAddress: selection.tokenAddress,
-      })),
+      l2TokenInputs: token.chainSelections
+        .filter((selection) => selection.chainId > 0)
+        .map((selection) => ({
+          chainId: selection.chainId,
+          tokenAddress: selection.tokenAddress,
+        })),
     }));
     
     const transformedData: RegisterTokensAPIRequest = {
@@ -187,7 +240,10 @@ export default function RegisterTokensDialog({
           <DialogHeader>
             <DialogTitle>Register Tokens</DialogTitle>
             <DialogDescription>
-              Register tokens for the cross-chain bridge. {mode === "l2_to_l2" && "All tokens must be registered across all L2 chains."}
+              Register tokens for the cross-chain bridge.{" "}
+              {mode === "l2_to_l1" 
+                ? "Each token must be registered on one L2 chain." 
+                : "All tokens must be registered across all L2 chains."}
             </DialogDescription>
           </DialogHeader>
 
@@ -203,20 +259,30 @@ export default function RegisterTokensDialog({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    const currentTokens = form.getValues("tokens") || [];
-                    form.setValue("tokens", [
-                      ...currentTokens,
-                      {
-                        tokenName: "",
-                        l1TokenAddress: "",
-                        chainSelections: [
-                          { chainId: 0, tokenAddress: "" },
-                          { chainId: 0, tokenAddress: "" },
-                        ],
-                      },
-                    ], { shouldValidate: false, shouldDirty: true });
-                  }}
+                    onClick={() => {
+                      const currentTokens = form.getValues("tokens") || [];
+                      const initialChainSelections = mode === "l2_to_l1" 
+                        ? [{ chainId: 0, tokenAddress: "" }]
+                        : [
+                            { chainId: 0, tokenAddress: "" },
+                            { chainId: 0, tokenAddress: "" },
+                          ];
+                      
+                      // Auto-select the first chain if there's only one chain and mode is l2_to_l1
+                      const autoSelectedChainSelections = 
+                        mode === "l2_to_l1" && l2ChainConfigs.length === 1
+                          ? [{ chainId: l2ChainConfigs[0].chain_id, tokenAddress: "" }]
+                          : initialChainSelections;
+                      
+                      form.setValue("tokens", [
+                        ...currentTokens,
+                        {
+                          tokenName: "",
+                          l1TokenAddress: "",
+                          chainSelections: autoSelectedChainSelections,
+                        },
+                      ], { shouldValidate: false, shouldDirty: true });
+                    }}
                   disabled={isPending}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -227,12 +293,12 @@ export default function RegisterTokensDialog({
               {formTokens.map((token, tokenIndex) => {
                 const tokenKey = `token-${tokenIndex}`;
                 const chainSelections = token.chainSelections || [];
-                // For "Add Chain" button, check if there are chains available beyond the first two
-                const firstChainId = chainSelections[0]?.chainId || 0;
-                const secondChainId = chainSelections[1]?.chainId || 0;
+                // For "Add Chain" button, check if there are chains that haven't been selected yet
+                const selectedChainIds = chainSelections
+                  .map((sel) => sel.chainId)
+                  .filter((id): id is number => id > 0);
                 const availableChains = l2ChainConfigs.filter(
-                  (chain) =>
-                    chain.chain_id !== firstChainId && chain.chain_id !== secondChainId
+                  (chain) => !selectedChainIds.includes(chain.chain_id)
                 );
 
                 return (
@@ -266,7 +332,6 @@ export default function RegisterTokensDialog({
                           disabled={isPending}
                           value={token.tokenName || ""}
                           onChange={(e) => {
-                            const currentTokens = form.getValues("tokens") || [];
                             const upperValue = e.target.value.toUpperCase();
                             form.setValue(`tokens.${tokenIndex}.tokenName`, upperValue, {
                               shouldValidate: true,
@@ -309,10 +374,12 @@ export default function RegisterTokensDialog({
 
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <Label>Chain Selections (At least 2 required)</Label>
-                          {chainSelections.length >= 2 &&
+                          <Label>
+                            Chain Selections ({mode === "l2_to_l1" ? "1 required" : "At least 2 required"})
+                          </Label>
+                          {chainSelections.length >= (mode === "l2_to_l1" ? 1 : 2) &&
                             chainSelections[0]?.chainId > 0 &&
-                            chainSelections[1]?.chainId > 0 &&
+                            (mode === "l2_to_l2" ? chainSelections[1]?.chainId > 0 : true) &&
                             availableChains.length > 0 && (
                               <Button
                                 type="button"
@@ -340,8 +407,14 @@ export default function RegisterTokensDialog({
 
                         {chainSelections.map((selection, selectionIndex) => {
                           const selectionKey = `selection-${tokenIndex}-${selectionIndex}`;
-                          const isFirstOrSecond = selectionIndex < 2;
-                          const canRemove = chainSelections.length > 2;
+                          // For l2_to_l1 mode, only the first chain is required
+                          // For l2_to_l2 mode, first two chains are required
+                          const isRequired = mode === "l2_to_l1" 
+                            ? selectionIndex < 1 
+                            : selectionIndex < 2;
+                          const canRemove = mode === "l2_to_l1" 
+                            ? chainSelections.length > 1 
+                            : chainSelections.length > 2;
 
                           return (
                             <div key={selectionKey} className="space-y-3 rounded-md border p-3">
@@ -378,15 +451,14 @@ export default function RegisterTokensDialog({
                                     <SelectContent>
                                       {l2ChainConfigs
                                         .filter((chain) => {
-                                          // For first and second selections, show all chains
-                                          if (isFirstOrSecond) return true;
-                                          // For additional selections (3rd, 4th, etc.), exclude the first two selected chains
-                                          const firstChainId = chainSelections[0]?.chainId || 0;
-                                          const secondChainId = chainSelections[1]?.chainId || 0;
-                                          return (
-                                            chain.chain_id !== firstChainId &&
-                                            chain.chain_id !== secondChainId
-                                          );
+                                          // Get all chain IDs that are already selected in other selections
+                                          const selectedChainIds = chainSelections
+                                            .map((sel, idx) => idx !== selectionIndex ? sel.chainId : null)
+                                            .filter((id): id is number => id !== null && id > 0);
+                                          
+                                          // Exclude chains that are already selected in other selections
+                                          // But allow the current selection's chain to remain (so user can keep their selection)
+                                          return !selectedChainIds.includes(chain.chain_id);
                                         })
                                         .map((chain) => (
                                           <SelectItem
@@ -404,7 +476,7 @@ export default function RegisterTokensDialog({
                                     </p>
                                   )}
                                 </div>
-                                {canRemove && !isFirstOrSecond && (
+                                {canRemove && !isRequired && (
                                   <Button
                                     type="button"
                                     variant="ghost"

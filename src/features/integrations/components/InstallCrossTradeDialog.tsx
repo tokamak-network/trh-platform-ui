@@ -595,8 +595,22 @@ export default function InstallCrossTradeDialog({
     }
   };
 
+  // Type for default contract addresses
+  type DefaultContractAddresses = {
+    l2CrossDomainMessenger: string;
+    nativeTokenAddress: string;
+    l1StandardBridgeAddress: string;
+    l1UsdcBridgeAddress: string;
+    l1CrossDomainMessenger: string;
+  };
+
+  // Type for the fetch function
+  type FetchDefaultContractAddresses = (
+    chainId: number
+  ) => Promise<DefaultContractAddresses | null>;
+
   // Function to fetch default contract addresses by chain ID
-  const fetchDefaultContractAddresses = async (chainId: number) => {
+  const fetchDefaultContractAddresses: FetchDefaultContractAddresses = async (chainId: number) => {
     try {
       // The API returns: { status: 200, message: "Success", data: { "10": {...}, "11155420": {...} } }
       // apiGet wraps it: { data: { status, message, data }, success, message? }
@@ -650,7 +664,6 @@ export default function InstallCrossTradeDialog({
 
   // Watch L1 RPC and fetch chainId
   const l1Rpc = form.watch("l1ChainConfig.rpc");
-  const l1ChainId = form.watch("l1ChainConfig.chainId");
   React.useEffect(() => {
     if (l1Rpc && l1Rpc.trim()) {
       // Reset error state when RPC changes
@@ -710,8 +723,8 @@ export default function InstallCrossTradeDialog({
             async (chainId) => {
               form.setValue(`l2ChainConfig.${index}.chainId`, chainId);
               
-              // For chains from the second one onwards (index >= 1), fetch and fill default contract addresses
-              if (index >= 1 && chainId > 0) {
+              // Fetch and fill default contract addresses for all chains when chainId is available
+              if (chainId > 0) {
                 console.log(`Fetching default contract addresses for L2 chain ${index} with chain ID:`, chainId);
                 const contractAddresses = await fetchDefaultContractAddresses(chainId);
                 if (contractAddresses) {
@@ -744,7 +757,20 @@ export default function InstallCrossTradeDialog({
                     l1CrossDomainMessenger: updatedConfig.l1CrossDomainMessenger,
                   });
                 } else {
-                  console.warn(`No contract addresses found for chain ID ${chainId}`);
+                  console.warn(`No contract addresses found for chain ID ${chainId}, clearing fields`);
+                  // Clear contract address fields if not found
+                  form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, "");
+                  form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, "");
+                  form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, "");
+                  form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, "");
+                  form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, "");
+                  
+                  // Clear auto-filled fields tracking
+                  setL2AutoFilledFields(prev => {
+                    const updated = { ...prev };
+                    delete updated[index];
+                    return updated;
+                  });
                 }
               }
             },
@@ -767,6 +793,18 @@ export default function InstallCrossTradeDialog({
           return newErrors;
         });
         form.setValue(`l2ChainConfig.${index}.chainId`, 0);
+        // Clear contract address fields when RPC is cleared
+        form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, "");
+        form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, "");
+        form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, "");
+        form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, "");
+        form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, "");
+        // Clear auto-filled fields tracking
+        setL2AutoFilledFields(prev => {
+          const updated = { ...prev };
+          delete updated[index];
+          return updated;
+        });
       }
     });
   }, [l2Rpcs.join(","), form]);
