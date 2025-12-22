@@ -34,13 +34,12 @@ export const useUninstallIntegrationMutation = (options?: {
     mutationFn: ({
       stackId,
       type,
-      id,
     }: {
       stackId: string;
       type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2";
       id?: string;
     }) => {
-      return uninstallIntegration(stackId, type, id);
+      return uninstallIntegration(stackId, type);
     },
     onMutate: () => {
       toast.loading("Uninstalling component...", {

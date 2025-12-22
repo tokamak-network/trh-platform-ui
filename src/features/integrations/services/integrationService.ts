@@ -13,18 +13,15 @@ export const getIntegrations = async (
 export const uninstallIntegration = async (
   stackId: string,
   type: Integration["type"],
-  id?: string
 ): Promise<void> => {
   // Map cross-trade types (old and new) to the same API endpoint
   let apiType: string = type;
   let url: string;
   
   if (type === "cross-trade-l2-to-l1" || type === "cross-trade-l2-to-l2") {
-    if (!id) {
-      throw new Error("id is required for cross-trade integration types");
-    }
+    const mode = type === "cross-trade-l2-to-l1" ? "l2_to_l1" : "l2_to_l2";
     apiType = "cross-trade";
-    url = `stacks/thanos/${stackId}/integrations/${apiType}/${id}`;
+    url = `stacks/thanos/${stackId}/integrations/${apiType}?mode=${mode}`;
   } else {
     url = `stacks/thanos/${stackId}/integrations/${apiType}`;
   }
