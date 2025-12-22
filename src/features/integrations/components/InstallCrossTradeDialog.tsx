@@ -702,6 +702,8 @@ export default function InstallCrossTradeDialog({
   // Watch L2 RPCs and fetch chainIds
   const l2Rpcs = form.watch("l2ChainConfig")?.map((config) => config.rpc) || [];
   React.useEffect(() => {
+    const timeouts: NodeJS.Timeout[] = [];
+    
     l2Rpcs.forEach((rpc, index) => {
       if (rpc && rpc.trim()) {
         // Reset error state when RPC changes
@@ -711,8 +713,17 @@ export default function InstallCrossTradeDialog({
           return newErrors;
         });
         const timeoutId = setTimeout(() => {
+          // Get current RPC value to ensure it hasn't changed
+          const currentConfigs = form.getValues("l2ChainConfig");
+          const currentRpc = currentConfigs[index]?.rpc;
+          
+          // Only proceed if RPC is still present
+          if (!currentRpc || !currentRpc.trim()) {
+            return;
+          }
+          
           fetchChainIdFromRpc(
-            rpc,
+            currentRpc,
             (loading) => {
               setL2FetchingChainId(prev => {
                 const newFetching = [...prev];
@@ -727,6 +738,14 @@ export default function InstallCrossTradeDialog({
               if (chainId > 0) {
                 console.log(`Fetching default contract addresses for L2 chain ${index} with chain ID:`, chainId);
                 const contractAddresses = await fetchDefaultContractAddresses(chainId);
+                
+                // Verify RPC is still present before setting contract addresses (critical check)
+                const finalConfigs = form.getValues("l2ChainConfig");
+                const finalRpc = finalConfigs[index]?.rpc;
+                if (!finalRpc || !finalRpc.trim()) {
+                  return;
+                }
+                
                 if (contractAddresses) {
                   console.log(`Setting default contract addresses for L2 chain ${index}:`, contractAddresses);
                   form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, contractAddresses.l2CrossDomainMessenger);
@@ -758,19 +777,24 @@ export default function InstallCrossTradeDialog({
                   });
                 } else {
                   console.warn(`No contract addresses found for chain ID ${chainId}, clearing fields`);
-                  // Clear contract address fields if not found
-                  form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, "");
-                  form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, "");
-                  form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, "");
-                  form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, "");
-                  form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, "");
-                  
-                  // Clear auto-filled fields tracking
-                  setL2AutoFilledFields(prev => {
-                    const updated = { ...prev };
-                    delete updated[index];
-                    return updated;
-                  });
+                  // Only clear if RPC is still empty or this chain's RPC was actually cleared
+                  const checkConfigs = form.getValues("l2ChainConfig");
+                  const checkRpc = checkConfigs[index]?.rpc;
+                  if (!checkRpc || !checkRpc.trim()) {
+                    // Clear contract address fields if not found AND RPC is empty
+                    form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, "");
+                    form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, "");
+                    form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, "");
+                    form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, "");
+                    form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, "");
+                    
+                    // Clear auto-filled fields tracking
+                    setL2AutoFilledFields(prev => {
+                      const updated = { ...prev };
+                      delete updated[index];
+                      return updated;
+                    });
+                  }
                 }
               }
             },
@@ -783,30 +807,41 @@ export default function InstallCrossTradeDialog({
             }
           );
         }, 500); // Debounce
-
-        return () => clearTimeout(timeoutId);
+        
+        timeouts.push(timeoutId);
       } else {
-        // Reset error and chainId when RPC is cleared
-        setL2ChainIdErrors(prev => {
-          const newErrors = [...prev];
-          newErrors[index] = false;
-          return newErrors;
-        });
-        form.setValue(`l2ChainConfig.${index}.chainId`, 0);
-        // Clear contract address fields when RPC is cleared
-        form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, "");
-        form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, "");
-        form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, "");
-        form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, "");
-        form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, "");
-        // Clear auto-filled fields tracking
-        setL2AutoFilledFields(prev => {
-          const updated = { ...prev };
-          delete updated[index];
-          return updated;
-        });
+        // Only clear if RPC is actually empty (not just when effect runs)
+        const currentConfigs = form.getValues("l2ChainConfig");
+        const currentRpc = currentConfigs[index]?.rpc;
+        
+        if (!currentRpc || !currentRpc.trim()) {
+          // Reset error and chainId when RPC is cleared
+          setL2ChainIdErrors(prev => {
+            const newErrors = [...prev];
+            newErrors[index] = false;
+            return newErrors;
+          });
+          form.setValue(`l2ChainConfig.${index}.chainId`, 0);
+          // Clear contract address fields when RPC is cleared
+          form.setValue(`l2ChainConfig.${index}.crossDomainMessenger`, "");
+          form.setValue(`l2ChainConfig.${index}.nativeTokenAddress`, "");
+          form.setValue(`l2ChainConfig.${index}.l1StandardBridgeAddress`, "");
+          form.setValue(`l2ChainConfig.${index}.l1UsdcBridgeAddress`, "");
+          form.setValue(`l2ChainConfig.${index}.l1CrossDomainMessenger`, "");
+          // Clear auto-filled fields tracking
+          setL2AutoFilledFields(prev => {
+            const updated = { ...prev };
+            delete updated[index];
+            return updated;
+          });
+        }
       }
     });
+    
+    // Cleanup all timeouts
+    return () => {
+      timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    };
   }, [l2Rpcs.join(","), form]);
 
   // Watch L2 private keys and RPCs, check balances
