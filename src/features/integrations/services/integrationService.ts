@@ -20,13 +20,11 @@ export const uninstallIntegration = async (
   let url: string;
   
   if (type === "cross-trade-l2-to-l1" || type === "cross-trade-l2-to-l2") {
-    apiType = "cross-trade";
-    // Include id in URL for cross-trade uninstall
-    if (id) {
-      url = `stacks/thanos/${stackId}/integrations/${apiType}/${id}`;
-    } else {
-      url = `stacks/thanos/${stackId}/integrations/${apiType}`;
+    if (!id) {
+      throw new Error("id is required for cross-trade integration types");
     }
+    apiType = "cross-trade";
+    url = `stacks/thanos/${stackId}/integrations/${apiType}/${id}`;
   } else {
     url = `stacks/thanos/${stackId}/integrations/${apiType}`;
   }
