@@ -8,18 +8,11 @@ export function CrossTradeCompactInfo({ integration }: {
     info?: IntegrationInfo;
   }; 
 }) {
-  if (integration.info?.contracts) {
-    const contracts = integration.info.contracts;
+  if (integration.info?.url) {
     return (
       <div className="text-sm text-gray-600">
-        <p>
-          <span className="font-medium">Mode:</span> {contracts.mode.toUpperCase()}
-        </p>
-        <p>
-          <span className="font-medium">L1 Proxy:</span>{" "}
-          <span className="font-mono text-xs">
-            {contracts.l1_cross_trade_proxy_address.slice(0, 10)}...
-          </span>
+        <p className="truncate">
+          <span className="font-medium">URL:</span> {integration.info.url}
         </p>
       </div>
     );

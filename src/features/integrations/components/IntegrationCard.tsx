@@ -229,6 +229,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <MonitoringCard {...commonProps} stackId={stackId} />;
       case "register-candidate":
         return <RegisterCandidateCard {...commonProps} />;
+      case "cross-trade-l2-to-l1":
+        return <CrossTradeCard {...commonProps} />;
+      case "cross-trade-l2-to-l2":
+        return <CrossTradeCard {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -252,6 +256,10 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <MonitoringCompactInfo {...commonProps} />;
       case "register-candidate":
         return <RegisterCandidateCompactInfo {...commonProps} />;
+      case "cross-trade-l2-to-l1":
+        return <CrossTradeCompactInfo {...commonProps} />;
+      case "cross-trade-l2-to-l2":
+        return <CrossTradeCompactInfo {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -347,7 +355,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
           </div>
         </CardHeader>
         <CardContent className="pb-10">{renderCompactInfo()}</CardContent>
-        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+        <div className="absolute bottom-3 left-3 flex items-center gap-2">
           {isCrossTrade && isCompleted && (
             <>
               <Button
@@ -372,11 +380,13 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
               </Button>
             </>
           )}
+        </div>
+        <div className="absolute bottom-3 right-3 flex items-center gap-2 h-8">
           <Button
             variant="link"
             size="sm"
             onClick={() => setShowModal(true)}
-            className="h-auto p-0 text-xs hover:underline underline-offset-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="h-8 p-0 text-xs hover:underline underline-offset-2 text-gray-600 hover:text-gray-900 transition-colors flex items-center"
             aria-label="View details"
           >
             <Eye className="w-3.5 h-3.5 mr-1.5" />
