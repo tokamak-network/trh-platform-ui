@@ -122,6 +122,10 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     "install-monitoring": "Install Monitoring Dashboard",
     "uninstall-monitoring": "Uninstall Monitoring Dashboard",
     "register-candidate": "Staking/DAO Candidate Registration",
+    "install-cross-trade-l2-to-l1": "Install Cross-Trade L2 to L1",
+    "uninstall-cross-trade-l2-to-l1": "Uninstall Cross-Trade L2 to L1",
+    "install-cross-trade-l2-to-l2": "Install Cross-Trade L2 to L2",
+    "uninstall-cross-trade-l2-to-l2": "Uninstall Cross-Trade L2 to L2",
   };
 
   if (!stack) return null;

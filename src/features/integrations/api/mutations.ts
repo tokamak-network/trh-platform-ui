@@ -7,6 +7,9 @@ import {
   installBlockExplorerIntegration,
   installMonitoringIntegration,
   registerDaoCandidateIntegration,
+  installCrossChainBridgeIntegration,
+  installCrossTradeL2ToL1Integration,
+  installCrossTradeL2ToL2Integration,
   uninstallMonitoringIntegration,
   disableEmailAlert,
   disableTelegramAlert,
@@ -14,6 +17,11 @@ import {
   configureEmailAlert,
   cancelIntegration,
   retryIntegration,
+  InstallCrossChainBridgeRequestBody,
+  registerTokens,
+  RegisterTokensAPIRequest,
+  deployNewL2Chain,
+  DeployNewL2ChainRequest,
 } from "../services/integrationService";
 import { queryClient } from "@/providers/query-provider";
 import { integrationKeys } from "./queries";
@@ -28,8 +36,11 @@ export const useUninstallIntegrationMutation = (options?: {
       type,
     }: {
       stackId: string;
-      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
-    }) => uninstallIntegration(stackId, type),
+      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2";
+      id?: string;
+    }) => {
+      return uninstallIntegration(stackId, type);
+    },
     onMutate: () => {
       toast.loading("Uninstalling component...", {
         id: "uninstall-integration",
@@ -273,6 +284,100 @@ export const useRegisterDaoCandidateMutation = (options?: {
   });
 };
 
+export interface InstallCrossChainBridgeVariables {
+  stackId: string;
+  mode: "l2_to_l1" | "l2_to_l2";
+  projectId: string;
+  l1ChainConfig: InstallCrossChainBridgeRequestBody["l1ChainConfig"];
+  l2ChainConfig: InstallCrossChainBridgeRequestBody["l2ChainConfig"];
+}
+
+export interface InstallCrossTradeL2ToL1Variables {
+  stackId: string;
+  projectId: string;
+  l1ChainConfig: InstallCrossChainBridgeRequestBody["l1ChainConfig"];
+  l2ChainConfig: InstallCrossChainBridgeRequestBody["l2ChainConfig"];
+  tokens?: InstallCrossChainBridgeRequestBody["tokens"];
+}
+
+export const useInstallCrossTradeL2ToL1Mutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: InstallCrossTradeL2ToL1Variables) =>
+      installCrossTradeL2ToL1Integration(variables.stackId, {
+        projectId: variables.projectId,
+        l1ChainConfig: variables.l1ChainConfig,
+        l2ChainConfig: variables.l2ChainConfig,
+        ...(variables.tokens && { tokens: variables.tokens }),
+      }),
+    onMutate: () => {
+      toast.loading("Installing Cross-Trade L2 to L1...", {
+        id: "install-cross-trade-l2-to-l1",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Cross-Trade L2 to L1 installation initiated", {
+        id: "install-cross-trade-l2-to-l1",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to install Cross-Trade L2 to L1", {
+        id: "install-cross-trade-l2-to-l1",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export interface InstallCrossTradeL2ToL2Variables {
+  stackId: string;
+  projectId: string;
+  l1ChainConfig: InstallCrossChainBridgeRequestBody["l1ChainConfig"];
+  l2ChainConfig: InstallCrossChainBridgeRequestBody["l2ChainConfig"];
+  tokens?: InstallCrossChainBridgeRequestBody["tokens"];
+}
+
+export const useInstallCrossTradeL2ToL2Mutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: InstallCrossTradeL2ToL2Variables) =>
+      installCrossTradeL2ToL2Integration(variables.stackId, {
+        projectId: variables.projectId,
+        l1ChainConfig: variables.l1ChainConfig,
+        l2ChainConfig: variables.l2ChainConfig,
+        ...(variables.tokens && { tokens: variables.tokens }),
+      }),
+    onMutate: () => {
+      toast.loading("Installing Cross-Trade L2 to L2...", {
+        id: "install-cross-trade-l2-to-l2",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Cross-Trade L2 to L2 installation initiated", {
+        id: "install-cross-trade-l2-to-l2",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to install Cross-Trade L2 to L2", {
+        id: "install-cross-trade-l2-to-l2",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
 export const useDisableEmailAlertMutation = (options?: {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
@@ -450,6 +555,45 @@ export const useCancelIntegrationMutation = (options?: {
   });
 };
 
+export interface RegisterTokensVariables {
+  stackId: string;
+  mode: "l2_to_l1" | "l2_to_l2";
+  tokens: RegisterTokensAPIRequest["tokens"];
+}
+
+export const useRegisterTokensMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: RegisterTokensVariables) =>
+      registerTokens(variables.stackId, {
+        mode: variables.mode,
+        tokens: variables.tokens,
+      }),
+    onMutate: () => {
+      toast.loading("Registering tokens...", {
+        id: "register-tokens",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Tokens registered successfully", {
+        id: "register-tokens",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to register tokens", {
+        id: "register-tokens",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
 export const useRetryIntegrationMutation = (options?: {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
@@ -479,6 +623,45 @@ export const useRetryIntegrationMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to retry installation", {
         id: "retry-integration",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export interface DeployNewL2ChainVariables {
+  stackId: string;
+  mode: "l2_to_l1" | "l2_to_l2";
+  l2ChainConfig: DeployNewL2ChainRequest["l2ChainConfig"];
+}
+
+export const useDeployNewL2ChainMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (variables: DeployNewL2ChainVariables) =>
+      deployNewL2Chain(variables.stackId, {
+        mode: variables.mode,
+        l2ChainConfig: variables.l2ChainConfig,
+      }),
+    onMutate: () => {
+      toast.loading("Deploying new L2 chain...", {
+        id: "deploy-l2-chain",
+      });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("L2 chain deployment initiated", {
+        id: "deploy-l2-chain",
+      });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.list(variables.stackId),
+      });
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to deploy L2 chain", {
+        id: "deploy-l2-chain",
       });
       options?.onError?.(error);
     },
