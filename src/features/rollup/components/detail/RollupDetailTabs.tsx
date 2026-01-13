@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ThanosStack } from "../../schemas/thanos";
+import { ThanosStack, ThanosStackStatus } from "../../schemas/thanos";
 import { RollupDetailTab } from "../../schemas/detail-tabs";
 import {
   OverviewTab,
@@ -28,6 +28,10 @@ export function RollupDetailTabs({
   const router = useRouter();
 
   const handleTabChange = (value: string) => {
+    if (value === "backup" && stack?.status !== ThanosStackStatus.DEPLOYED) {
+      return;
+    }
+
     // Get the current pathname and search params
     const pathname = window.location.pathname;
     const searchParams = new URLSearchParams(window.location.search);
@@ -66,7 +70,8 @@ export function RollupDetailTabs({
         </TabsTrigger>
         <TabsTrigger
           value="backup"
-          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+          disabled={stack?.status !== ThanosStackStatus.DEPLOYED}
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Backup
         </TabsTrigger>

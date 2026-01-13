@@ -18,6 +18,13 @@ import {
   CreateRegisterMetadataDAORequest,
   RegisterMetadataDAOData,
 } from "../schemas/register-metadata-dao";
+import {
+  BackupStatus,
+  RecoveryPoint,
+  BackupConfigureRequest,
+  BackupAttachRequest,
+  BackupRestoreRequest,
+} from "../schemas/backup";
 
 export const deployRollup = async (request: RollupDeploymentRequest) => {
   const response = await apiPost<{ id: string }>("stacks/thanos", request, {
@@ -353,4 +360,72 @@ export const createRegisterMetadataDAO = async (
     request
   );
   return response.data;
+};
+
+// Get backup status for a Thanos stack
+export const getBackupStatus = async (id: string): Promise<BackupStatus> => {
+  const response = await apiGet<BackupStatus>(
+    `stacks/thanos/${id}/integrations/backup/status`,
+    { timeout: 60000 }
+  );
+  return response.data;
+};
+
+// Get backup checkpoints/snapshots for a Thanos stack
+export const getBackupCheckpoints = async (
+  id: string,
+  limit?: string
+): Promise<RecoveryPoint[]> => {
+  const queryParams = limit ? `?limit=${limit}` : "";
+  const response = await apiGet<RecoveryPoint[]>(
+    `stacks/thanos/${id}/integrations/backup/checkpoints${queryParams}`,
+    { timeout: 60000 }
+  );
+  return response.data;
+};
+
+// Create a backup snapshot
+export const createBackupSnapshot = async (
+  id: string,
+  request?: { awsAccessKey?: string; awsSecretAccessKey?: string; awsRegion?: string }
+): Promise<void> => {
+  await apiPost<void>(`stacks/thanos/${id}/integrations/backup/snapshot`, request || {});
+};
+
+// Restore from a backup
+export const restoreFromBackup = async (
+  id: string,
+  request: BackupRestoreRequest
+): Promise<void> => {
+  await apiPost<void>(
+    `stacks/thanos/${id}/integrations/backup/restore`,
+    request
+  );
+};
+
+// Configure backup settings
+export const configureBackup = async (
+  id: string,
+  request: BackupConfigureRequest
+): Promise<void> => {
+  await apiPost<void>(
+    `stacks/thanos/${id}/integrations/backup/configure`,
+    request
+  );
+};
+
+// Attach backup storage
+export const attachBackupStorage = async (
+  id: string,
+  request: BackupAttachRequest
+): Promise<void> => {
+  await apiPost<void>(
+    `stacks/thanos/${id}/integrations/backup/attach`,
+    request
+  );
+};
+
+// Cleanup backup resources
+export const cleanupBackup = async (id: string): Promise<void> => {
+  await apiDelete<void>(`stacks/thanos/${id}/integrations/backup/cleanup`);
 };

@@ -7,6 +7,8 @@ import {
   getThanosDeployments,
   getThanosDeploymentLogs,
   getRegisterMetadataDAO,
+  getBackupStatus,
+  getBackupCheckpoints,
 } from "../services/rollupService";
 import { getIntegrations } from "@/features/integrations/services/integrationService";
 
@@ -20,6 +22,10 @@ export const rollupKeys = {
     [...rollupKeys.thanosStack(stackId), "integrations"] as const,
   registerMetadataDAO: (stackId: string) =>
     [...rollupKeys.thanosStack(stackId), "register-metadata-dao"] as const,
+  backupStatus: (stackId: string) =>
+    [...rollupKeys.thanosStack(stackId), "backup-status"] as const,
+  backupCheckpoints: (stackId: string, limit?: string) =>
+    [...rollupKeys.thanosStack(stackId), "backup-checkpoints", limit] as const,
   lists: () => [...rollupKeys.all, "list"] as const,
   list: (filters: string) => [...rollupKeys.lists(), { filters }] as const,
   details: () => [...rollupKeys.all, "detail"] as const,
@@ -110,5 +116,27 @@ export const useRegisterMetadataDAOQuery = (id?: string) => {
     queryFn: () => getRegisterMetadataDAO(id as string),
     enabled: Boolean(id),
     refetchInterval: 120000, // 2 minutes
+  });
+};
+
+export const useBackupStatusQuery = (id?: string) => {
+  return useQuery({
+    queryKey: id
+      ? rollupKeys.backupStatus(id)
+      : (["thanosStacks", "backup-status", "disabled"] as const),
+    queryFn: () => getBackupStatus(id as string),
+    enabled: Boolean(id),
+    staleTime: 30000,
+  });
+};
+
+export const useBackupCheckpointsQuery = (id?: string, limit?: string) => {
+  return useQuery({
+    queryKey: id
+      ? rollupKeys.backupCheckpoints(id, limit)
+      : (["thanosStacks", "backup-checkpoints", "disabled"] as const),
+    queryFn: () => getBackupCheckpoints(id as string, limit),
+    enabled: Boolean(id),
+    staleTime: 60000,
   });
 };

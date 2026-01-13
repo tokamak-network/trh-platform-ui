@@ -1,29 +1,582 @@
 "use client";
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Database,
+  HardDrive,
+  RefreshCw,
+  Upload,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Server,
+  Shield,
+} from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
+import {
+  useBackupStatusQuery,
+  useBackupCheckpointsQuery,
+} from "../../../api/queries";
+import {
+  useCreateSnapshotMutation,
+  useRestoreBackupMutation,
+  useConfigureBackupMutation,
+  useAttachStorageMutation,
+} from "../../../api/mutations";
+import { BackupConfigureRequest, BackupAttachRequest } from "../../../schemas/backup";
 
 export function BackupTab({ stack }: RollupDetailTabProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [attachDialogOpen, setAttachDialogOpen] = useState(false);
+  const [selectedRecoveryPoint, setSelectedRecoveryPoint] = useState<string>("");
+  
+  // Backup configuration state
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
+  const [backupTime, setBackupTime] = useState("02:30");
+  const [retentionDays, setRetentionDays] = useState("30");
+  
+  // Attach storage state
+  const [efsId, setEfsId] = useState("");
+  const [pvcs, setPvcs] = useState("");
+  const [stss, setStss] = useState("");
+
+  // Query hooks
+  const {
+    data: backupStatus,
+    isLoading: isLoadingStatus,
+    error: statusError,
+    refetch: refetchStatus,
+    isFetching: isFetchingStatus,
+  } = useBackupStatusQuery(stack?.id);
+
+  useEffect(() => {
+    if (!backupStatus) return;
+    const nextTime = backupStatus.NextBackupTime?.split(" ")[1];
+    if (nextTime) {
+      setBackupTime(nextTime || "02:30");
+    }
+
+    const retentionMatch = backupStatus.ExpectedExpiryDate?.match(/\((\d+)\s+days?/i);
+    if (retentionMatch?.[1]) {
+      setRetentionDays(retentionMatch[1] || "30");
+    }
+  }, [backupStatus]);
+
+  const {
+    data: checkpoints,
+    isLoading: isLoadingCheckpoints,
+    error: checkpointsError,
+    refetch: refetchCheckpoints,
+    isFetching: isFetchingCheckpoints,
+  } = useBackupCheckpointsQuery(stack?.id, "20");
+
+  // Refresh all backup data
+  const handleRefresh = async () => {
+    setError(null);
+    try {
+      await Promise.all([refetchStatus(), refetchCheckpoints()]);
+      setSuccess("Backup data refreshed successfully!");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError("Failed to refresh backup data");
+    }
+  };
+
+  const isRefreshing = isFetchingStatus || isFetchingCheckpoints;
+
+  // Mutation hooks
+  const createSnapshotMutation = useCreateSnapshotMutation({
+    onSuccess: () => {
+      setSuccess("Backup snapshot creation initiated!");
+      setError(null);
+    },
+    onError: (err: Error) => {
+      setError(err.message || "Failed to create snapshot");
+      setSuccess(null);
+    },
+  });
+
+  const restoreBackupMutation = useRestoreBackupMutation({
+    onSuccess: () => {
+      setSuccess("Backup restore initiated successfully!");
+      setError(null);
+      setRestoreDialogOpen(false);
+      setSelectedRecoveryPoint("");
+    },
+    onError: (err: Error) => {
+      setError(err.message || "Failed to restore backup");
+      setSuccess(null);
+    },
+  });
+
+  const configureBackupMutation = useConfigureBackupMutation({
+    onSuccess: () => {
+      setSuccess("Backup configuration updated!");
+      setError(null);
+    },
+    onError: (err: Error) => {
+      setError(err.message || "Failed to configure backup");
+      setSuccess(null);
+    },
+  });
+
+  const attachStorageMutation = useAttachStorageMutation({
+    onSuccess: () => {
+      setSuccess("Storage attached successfully!");
+      setError(null);
+      setAttachDialogOpen(false);
+      setEfsId("");
+      setPvcs("");
+      setStss("");
+    },
+    onError: (err: Error) => {
+      setError(err.message || "Failed to attach storage");
+      setSuccess(null);
+    },
+  });
+
+  const handleCreateSnapshot = () => {
+    if (!stack?.id) return;
+    setError(null);
+    setSuccess(null);
+    
+    const awsCreds = getAwsCredentials();
+    createSnapshotMutation.mutate({
+      id: stack.id,
+      request: awsCreds,
+    });
+  };
+
+  // Extract AWS credentials from stack config
+  const getAwsCredentials = () => {
+    console.log("stack.config", stack?.config);
+    if (!stack?.config) return {};
+
+    return {
+      awsAccessKey: stack.config.awsAccessKey || undefined,
+      awsSecretAccessKey: stack.config.awsSecretAccessKey || undefined,
+      awsRegion: stack.config.awsRegion || undefined,
+    };
+  };
+
+  const handleRestoreBackup = () => {
+    if (!stack?.id || !selectedRecoveryPoint) return;
+    setError(null);
+    setSuccess(null);
+    
+    const awsCreds = getAwsCredentials();
+    restoreBackupMutation.mutate({
+      id: stack.id,
+      request: { 
+        recoveryPointID: selectedRecoveryPoint,
+        ...awsCreds,
+      },
+    });
+  };
+
+  const handleConfigureBackup = () => {
+    if (!stack?.id) return;
+    setError(null);
+    setSuccess(null);
+    
+    const awsCreds = getAwsCredentials();
+    const request: BackupConfigureRequest = {
+      daily: backupTime,
+      keep: retentionDays,
+      ...awsCreds,
+    };
+    
+    configureBackupMutation.mutate({ id: stack.id, request });
+  };
+
+  const handleAttachStorage = () => {
+    if (!stack?.id) return;
+    setError(null);
+    setSuccess(null);
+    
+    const awsCreds = getAwsCredentials();
+    const request: BackupAttachRequest = {
+      efsId: efsId || undefined,
+      pvcs: pvcs || undefined,
+      stss: stss || undefined,
+      ...awsCreds,
+    };
+    
+    attachStorageMutation.mutate({ id: stack.id, request });
+  };
+
+  if (isLoadingStatus) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-0 shadow-xl">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 to-cyan-100">
-        <CardContent>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-8 h-8 text-white" />
+      {error && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            {success}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Refresh Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          variant="outline"
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          {isRefreshing ? "Refreshing..." : "Refresh Backup Data"}
+        </Button>
+      </div>
+
+      {/* Top row: Backup Status and Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Backup Status Card */}
+        <Card className="border-0 shadow-xl">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                Backup Status
+              </CardTitle>
+              {backupStatus?.IsProtected && (
+                <Badge className="bg-green-100 text-green-800">Protected</Badge>
+              )}
             </div>
-            <h3 className="text-xl font-semibold text-slate-800 mb-2">
-              Backup Coming Soon
-            </h3>
-            <p className="text-slate-600 font-medium max-w-md mx-auto">
-              The rollup backup functionality is currently under development.
-              Soon you&apos;ll be able to backup your rollup data and restore it if needed.
-            </p>
-          </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              {backupStatus ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Region:</span>
+                    <span className="text-sm font-medium">{backupStatus.Region}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Namespace:</span>
+                    <span className="text-sm font-medium">{backupStatus.Namespace}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Account ID:</span>
+                    <span className="text-sm font-medium">{backupStatus.AccountID}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">EFS ARN:</span>
+                    <span className="text-sm font-medium truncate ml-2">{backupStatus.ARN}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Protected:</span>
+                    <span className="text-sm font-medium">{backupStatus.IsProtected ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Latest Recovery Point:</span>
+                    <span className="text-sm font-medium">{backupStatus.LatestRecoveryPoint}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Next Backup:</span>
+                    <span className="text-sm font-medium">{backupStatus.NextBackupTime}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Schedule:</span>
+                    <span className="text-sm font-medium">{backupStatus.BackupSchedule}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Vaults:</span>
+                    <span className="text-sm font-medium truncate ml-2">
+                      {backupStatus.BackupVaults?.join(", ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Expiry:</span>
+                    <span className="text-sm font-medium">{backupStatus.ExpectedExpiryDate}</span>
+                  </div>
+                </>
+              ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                {statusError ? "Failed to load backup status" : "No backup configured"}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Backup Actions Card */}
+        <Card className="border-0 shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Backup Actions
+            </CardTitle>
+            <CardDescription>Manage your rollup backups</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={handleCreateSnapshot}
+              disabled={createSnapshotMutation.isPending}
+              className="w-full"
+              variant="outline"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {createSnapshotMutation.isPending ? "Creating..." : "Create Snapshots"}
+            </Button>
+            <Button
+              onClick={() => setRestoreDialogOpen(true)}
+              disabled={!checkpoints || checkpoints.length === 0}
+              className="w-full"
+              variant="outline"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Restore from Backup
+            </Button>
+            <Button
+              onClick={() => setAttachDialogOpen(true)}
+              className="w-full"
+              variant="outline"
+            >
+              <HardDrive className="w-4 h-4 mr-2" />
+              Attach to New Storage
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Snapshots Section - will be implemented in next todo */}
+      <Card className="border-0 shadow-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            Recent Snapshots
+          </CardTitle>
+          <CardDescription>Recent backup checkpoints and recovery points</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingCheckpoints ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : checkpoints && checkpoints.length > 0 ? (
+            <div className="space-y-2">
+              {checkpoints.map((checkpoint) => (
+                <div
+                  key={checkpoint.RecoveryPointARN}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{checkpoint.Vault}</div>
+                    <div className="text-xs text-muted-foreground">{checkpoint.RecoveryPointARN}</div>
+                    <div className="text-xs text-muted-foreground">{checkpoint.Created}</div>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">
+                    {checkpoint.Status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              {checkpointsError ? "Failed to load checkpoints" : "No snapshots available"}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Backup Configuration Section - will be implemented in next todo */}
+      <Card className="border-0 shadow-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Server className="w-5 h-5" />
+            Backup Configuration
+          </CardTitle>
+          <CardDescription>Configure automatic backup settings</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Auto Backup</Label>
+            <Badge variant={autoBackupEnabled ? "default" : "secondary"}>
+              {autoBackupEnabled ? "Enabled" : "Disabled"}
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="backupTime">Backup Time (UTC)</Label>
+            <Input
+              id="backupTime"
+              type="time"
+              value={backupTime}
+              onChange={(e) => setBackupTime(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="retentionPeriod">Retention Period (days)</Label>
+            <Input
+              id="retentionPeriod"
+              type="number"
+              value={retentionDays}
+              onChange={(e) => setRetentionDays(e.target.value)}
+              min="1"
+              max="365"
+            />
+          </div>
+          <Button
+            onClick={handleConfigureBackup}
+            disabled={configureBackupMutation.isPending}
+            className="w-full"
+          >
+            {configureBackupMutation.isPending ? "Updating..." : "Configure Backup"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Restore Dialog */}
+      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restore from Backup</DialogTitle>
+            <DialogDescription>
+              Select a recovery point to restore your rollup data
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recoveryPoint">Recovery Point</Label>
+              <Select
+                value={selectedRecoveryPoint}
+                onValueChange={setSelectedRecoveryPoint}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a recovery point" />
+                </SelectTrigger>
+                <SelectContent>
+                  {checkpoints?.map((checkpoint) => (
+                    <SelectItem
+                      key={checkpoint.RecoveryPointARN}
+                      value={checkpoint.RecoveryPointARN}
+                    >
+                      {checkpoint.Vault} - {checkpoint.Created}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRestoreDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRestoreBackup}
+              disabled={!selectedRecoveryPoint || restoreBackupMutation.isPending}
+            >
+              {restoreBackupMutation.isPending ? "Restoring..." : "Restore"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attach Storage Dialog */}
+      <Dialog open={attachDialogOpen} onOpenChange={setAttachDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Attach to New Storage</DialogTitle>
+            <DialogDescription>
+              Configure storage attachment for backup
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="efsId">EFS ID</Label>
+              <Input
+                id="efsId"
+                placeholder="fs-xxxxxxxxxx"
+                value={efsId}
+                onChange={(e) => setEfsId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pvcs">Persistent Volume Claims (PVCs)</Label>
+              <Input
+                id="pvcs"
+                placeholder="pvc-name-1,pvc-name-2"
+                value={pvcs}
+                onChange={(e) => setPvcs(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stss">StatefulSets (STSs)</Label>
+              <Input
+                id="stss"
+                placeholder="sts-name-1,sts-name-2"
+                value={stss}
+                onChange={(e) => setStss(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAttachDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAttachStorage}
+              disabled={attachStorageMutation.isPending}
+            >
+              {attachStorageMutation.isPending ? "Attaching..." : "Attach"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
