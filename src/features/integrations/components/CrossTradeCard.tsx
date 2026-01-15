@@ -12,7 +12,10 @@ export function CrossTradeCompactInfo({ integration }: {
     return (
       <div className="text-sm text-gray-600">
         <p className="truncate">
-          <span className="font-medium">URL:</span> {integration.info.url}
+          <span className="font-medium">URL:</span>{" "}
+          <a href={integration.info.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            {integration.info.url}
+          </a>
         </p>
       </div>
     );
