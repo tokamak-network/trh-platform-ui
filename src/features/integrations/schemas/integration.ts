@@ -32,12 +32,27 @@ export interface IntegrationInfo {
     registration_time: string;
     rollup_config_address: string;
   };
+  contracts?: {
+    mode: "l2_to_l1" | "l2_to_l2";
+    l1_cross_trade_proxy_address: string;
+    l1_cross_trade_address: string;
+    l2_cross_trade_proxy_addresses: Record<number, string>;
+    l2_cross_trade_addresses: Record<number, string>;
+  };
+  registered_tokens?: Array<{
+    token_name: string;
+    l1_token_address: string;
+    l2_token_inputs: Array<{
+      rpc: string;
+      chain_id: number;
+    }>;
+  }>;
 }
 
 export interface Integration {
   id: string;
   stack_id: string;
-  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
+  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2";
   status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
@@ -80,4 +95,16 @@ export const INTEGRATION_TYPES = {
     icon: "⏱️",
     color: "from-indigo-500 to-blue-400",
   },
+  "cross-trade-l2-to-l1": {
+    label: "Cross-Trade: L2 to L1",
+    description: "Cross-chain bridge for L2 to L1 trading",
+    icon: "💰",
+    color: "from-blue-500 to-cyan-400",
+  },
+  "cross-trade-l2-to-l2": {
+    label: "Cross-Trade: L2 to L2",
+    description: "Cross-chain bridge for L2 to L2 trading",
+    icon: "💰",
+    color: "from-indigo-500 to-purple-400",
+  }
 } as const;
