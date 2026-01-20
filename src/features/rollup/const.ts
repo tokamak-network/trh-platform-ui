@@ -3,3 +3,8 @@ export const THANOS_STACK_PREREQUISITE_GUIDE_URL =
 
 export const DAO_CANDIDATE_GUIDE_URL =
 "https://docs.tokamak.network/home/service-guide/staking-and-dao/tokamak-network-dao/dao-candidates/dao-candidate-registration"
+
+export const CHAIN_NETWORK = {
+    MAINNET: "mainnet",
+    TESTNET: "testnet",
+}

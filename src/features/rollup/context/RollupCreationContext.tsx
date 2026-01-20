@@ -28,6 +28,7 @@ const defaultFormData: CreateRollupFormData = {
     batchSubmissionFreq: "1440",
     outputRootFreq: "240",
     challengePeriod: "12",
+    enableBackup: false,
   },
   accountAndAws: {
     seedPhrase: Array(12).fill(""),

@@ -1,6 +1,5 @@
 // Backup API request and response types matching backend DTOs
 
-// Backend backup status response (PascalCase fields)
 export interface BackupStatus {
   Region: string;
   Namespace: string;

@@ -9,6 +9,7 @@ import { Plus, Globe } from "lucide-react";
 import { RPCUrl, RPCUrlFormData } from "../../schemas";
 import { RPCUrlCard } from "./RPCUrlCard";
 import { RPCUrlForm } from "./RPCUrlForm";
+import { CHAIN_NETWORK } from "@/features/rollup/const";
 
 interface RPCUrlsListProps {
   rpcUrls: RPCUrl[];
@@ -138,10 +139,10 @@ export function RPCUrlsList({
       </div>
 
       {/* Network Tabs */}
-      <Tabs defaultValue="testnet" className="space-y-4">
+      <Tabs defaultValue={CHAIN_NETWORK.TESTNET} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
           <TabsTrigger
-            value="mainnet"
+            value={CHAIN_NETWORK.MAINNET}
             className="flex items-center gap-2 cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium text-slate-600 hover:text-slate-800 transition-colors"
           >
             <Globe className="w-4 h-4" />
@@ -154,7 +155,7 @@ export function RPCUrlsList({
             </Badge>
           </TabsTrigger>
           <TabsTrigger
-            value="testnet"
+            value={CHAIN_NETWORK.TESTNET}
             className="flex items-center gap-2 cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium text-slate-600 hover:text-slate-800 transition-colors"
           >
             <Globe className="w-4 h-4" />
@@ -168,7 +169,7 @@ export function RPCUrlsList({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="mainnet" className="space-y-4">
+        <TabsContent value={CHAIN_NETWORK.MAINNET} className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Mainnet Endpoints</h3>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -185,7 +186,7 @@ export function RPCUrlsList({
           {renderRpcEndpoints(mainnetRpcUrls)}
         </TabsContent>
 
-        <TabsContent value="testnet" className="space-y-4">
+        <TabsContent value={CHAIN_NETWORK.TESTNET} className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Testnet Endpoints</h3>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
