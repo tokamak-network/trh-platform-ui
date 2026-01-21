@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -38,7 +39,14 @@ import {
   Clock,
   Server,
   Shield,
+  Info,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import {
   useBackupStatusQuery,
@@ -58,9 +66,9 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [attachDialogOpen, setAttachDialogOpen] = useState(false);
   const [selectedRecoveryPoint, setSelectedRecoveryPoint] = useState<string>("");
+  const [attachWorkloads, setAttachWorkloads] = useState<boolean>(false);
   
   // Backup configuration state
-  const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
   const [backupTime, setBackupTime] = useState("02:30");
   const [retentionDays, setRetentionDays] = useState("30");
   
@@ -198,6 +206,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
       id: stack.id,
       request: { 
         recoveryPointID: selectedRecoveryPoint,
+        attachWorkloads: attachWorkloads,
         ...awsCreds,
       },
     });
@@ -289,8 +298,10 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 <Database className="w-5 h-5" />
                 Backup Status
               </CardTitle>
-              {backupStatus?.IsProtected && (
+              {backupStatus?.IsProtected ? (
                 <Badge className="bg-green-100 text-green-800">Protected</Badge>
+              ) : (
+                <Badge className="bg-red-100 text-red-800">Not Protected</Badge>
               )}
             </div>
           </CardHeader>
@@ -378,6 +389,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
             </Button>
             <Button
               onClick={() => setAttachDialogOpen(true)}
+              disabled={!backupStatus?.IsProtected}
               className="w-full"
               variant="outline"
             >
@@ -388,14 +400,30 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
         </Card>
       </div>
 
-      {/* Recent Snapshots Section - will be implemented in next todo */}
+      {/* Recent Snapshots Section */}
       <Card className="border-0 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5" />
             Recent Snapshots
+            {!backupStatus?.IsProtected && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="start">
+                    <p className="max-w-xs text-xs">
+                      To see recent checkpoints, configure backup for this chain.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </CardTitle>
-          <CardDescription>Recent backup checkpoints and recovery points</CardDescription>
+          <CardDescription>
+            Recent backup checkpoints and recovery points
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoadingCheckpoints ? (
@@ -428,20 +456,35 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
         </CardContent>
       </Card>
 
-      {/* Backup Configuration Section - will be implemented in next todo */}
+      {/* Backup Configuration Section */}
       <Card className="border-0 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Server className="w-5 h-5" />
             Backup Configuration
+            {!backupStatus?.IsProtected && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="start">
+                    <p className="max-w-xs text-xs">
+                      Backups are not yet protected. Configure backup for this
+                      chain to enable automatic scheduling and recovery points.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </CardTitle>
           <CardDescription>Configure automatic backup settings</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Auto Backup</Label>
-            <Badge variant={autoBackupEnabled ? "default" : "secondary"}>
-              {autoBackupEnabled ? "Enabled" : "Disabled"}
+            <Badge variant={backupStatus?.IsProtected ? "default" : "secondary"}>
+              {backupStatus?.IsProtected ? "Enabled" : "Disabled"}
             </Badge>
           </div>
           <div className="space-y-2">
@@ -450,6 +493,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
               id="backupTime"
               type="time"
               value={backupTime}
+              disabled={!backupStatus?.IsProtected}
               onChange={(e) => setBackupTime(e.target.value)}
             />
           </div>
@@ -459,6 +503,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
               id="retentionPeriod"
               type="number"
               value={retentionDays}
+              disabled={!backupStatus?.IsProtected}
               onChange={(e) => setRetentionDays(e.target.value)}
               min="1"
               max="365"
@@ -466,7 +511,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
           </div>
           <Button
             onClick={handleConfigureBackup}
-            disabled={configureBackupMutation.isPending}
+            disabled={configureBackupMutation.isPending || !backupStatus?.IsProtected}
             className="w-full"
           >
             {configureBackupMutation.isPending ? "Updating..." : "Configure Backup"}
@@ -505,6 +550,19 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="attachWorkloads"
+                checked={attachWorkloads}
+                onCheckedChange={(checked) => setAttachWorkloads(!!checked)}
+              />
+              <Label htmlFor="attachWorkloads" className="text-sm font-normal cursor-pointer">
+                Automatically attach workloads to restored EFS
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              If enabled, the restored EFS will be automatically attached to your workloads (op-geth, op-node) after restoration completes.
+            </p>
           </div>
           <DialogFooter>
             <Button

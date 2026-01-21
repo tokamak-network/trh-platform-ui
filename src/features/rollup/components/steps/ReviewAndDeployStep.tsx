@@ -158,6 +158,7 @@ export function ReviewAndDeployStep() {
                 onCheckedChange={(checked) =>
                   setValue("networkAndChain.enableBackup", checked === true)
                 }
+                className="mt-1 border-2 border-gray-500"
               />
               <div className="space-y-1">
                 <Label

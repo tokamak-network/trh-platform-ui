@@ -42,6 +42,7 @@ export interface BackupAttachRequest {
 
 export interface BackupRestoreRequest {
   recoveryPointID: string;
+  attachWorkloads: boolean; // Automatically attach workloads to restored EFS
   awsAccessKey?: string;
   awsSecretAccessKey?: string;
   awsRegion?: string;
