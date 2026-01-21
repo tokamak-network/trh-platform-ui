@@ -26,7 +26,7 @@ export const networkAndChainSchema = z
     batchSubmissionFreq: z.string().optional(),
     outputRootFreq: z.string().optional(),
     challengePeriod: z.string().optional(),
-    enableBackup: z.boolean().optional().default(false),
+    enableBackup: z.boolean(),
   })
   .refine(
     (data) => {
