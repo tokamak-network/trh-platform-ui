@@ -6,4 +6,3 @@ export * from "./RPCSelector";
 export * from "./SaveApiKeyDialog";
 export * from "./SaveRpcUrlDialog";
 export * from "./Sidebar";
-export * from "./SidebarItem";

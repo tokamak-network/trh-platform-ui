@@ -5,20 +5,21 @@ import { useParams } from "next/navigation";
 import { AuthenticatedLayout } from "@/components/layout";
 import { RollupDetail } from "@/features/rollup/components/detail";
 
-function RollupDetailContent() {
-  const params = useParams();
-  const id = params.id as string;
-
-  return <RollupDetail id={id} />;
-}
-
 function RollupDetailPage() {
+  const { id } = useParams<{ id: string }>();
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+        </div>
+      }
+    >
       <AuthenticatedLayout>
-        <main className="flex-1 p-6 px-16">
-          <RollupDetailContent />
-        </main>
+        <section className="p-6">
+          <RollupDetail id={id} />
+        </section>
       </AuthenticatedLayout>
     </Suspense>
   );
