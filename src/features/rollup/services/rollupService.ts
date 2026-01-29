@@ -272,6 +272,72 @@ export const downloadThanosRollupConfig = async (
   }
 };
 
+export const downloadThanosPvPvcBackup = async (
+  stackId: string
+): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
+      }/api/v1/stacks/thanos/${stackId}/integrations/backup/pv-pvc/export`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${typeof window !== "undefined"
+            ? localStorage.getItem("accessToken")
+            : ""
+            }`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Failed to download PV/PVC backup";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        errorMessage = response.statusText || errorMessage;
+      }
+
+      switch (response.status) {
+        case 400:
+          throw new Error("Invalid stack ID format");
+        case 404:
+          throw new Error("Stack not found");
+        case 500:
+          throw new Error("Server error while generating backup");
+        default:
+          throw new Error(errorMessage);
+      }
+    }
+
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = `pvpvc-backup-${stackId}.zip`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+      );
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, "");
+      }
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Download failed:", error);
+    throw error;
+  }
+};
+
 export const deleteRollup = async (id: string) => {
   const response = await apiDelete<{ success: boolean }>(`stacks/thanos/${id}`);
   return response;

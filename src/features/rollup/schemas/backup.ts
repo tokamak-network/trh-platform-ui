@@ -32,6 +32,7 @@ export interface BackupAttachRequest {
   efsId?: string;
   pvcs?: string;
   stss?: string;
+  backupPvPvc?: boolean;
 }
 
 export interface BackupRestoreRequest {

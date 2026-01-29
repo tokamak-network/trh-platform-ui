@@ -49,6 +49,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
+import { downloadThanosPvPvcBackup } from "../../../services/rollupService";
 import {
   useBackupStatusQuery,
   useBackupCheckpointsQuery,
@@ -67,12 +68,16 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [attachDialogOpen, setAttachDialogOpen] = useState(false);
+  const [attachConfirmOpen, setAttachConfirmOpen] = useState(false);
   const [selectedRecoveryPoint, setSelectedRecoveryPoint] = useState<string>("");
   const [restoreTaskId, setRestoreTaskId] = useState<string | null>(null);
   const [restoreResult, setRestoreResult] = useState<any | null>(null);
   const [snapshotTaskId, setSnapshotTaskId] = useState<string | null>(null);
   const [attachTaskId, setAttachTaskId] = useState<string | null>(null);
   const [attachWorkloads, setAttachWorkloads] = useState<boolean>(false);
+  const [backupPvPvc, setBackupPvPvc] = useState<boolean>(true);
+  const [backupDownloadPending, setBackupDownloadPending] = useState(false);
+  const [backupDownloaded, setBackupDownloaded] = useState(false);
 
   // Backup configuration state
   const [backupTime, setBackupTime] = useState("02:30");
@@ -104,6 +109,20 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
       setRetentionDays(retentionMatch[1] || "30");
     }
   }, [backupStatus]);
+
+  useEffect(() => {
+    if (!backupPvPvc) {
+      setBackupDownloaded(false);
+      setBackupDownloadPending(false);
+    }
+  }, [backupPvPvc]);
+
+  useEffect(() => {
+    if (attachDialogOpen) {
+      setBackupDownloaded(false);
+      setBackupDownloadPending(false);
+    }
+  }, [attachDialogOpen]);
 
   const {
     data: checkpoints,
@@ -240,20 +259,50 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     configureBackupMutation.mutate({ id: stack.id, request });
   };
 
-  const handleAttachStorage = () => {
+  const startAttachStorage = (serverBackupOverride?: boolean) => {
     if (!stack?.id) return;
     setError(null);
     setSuccess(null);
 
     const awsCreds = getAwsCredentials();
+    const shouldRunServerBackup =
+      serverBackupOverride ?? (backupPvPvc && !backupDownloaded);
     const request: BackupAttachRequest = {
       efsId: efsId || undefined,
       pvcs: pvcs || undefined,
       stss: stss || undefined,
+      backupPvPvc: shouldRunServerBackup,
       ...awsCreds,
     };
 
     attachStorageMutation.mutate({ id: stack.id, request });
+  };
+
+  const handleAttachStorage = () => {
+    if (backupPvPvc && !backupDownloaded) {
+      setAttachConfirmOpen(true);
+      return;
+    }
+    startAttachStorage();
+  };
+
+  const handleDownloadPvPvcBackup = async () => {
+    if (!stack?.id) return;
+    setError(null);
+    setSuccess(null);
+    setBackupDownloadPending(true);
+    try {
+      await downloadThanosPvPvcBackup(stack.id);
+      setBackupDownloaded(true);
+      setSuccess("PV/PVC backup downloaded.");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to download PV/PVC backup";
+      setError(message);
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setBackupDownloadPending(false);
+    }
   };
 
   if (isLoadingStatus) {
@@ -658,6 +707,54 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 onChange={(e) => setStss(e.target.value)}
               />
             </div>
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="backupPvPvc"
+                checked={backupPvPvc}
+                onCheckedChange={(checked) => setBackupPvPvc(Boolean(checked))}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label htmlFor="backupPvPvc">Back up PV/PVC definitions before attach</Label>
+                <p className="text-xs text-muted-foreground">
+                  Runs the PV/PVC backup script before updating volume handles.
+                </p>
+              </div>
+            </div>
+            {backupPvPvc && (
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">PV/PVC Backup</span>
+                  <Badge variant={backupDownloaded ? "default" : "secondary"}>
+                    {backupDownloaded ? "Downloaded" : "Recommended"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Generate the YAML backup and download it before attaching storage.
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDownloadPvPvcBackup}
+                  disabled={backupDownloadPending}
+                >
+                  {backupDownloadPending
+                    ? "Generating..."
+                    : backupDownloaded
+                    ? "Download Again"
+                    : "Generate & Download Backup"}
+                </Button>
+                {backupDownloaded && (
+                  <p className="text-xs text-muted-foreground">
+                    Backup downloaded. Attach will skip server-side backup.
+                  </p>
+                )}
+                {!backupDownloaded && (
+                  <p className="text-xs text-muted-foreground">
+                    You can continue without downloading, but a backup is recommended.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -668,9 +765,49 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
             </Button>
             <Button
               onClick={handleAttachStorage}
-              disabled={attachStorageMutation.isPending}
+              disabled={
+                attachStorageMutation.isPending || backupDownloadPending
+              }
             >
               {attachStorageMutation.isPending ? "Attaching..." : "Attach"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attach Backup Reminder Dialog */}
+      <Dialog open={attachConfirmOpen} onOpenChange={setAttachConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>PV/PVC Backup Recommended</DialogTitle>
+            <DialogDescription>
+              You enabled PV/PVC backup but have not downloaded it. You can download now or continue without downloading.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAttachConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await handleDownloadPvPvcBackup();
+                setAttachConfirmOpen(false);
+              }}
+              disabled={backupDownloadPending}
+            >
+              {backupDownloadPending ? "Generating..." : "Download Backup"}
+            </Button>
+            <Button
+              onClick={() => {
+                setAttachConfirmOpen(false);
+                startAttachStorage();
+              }}
+            >
+              Continue Without Download
             </Button>
           </DialogFooter>
         </DialogContent>
