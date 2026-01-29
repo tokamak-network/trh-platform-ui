@@ -40,6 +40,7 @@ import {
   Server,
   Shield,
   Info,
+  Copy,
 } from "lucide-react";
 import {
   Tooltip,
@@ -59,6 +60,7 @@ import {
   useAttachStorageMutation,
 } from "../../../api/mutations";
 import { BackupConfigureRequest, BackupAttachRequest } from "../../../schemas/backup";
+import { TaskProgress } from "@/components/TaskProgress";
 
 export function BackupTab({ stack }: RollupDetailTabProps) {
   const [error, setError] = useState<string | null>(null);
@@ -66,12 +68,16 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [attachDialogOpen, setAttachDialogOpen] = useState(false);
   const [selectedRecoveryPoint, setSelectedRecoveryPoint] = useState<string>("");
+  const [restoreTaskId, setRestoreTaskId] = useState<string | null>(null);
+  const [restoreResult, setRestoreResult] = useState<any | null>(null);
+  const [snapshotTaskId, setSnapshotTaskId] = useState<string | null>(null);
+  const [attachTaskId, setAttachTaskId] = useState<string | null>(null);
   const [attachWorkloads, setAttachWorkloads] = useState<boolean>(false);
-  
+
   // Backup configuration state
   const [backupTime, setBackupTime] = useState("02:30");
   const [retentionDays, setRetentionDays] = useState("30");
-  
+
   // Attach storage state
   const [efsId, setEfsId] = useState("");
   const [pvcs, setPvcs] = useState("");
@@ -123,7 +129,10 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
 
   // Mutation hooks
   const createSnapshotMutation = useCreateSnapshotMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data && data.task_id) {
+        setSnapshotTaskId(data.task_id);
+      }
       setSuccess("Backup snapshot creation initiated!");
       setError(null);
     },
@@ -134,7 +143,10 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   });
 
   const restoreBackupMutation = useRestoreBackupMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data && data.task_id) {
+        setRestoreTaskId(data.task_id);
+      }
       setSuccess("Backup restore initiated successfully!");
       setError(null);
       setRestoreDialogOpen(false);
@@ -158,13 +170,13 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   });
 
   const attachStorageMutation = useAttachStorageMutation({
-    onSuccess: () => {
-      setSuccess("Storage attached successfully!");
+    onSuccess: (data) => {
+      if (data && (data as any).task_id) {
+        setAttachTaskId((data as any).task_id);
+      }
+      setSuccess("Attach started successfully!");
       setError(null);
       setAttachDialogOpen(false);
-      setEfsId("");
-      setPvcs("");
-      setStss("");
     },
     onError: (err: Error) => {
       setError(err.message || "Failed to attach storage");
@@ -176,7 +188,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     if (!stack?.id) return;
     setError(null);
     setSuccess(null);
-    
+
     const awsCreds = getAwsCredentials();
     createSnapshotMutation.mutate({
       id: stack.id,
@@ -200,13 +212,14 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     if (!stack?.id || !selectedRecoveryPoint) return;
     setError(null);
     setSuccess(null);
-    
+    setRestoreResult(null);
+
     const awsCreds = getAwsCredentials();
     restoreBackupMutation.mutate({
       id: stack.id,
-      request: { 
+      request: {
         recoveryPointID: selectedRecoveryPoint,
-        attachWorkloads: attachWorkloads,
+        attach: attachWorkloads,
         ...awsCreds,
       },
     });
@@ -216,14 +229,14 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     if (!stack?.id) return;
     setError(null);
     setSuccess(null);
-    
+
     const awsCreds = getAwsCredentials();
     const request: BackupConfigureRequest = {
       daily: backupTime,
       keep: retentionDays,
       ...awsCreds,
     };
-    
+
     configureBackupMutation.mutate({ id: stack.id, request });
   };
 
@@ -231,7 +244,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     if (!stack?.id) return;
     setError(null);
     setSuccess(null);
-    
+
     const awsCreds = getAwsCredentials();
     const request: BackupAttachRequest = {
       efsId: efsId || undefined,
@@ -239,7 +252,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
       stss: stss || undefined,
       ...awsCreds,
     };
-    
+
     attachStorageMutation.mutate({ id: stack.id, request });
   };
 
@@ -256,6 +269,33 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
       </div>
     );
   }
+
+  const getSuggested = (key: string, fallback: string) => {
+    const value = (restoreResult as any)?.[key];
+    if (typeof value === "string" && value.trim() !== "") return value;
+    return fallback;
+  };
+
+  const suggestedEfs =
+    getSuggested("SuggestedEFSID", (restoreResult as any)?.NewEFSID || "");
+  const suggestedPvcs = getSuggested("SuggestedPVCs", "op-geth,op-node");
+  const suggestedStss = getSuggested("SuggestedSTSs", "op-geth,op-node");
+
+  const copyField = async (label: string, value: string) => {
+    if (!value) {
+      setError(`No ${label} to copy.`);
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      setSuccess(`${label} copied to clipboard.`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch {
+      setError("Failed to copy to clipboard.");
+      setTimeout(() => setError(null), 3000);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -306,52 +346,52 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-              {backupStatus ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Region:</span>
-                    <span className="text-sm font-medium">{backupStatus.Region}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Namespace:</span>
-                    <span className="text-sm font-medium">{backupStatus.Namespace}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Account ID:</span>
-                    <span className="text-sm font-medium">{backupStatus.AccountID}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">EFS ARN:</span>
-                    <span className="text-sm font-medium truncate ml-2">{backupStatus.ARN}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Protected:</span>
-                    <span className="text-sm font-medium">{backupStatus.IsProtected ? "Yes" : "No"}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Latest Recovery Point:</span>
-                    <span className="text-sm font-medium">{backupStatus.LatestRecoveryPoint}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Next Backup:</span>
-                    <span className="text-sm font-medium">{backupStatus.NextBackupTime}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Schedule:</span>
-                    <span className="text-sm font-medium">{backupStatus.BackupSchedule}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Vaults:</span>
-                    <span className="text-sm font-medium truncate ml-2">
-                      {backupStatus.BackupVaults?.join(", ")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Expiry:</span>
-                    <span className="text-sm font-medium">{backupStatus.ExpectedExpiryDate}</span>
-                  </div>
-                </>
-              ) : (
+            {backupStatus ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Region:</span>
+                  <span className="text-sm font-medium">{backupStatus.Region}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Namespace:</span>
+                  <span className="text-sm font-medium">{backupStatus.Namespace}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Account ID:</span>
+                  <span className="text-sm font-medium">{backupStatus.AccountID}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">EFS ARN:</span>
+                  <span className="text-sm font-medium truncate ml-2">{backupStatus.ARN}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Protected:</span>
+                  <span className="text-sm font-medium">{backupStatus.IsProtected ? "Yes" : "No"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Latest Recovery Point:</span>
+                  <span className="text-sm font-medium">{backupStatus.LatestRecoveryPoint}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Next Backup:</span>
+                  <span className="text-sm font-medium">{backupStatus.NextBackupTime}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Schedule:</span>
+                  <span className="text-sm font-medium">{backupStatus.BackupSchedule}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Vaults:</span>
+                  <span className="text-sm font-medium truncate ml-2">
+                    {backupStatus.BackupVaults?.join(", ")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Expiry:</span>
+                  <span className="text-sm font-medium">{backupStatus.ExpectedExpiryDate}</span>
+                </div>
+              </>
+            ) : (
               <div className="text-center py-4 text-muted-foreground">
                 {statusError ? "Failed to load backup status" : "No backup configured"}
               </div>
@@ -633,6 +673,172 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
               {attachStorageMutation.isPending ? "Attaching..." : "Attach"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Progress Dialog */}
+      <Dialog open={!!restoreTaskId} onOpenChange={(open) => !open && setRestoreTaskId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restore in Progress</DialogTitle>
+            <DialogDescription>
+              Please wait while the backup is being restored.
+            </DialogDescription>
+          </DialogHeader>
+          {restoreTaskId && (
+            <TaskProgress
+              taskId={restoreTaskId}
+              title="Restoring Backup"
+              onComplete={(data) => {
+                setSuccess("Restore completed successfully!");
+                setTimeout(() => setRestoreTaskId(null), 2000);
+                setTimeout(() => setSuccess(null), 5000);
+                refetchStatus();
+                if (data?.result) {
+                  setRestoreResult(data.result);
+                }
+              }}
+              onError={(err) => {
+                setError(`Restore failed: ${err}`);
+                // keep dialog open or close?
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Attach Progress Dialog */}
+      <Dialog open={!!attachTaskId} onOpenChange={(open) => !open && setAttachTaskId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Attach in Progress</DialogTitle>
+            <DialogDescription>
+              Please wait while the storage is being attached.
+            </DialogDescription>
+          </DialogHeader>
+          {attachTaskId && (
+            <TaskProgress
+              taskId={attachTaskId}
+              title="Attaching Storage"
+              onComplete={() => {
+                setSuccess("Storage attached successfully!");
+                setTimeout(() => setAttachTaskId(null), 2000);
+                setTimeout(() => setSuccess(null), 5000);
+                refetchStatus();
+              }}
+              onError={(err) => {
+                setError(`Attach failed: ${err}`);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore Output Dialog */}
+      <Dialog
+        open={!!restoreResult && !attachWorkloads}
+        onOpenChange={(open) => !open && setRestoreResult(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restore Output (Attach Later)</DialogTitle>
+            <DialogDescription>
+              Copy these values and keep them for attaching later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">EFS ID:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {suggestedEfs || "-"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyField("EFS ID", suggestedEfs)}
+                  aria-label="Copy EFS ID"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">PVCs:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {suggestedPvcs || "-"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyField("PVCs", suggestedPvcs)}
+                  aria-label="Copy PVCs"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">STSs:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {suggestedStss || "-"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyField("STSs", suggestedStss)}
+                  aria-label="Copy STSs"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEfsId(suggestedEfs);
+                setPvcs(suggestedPvcs);
+                setStss(suggestedStss);
+                setAttachDialogOpen(true);
+              }}
+            >
+              Open Attach Form
+            </Button>
+            <Button variant="outline" onClick={() => setRestoreResult(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Snapshot Progress Dialog */}
+      <Dialog open={!!snapshotTaskId} onOpenChange={(open) => !open && setSnapshotTaskId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Snapshot in Progress</DialogTitle>
+            <DialogDescription>
+              Please wait while the backup snapshot is being created.
+            </DialogDescription>
+          </DialogHeader>
+          {snapshotTaskId && (
+            <TaskProgress
+              taskId={snapshotTaskId}
+              title="Creating Snapshot"
+              onComplete={() => {
+                setSuccess("Snapshot created successfully!");
+                setTimeout(() => setSnapshotTaskId(null), 2000);
+                setTimeout(() => setSuccess(null), 5000);
+                refetchCheckpoints();
+                refetchStatus();
+              }}
+              onError={(err) => {
+                setError(`Snapshot failed: ${err}`);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

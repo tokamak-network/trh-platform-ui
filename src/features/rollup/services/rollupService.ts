@@ -135,17 +135,15 @@ export const downloadThanosDeploymentLogs = async (
 ): Promise<void> => {
   try {
     const response = await fetch(
-      `${
-        env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
+      `${env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
       }/api/v1/stacks/thanos/${stackId}/deployments/${deploymentId}/logs/download`,
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${
-            typeof window !== "undefined"
-              ? localStorage.getItem("accessToken")
-              : ""
-          }`,
+          Authorization: `Bearer ${typeof window !== "undefined"
+            ? localStorage.getItem("accessToken")
+            : ""
+            }`,
         },
       }
     );
@@ -208,17 +206,15 @@ export const downloadThanosRollupConfig = async (
 ): Promise<void> => {
   try {
     const response = await fetch(
-      `${
-        env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
+      `${env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
       }/api/v1/stacks/thanos/${stackId}/rollupconfig`,
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${
-            typeof window !== "undefined"
-              ? localStorage.getItem("accessToken")
-              : ""
-          }`,
+          Authorization: `Bearer ${typeof window !== "undefined"
+            ? localStorage.getItem("accessToken")
+            : ""
+            }`,
         },
       }
     );
@@ -388,19 +384,21 @@ export const getBackupCheckpoints = async (
 export const createBackupSnapshot = async (
   id: string,
   request?: { awsAccessKey?: string; awsSecretAccessKey?: string; awsRegion?: string }
-): Promise<void> => {
-  await apiPost<void>(`stacks/thanos/${id}/integrations/backup/snapshot`, request || {});
+): Promise<{ task_id: string }> => {
+  const response = await apiPost<{ task_id: string }>(`stacks/thanos/${id}/integrations/backup/snapshot`, request || {});
+  return response.data;
 };
 
 // Restore from a backup
 export const restoreFromBackup = async (
   id: string,
   request: BackupRestoreRequest
-): Promise<void> => {
-  await apiPost<void>(
+): Promise<{ task_id: string }> => {
+  const response = await apiPost<{ task_id: string }>(
     `stacks/thanos/${id}/integrations/backup/restore`,
     request
   );
+  return response.data;
 };
 
 // Configure backup settings
@@ -418,11 +416,12 @@ export const configureBackup = async (
 export const attachBackupStorage = async (
   id: string,
   request: BackupAttachRequest
-): Promise<void> => {
-  await apiPost<void>(
+): Promise<{ task_id: string }> => {
+  const response = await apiPost<{ task_id: string }>(
     `stacks/thanos/${id}/integrations/backup/attach`,
     request
   );
+  return response.data;
 };
 
 // Cleanup backup resources

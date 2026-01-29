@@ -36,7 +36,12 @@ export interface BackupAttachRequest {
 
 export interface BackupRestoreRequest {
   recoveryPointID: string;
-  attachWorkloads: boolean; // Automatically attach workloads to restored EFS
+  attach?: boolean; // Automatically attach workloads to restored EFS
+  pvcs?: string;
+  stss?: string;
+  awsAccessKey?: string;
+  awsSecretAccessKey?: string;
+  awsRegion?: string;
 }
 
 export interface BackupStatusResponse {
@@ -54,6 +59,5 @@ export interface BackupCheckpointsResponse {
 export interface BackupOperationResponse {
   status: number;
   message: string;
-  data: null;
+  data: { task_id: string } | null;
 }
-

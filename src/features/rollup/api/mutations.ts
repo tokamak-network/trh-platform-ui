@@ -234,7 +234,7 @@ export const useCreateRegisterMetadataDAOMutation = (options?: {
 };
 
 export const useCreateSnapshotMutation = (options?: {
-  onSuccess?: () => void;
+  onSuccess?: (data: { task_id: string }) => void;
   onError?: (error: Error) => void;
 }) => {
   return useMutation({
@@ -250,7 +250,7 @@ export const useCreateSnapshotMutation = (options?: {
         id: "create-snapshot",
       });
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
       toast.success("Backup snapshot creation initiated successfully!", {
         id: "create-snapshot",
       });
@@ -262,7 +262,7 @@ export const useCreateSnapshotMutation = (options?: {
           queryKey: rollupKeys.backupCheckpoints(id),
         });
       }
-      options?.onSuccess?.();
+      options?.onSuccess?.(data);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to create backup snapshot", {
@@ -274,7 +274,7 @@ export const useCreateSnapshotMutation = (options?: {
 };
 
 export const useRestoreBackupMutation = (options?: {
-  onSuccess?: () => void;
+  onSuccess?: (data: { task_id: string }) => void;
   onError?: (error: Error) => void;
 }) => {
   return useMutation({
@@ -290,7 +290,7 @@ export const useRestoreBackupMutation = (options?: {
         id: "restore-backup",
       });
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
       toast.success("Backup restore initiated successfully!", {
         id: "restore-backup",
       });
@@ -299,7 +299,7 @@ export const useRestoreBackupMutation = (options?: {
           queryKey: rollupKeys.backupStatus(id),
         });
       }
-      options?.onSuccess?.();
+      options?.onSuccess?.(data);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to restore from backup", {
