@@ -126,6 +126,8 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     "uninstall-cross-trade-l2-to-l1": "Uninstall Cross-Trade L2 to L1",
     "install-cross-trade-l2-to-l2": "Install Cross-Trade L2 to L2",
     "uninstall-cross-trade-l2-to-l2": "Uninstall Cross-Trade L2 to L2",
+    "install-drb": "Install DRB Leader Node",
+    "uninstall-drb": "Uninstall DRB",
   };
 
   if (!stack) return null;

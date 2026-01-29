@@ -7,38 +7,67 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dices, ArrowUpRight, Server, Database } from "lucide-react";
 import { InstallDRBDialog } from "./InstallDRBDialog";
+import { useDRBDeploymentInfo, useThanosSepolia } from "../api/queries";
 
 interface NetworkConfig {
   rpcUrl: string;
   chainId: number;
   name: string;
+  explorerUrl?: string;
 }
 
 interface DRBServiceCardProps {
-  stackId: string;
+  stackId?: string; // Optional - will use Thanos Sepolia system stack if not provided
   chainName: string;
-  isInstalled?: boolean;
-  status?: "Available" | "Installing" | "Active" | "Failed";
   deployedNetwork?: NetworkConfig;
 }
 
 const statusStyles: Record<string, { label: string; className: string }> = {
   Available: { label: "Available", className: "bg-neutral-100 text-neutral-600" },
   Installing: { label: "Installing", className: "bg-primary-100 text-primary-700 animate-pulse" },
+  Terminating: { label: "Removing", className: "bg-warning-100 text-warning-700 animate-pulse" },
+  Cancelling: { label: "Cancelling", className: "bg-warning-100 text-warning-700 animate-pulse" },
   Active: { label: "Active", className: "bg-success-50 text-success-600" },
   Failed: { label: "Failed", className: "bg-error-50 text-error-600" },
+  Cancelled: { label: "Cancelled", className: "bg-neutral-100 text-neutral-600" },
 };
 
 export function DRBServiceCard({
-  stackId,
+  stackId: propStackId,
   chainName,
-  isInstalled = false,
-  status = "Available",
   deployedNetwork,
 }: DRBServiceCardProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const statusConfig = statusStyles[status] || statusStyles.Available;
+
+  // If no stackId provided, use Thanos Sepolia system stack
+  const { data: systemStack, isLoading: isLoadingSystemStack, error: systemStackError } = useThanosSepolia();
+  const resolvedStackId = propStackId || systemStack?.id;
+  const isLoadingStack = !propStackId && isLoadingSystemStack;
+  const hasSystemStackError = !propStackId && !!systemStackError;
+
+  // Get real deployment status from API
+  const { isCompleted, isInProgress, isFailed, isTerminating, isCancelling, isCancelled } = useDRBDeploymentInfo(resolvedStackId || "");
+
+  const status = isCompleted
+    ? "Active"
+    : isInProgress
+    ? "Installing"
+    : isTerminating
+    ? "Terminating"
+    : isCancelling
+    ? "Cancelling"
+    : isFailed
+    ? "Failed"
+    : isCancelled
+    ? "Cancelled"
+    : "Available";
+  const statusConfig = statusStyles[status];
+
+  const handleViewDetails = () => {
+    if (!resolvedStackId) return;
+    router.push(`/rollup/${resolvedStackId}?tab=deployments`);
+  };
 
   return (
     <>
@@ -62,11 +91,11 @@ export function DRBServiceCard({
           </header>
 
           <p className="mb-4 text-sm leading-relaxed text-neutral-600">
-            Verifiable on-chain randomness via Commit-Reveal² protocol. Deploy on any EVM chain.
+            Verifiable on-chain randomness via Commit-Reveal2 protocol. Deploy on any EVM chain.
           </p>
 
           <div className="mb-4 grid grid-cols-2 gap-2">
-            <Spec icon={Server} label="Nodes" value="1 Leader + 3" />
+            <Spec icon={Server} label="Nodes" value="Leader Node" />
             <Spec icon={Database} label="Storage" value="PostgreSQL" />
           </div>
 
@@ -91,13 +120,25 @@ export function DRBServiceCard({
               <ArrowUpRight className="h-3 w-3" />
             </a>
 
-            {isInstalled ? (
-              <Button variant="outline" size="sm" onClick={() => router.push("/analytics")}>
-                View Dashboard
+            {isCompleted ? (
+              <Button variant="outline" size="sm" onClick={handleViewDetails}>
+                View Details
+              </Button>
+            ) : isInProgress ? (
+              <Button variant="outline" size="sm" onClick={handleViewDetails}>
+                View Progress
+              </Button>
+            ) : isTerminating || isCancelling ? (
+              <Button variant="outline" size="sm" disabled>
+                {isTerminating ? "Removing..." : "Cancelling..."}
+              </Button>
+            ) : hasSystemStackError ? (
+              <Button size="sm" variant="destructive" disabled>
+                Error Loading
               </Button>
             ) : (
-              <Button size="sm" onClick={() => setDialogOpen(true)}>
-                Deploy
+              <Button size="sm" onClick={() => setDialogOpen(true)} disabled={isLoadingStack}>
+                {isLoadingStack ? "Loading..." : "Deploy"}
               </Button>
             )}
           </footer>
@@ -107,7 +148,7 @@ export function DRBServiceCard({
       <InstallDRBDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        stackId={stackId}
+        stackId={resolvedStackId}
         chainName={chainName}
         deployedNetwork={deployedNetwork}
       />

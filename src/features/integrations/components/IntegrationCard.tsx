@@ -40,6 +40,7 @@ import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
 import { CrossTradeCard } from "./CrossTrade";
 import { CrossTradeCompactInfo } from "./CrossTradeCard";
+import { DRBCard, DRBCompactInfo } from "./DRBCard";
 import AddChainDialog from "./AddChainDialog";
 import RegisterTokensDialog from "./RegisterTokensDialog";
 import { useRegisterTokensMutation, useDeployNewL2ChainMutation } from "../api";
@@ -233,6 +234,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <CrossTradeCard {...commonProps} />;
       case "cross-trade-l2-to-l2":
         return <CrossTradeCard {...commonProps} />;
+      case "drb":
+        return <DRBCard {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -260,6 +263,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <CrossTradeCompactInfo {...commonProps} />;
       case "cross-trade-l2-to-l2":
         return <CrossTradeCompactInfo {...commonProps} />;
+      case "drb":
+        return <DRBCompactInfo {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">

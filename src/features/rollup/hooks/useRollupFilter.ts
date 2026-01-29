@@ -28,8 +28,9 @@ export function useRollupFilter({
 
   const filteredRollups = useMemo(() => {
     return rollups.filter((stack) => {
-      // Search by chain name
-      const matchesSearch = stack.config.chainName
+      // Search by chain name (handle missing config or chainName)
+      const chainName = stack.config?.chainName || stack.name || "";
+      const matchesSearch = chainName
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 

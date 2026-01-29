@@ -40,6 +40,17 @@ import { DeployNewL2ChainRequest } from "../services/integrationService";
 // Block Explorer Types
 type BlockExplorerType = "etherscan" | "blockscout";
 
+// Contract Addresses API Types
+interface ContractAddressData {
+  l2_cross_domain_messenger_address: string;
+  native_token_address: string;
+  l1_standard_bridge_address: string;
+  l1_usdc_bridge_address: string;
+  l1_cross_domain_messenger_address: string;
+}
+
+type ContractAddressesByChain = Record<string, ContractAddressData>;
+
 // Schema definitions
 const blockExplorerConfigSchema = z
   .object({
@@ -237,15 +248,15 @@ export default function AddChainDialog({
   // Function to fetch default contract addresses by chain ID
   const fetchDefaultContractAddresses = async (chainId: number) => {
     try {
-      const response = await apiGet<any>("stacks/thanos/default-contract-addresses");
-      let apiData: Record<string, any> | undefined;
+      const response = await apiGet<{ status: number; message: string; data: ContractAddressesByChain }>("stacks/thanos/default-contract-addresses");
+      let apiData: ContractAddressesByChain | undefined;
       
       if (response.data?.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
         apiData = response.data.data;
-      } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !response.data.status) {
-        apiData = response.data;
+      } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !('status' in response.data)) {
+        apiData = response.data as unknown as ContractAddressesByChain;
       } else if (response && typeof response === 'object' && !Array.isArray(response) && response.data) {
-        apiData = response.data;
+        apiData = response.data.data;
       }
 
       const chainIdStr = chainId.toString();

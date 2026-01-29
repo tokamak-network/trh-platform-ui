@@ -36,7 +36,7 @@ export const useUninstallIntegrationMutation = (options?: {
       type,
     }: {
       stackId: string;
-      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2";
+      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2" | "drb";
       id?: string;
     }) => {
       return uninstallIntegration(stackId, type);

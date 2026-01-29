@@ -44,6 +44,17 @@ import { apiGet } from "@/lib/api";
 // Block Explorer Types
 type BlockExplorerType = "etherscan" | "blockscout";
 
+// Contract Addresses API Types
+interface ContractAddressData {
+  l2_cross_domain_messenger_address: string;
+  native_token_address: string;
+  l1_standard_bridge_address: string;
+  l1_usdc_bridge_address: string;
+  l1_cross_domain_messenger_address: string;
+}
+
+type ContractAddressesByChain = Record<string, ContractAddressData>;
+
 // Schema definitions
 const blockExplorerConfigSchema = z
   .object({
@@ -614,7 +625,7 @@ export default function InstallCrossTradeDialog({
     try {
       // The API returns: { status: 200, message: "Success", data: { "10": {...}, "11155420": {...} } }
       // apiGet wraps it: { data: { status, message, data }, success, message? }
-      const response = await apiGet<any>("stacks/thanos/default-contract-addresses");
+      const response = await apiGet<{ status: number; message: string; data: ContractAddressesByChain }>("stacks/thanos/default-contract-addresses");
 
       console.log("Default Contract Addresses API Full Response:", JSON.stringify(response, null, 2));
       console.log("Looking for chain ID:", chainId);
@@ -622,18 +633,18 @@ export default function InstallCrossTradeDialog({
       // Extract the actual data object from the response
       // The backend returns: { status: 200, message: "Success", data: {...} }
       // apiGet wraps it, so response.data contains the backend response
-      let apiData: Record<string, any> | undefined;
+      let apiData: ContractAddressesByChain | undefined;
       
       // Try to find the data object in various possible locations
       if (response.data?.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
         // Case: response.data = { status: 200, message: "Success", data: {...} }
         apiData = response.data.data;
-      } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !response.data.status) {
+      } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !('status' in response.data)) {
         // Case: response.data is directly the data object
-        apiData = response.data;
+        apiData = response.data as unknown as ContractAddressesByChain;
       } else if (response && typeof response === 'object' && !Array.isArray(response) && response.data) {
         // Case: response itself has the structure
-        apiData = response.data;
+        apiData = response.data.data;
       }
 
       const chainIdStr = chainId.toString();

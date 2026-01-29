@@ -47,12 +47,37 @@ export interface IntegrationInfo {
       chain_id: number;
     }>;
   }>;
+  // DRB (Distributed Randomness Beacon) metadata
+  contract?: {
+    contractAddress: string;
+    contractName: "CommitReveal2" | "CommitReveal2L2";
+    chainId: number;
+    consumerExampleV2Address?: string;
+  };
+  application?: {
+    leaderNodeUrl: string;
+  };
+  leaderInfo?: {
+    leaderUrl: string;
+    leaderIp: string;
+    leaderPort: number;
+    leaderPeerId: string;
+    leaderEoa: string;
+    commitReveal2L2Address: string;
+    consumerExampleV2Address?: string;
+    chainId: number;
+    rpcUrl: string;
+    deploymentTimestamp: string;
+    clusterName: string;
+    namespace: string;
+  };
+  databaseType?: "rds";
 }
 
 export interface Integration {
   id: string;
   stack_id: string;
-  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2";
+  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "cross-trade-l2-to-l1" | "cross-trade-l2-to-l2" | "drb";
   status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
@@ -106,5 +131,11 @@ export const INTEGRATION_TYPES = {
     description: "Cross-chain bridge for L2 to L2 trading",
     icon: "💰",
     color: "from-indigo-500 to-purple-400",
+  },
+  "drb": {
+    label: "DRB (Distributed Randomness Beacon)",
+    description: "Verifiable on-chain randomness using Commit-Reveal2 protocol",
+    icon: "🎲",
+    color: "from-amber-500 to-orange-400",
   }
 } as const;

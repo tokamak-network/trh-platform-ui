@@ -27,15 +27,20 @@ export const useThanosStack = (): UseThanosStackResult => {
     error,
   } = useThanosStacksQuery();
 
+  // Filter out system stacks (e.g., "Thanos Sepolia (System)")
+  const userStacks = useMemo(() => {
+    return stacks.filter((stack) => !stack.name.includes("(System)"));
+  }, [stacks]);
+
   const getStackByStatus = useCallback(
     (status: ThanosStackStatus) => {
-      return stacks.filter((stack) => stack.status === status);
+      return userStacks.filter((stack) => stack.status === status);
     },
-    [stacks]
+    [userStacks]
   );
 
   return {
-    stacks,
+    stacks: userStacks,
     isLoading,
     isError,
     error,

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { ethers } from "ethers";
 import {
   Dialog,
   DialogContent,
@@ -15,92 +16,132 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
-  Dices, Rocket, FileCode, Globe, Key, Eye, EyeOff, Database,
-  HardDrive, Cloud, Check, Loader2, AlertCircle, ChevronLeft,
-  ChevronDown, ChevronUp, Info, Shield, Shuffle, Users, Blocks,
+  Dices, Crown, Globe, Key, Eye, EyeOff, Database,
+  Cloud, Check, Loader2, AlertCircle, ChevronLeft,
+  ChevronDown, ChevronUp, Info, Shield, Shuffle, Users, Blocks, Wallet, Link,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useInstallDRBMutation } from "../api/mutations";
+import { getThanosSepolia, THANOS_SEPOLIA } from "../services/drbService";
+import { useAwsCredentials } from "@/features/configuration/aws-credentials/hooks/useAwsCredentials";
+import { useAwsRegions } from "@/features/configuration/aws-credentials/hooks/useAwsRegions";
+
+interface WalletInfo {
+  address: string;
+  balance: string;
+  balanceRaw: bigint;
+  isLoading: boolean;
+  error: string | null;
+}
 
 interface NetworkConfig {
   rpcUrl: string;
   chainId: number;
   name: string;
+  nativeToken?: string;
 }
 
 interface InstallDRBDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  stackId: string;
-  chainName: string;
+  stackId?: string; // Optional - will use Thanos Sepolia system stack if not provided
+  chainName?: string;
   deployedNetwork?: NetworkConfig;
 }
 
-type Step = "mode" | "network" | "config" | "database" | "deploying" | "success" | "error";
-type DeployMode = "fresh" | "existing";
+type Step = "info" | "network" | "config" | "aws" | "database" | "deploying" | "success" | "error";
 type NetworkMode = "deployed" | "custom";
-type DatabaseType = "local" | "rds";
 
 interface FormState {
-  deployMode: DeployMode | null;
   networkMode: NetworkMode;
   customRpcUrl: string;
   customChainId: string;
   privateKey: string;
-  contractAddress: string;
-  databaseType: DatabaseType;
+  // AWS Infrastructure (from saved configuration)
+  awsCredentialId: string;
+  awsAccessKeyId: string;
+  awsSecretAccessKey: string;
+  awsRegion: string;
+  // Database
   dbUsername: string;
   dbPassword: string;
 }
 
 const initialForm: FormState = {
-  deployMode: null,
   networkMode: "deployed",
   customRpcUrl: "",
   customChainId: "",
   privateKey: "",
-  contractAddress: "",
-  databaseType: "local",
-  dbUsername: "",
+  awsCredentialId: "",
+  awsAccessKeyId: "",
+  awsSecretAccessKey: "",
+  awsRegion: "",
+  dbUsername: "postgres",
   dbPassword: "",
 };
 
 const deployTasks = [
   "Validating credentials",
-  "Cloning Commit-Reveal2",
-  "Building contracts",
-  "Deploying to chain",
+  "Creating AWS resources",
+  "Deploying smart contract",
   "Provisioning database",
-  "Starting leader node",
-  "Starting regular nodes",
-  "Configuring P2P mesh",
+  "Starting DRB node",
+  "Configuring network",
   "Verifying deployment",
 ];
 
-const demoOutput = {
-  contracts: {
-    contractAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    contractName: "CommitReveal2L2",
-    chainId: 111551119090,
-  },
-  application: {
-    leaderNodeUrl: "https://drb-leader.thanos-sepolia.tokamak.network",
-    regularNodeUrls: [
-      "https://drb-node-1.thanos-sepolia.tokamak.network",
-      "https://drb-node-2.thanos-sepolia.tokamak.network",
-      "https://drb-node-3.thanos-sepolia.tokamak.network",
-    ],
-  },
-};
-
 const isValidAddress = (addr: string) => /^0x[a-fA-F0-9]{40}$/.test(addr);
 const isValidPrivateKey = (key: string) => /^[a-fA-F0-9]{64}$/.test(key.replace(/^0x/, ""));
+const isValidRDSPassword = (password: string) => {
+  if (password.length < 8 || password.length > 128) return false;
+  const forbidden = /[/'\"@ ]/;
+  return !forbidden.test(password);
+};
+
+// DRB contract requires minimum 0.01 TON deposit during deployment (activationThreshold)
+// Plus gas fees for contract deployment and node setup
+const MIN_DEPOSIT = 0.01; // Contract activation threshold
+const MIN_BALANCE = 0.5; // Recommended: deposit (0.01) + gas fees (~0.1-0.2) + buffer
+
+async function getWalletInfo(privateKey: string, rpcUrl: string): Promise<WalletInfo> {
+  try {
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const wallet = new ethers.Wallet(privateKey, provider);
+    const balance = await provider.getBalance(wallet.address);
+    const balanceEth = ethers.formatEther(balance);
+    return {
+      address: wallet.address,
+      balance: balanceEth,
+      balanceRaw: balance,
+      isLoading: false,
+      error: null,
+    };
+  } catch (err) {
+    return {
+      address: "",
+      balance: "0",
+      balanceRaw: BigInt(0),
+      isLoading: false,
+      error: err instanceof Error ? err.message : "Failed to fetch wallet info",
+    };
+  }
+}
 
 export function InstallDRBDialog({
   open,
   onOpenChange,
+  stackId,
   deployedNetwork,
 }: InstallDRBDialogProps) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("mode");
+  const [step, setStep] = useState<Step>("info");
   const [form, setForm] = useState<FormState>(initialForm);
   const [progress, setProgress] = useState(0);
   const [currentTask, setCurrentTask] = useState("");
@@ -108,12 +149,14 @@ export function InstallDRBDialog({
   const [showDbPassword, setShowDbPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const mutation = useInstallDRBMutation();
+
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
   }, []);
 
   const handleClose = useCallback(() => {
-    setStep("mode");
+    setStep("info");
     setForm(initialForm);
     setProgress(0);
     setCurrentTask("");
@@ -125,50 +168,107 @@ export function InstallDRBDialog({
 
   const goBack = useCallback(() => {
     const backMap: Partial<Record<Step, Step>> = {
-      network: "mode",
+      network: "info",
       config: "network",
-      database: "config",
+      aws: "config",
+      database: "aws",
     };
     const prev = backMap[step];
     if (prev) setStep(prev);
   }, [step]);
 
-  const activeNetwork = form.networkMode === "deployed" && deployedNetwork
-    ? deployedNetwork
+  // Default to Thanos Sepolia if no deployed network provided
+  const defaultNetwork = deployedNetwork || {
+    rpcUrl: THANOS_SEPOLIA.rpcUrl,
+    chainId: THANOS_SEPOLIA.chainId,
+    name: THANOS_SEPOLIA.name,
+    nativeToken: THANOS_SEPOLIA.nativeToken,
+  };
+
+  const activeNetwork = form.networkMode === "deployed"
+    ? defaultNetwork
     : form.networkMode === "custom" && form.customRpcUrl && form.customChainId
-    ? { rpcUrl: form.customRpcUrl, chainId: parseInt(form.customChainId), name: `Chain ${form.customChainId}` }
-    : null;
+    ? { rpcUrl: form.customRpcUrl, chainId: parseInt(form.customChainId), name: `Chain ${form.customChainId}`, nativeToken: "ETH" }
+    : defaultNetwork;
 
   const contractType = activeNetwork && (activeNetwork.chainId === 1 || activeNetwork.chainId === 11155111)
     ? "CommitReveal2"
     : "CommitReveal2L2";
 
   const canProceedNetwork = form.networkMode === "deployed"
-    ? !!deployedNetwork
+    ? true // Always valid - uses deployedNetwork or defaults to Thanos Sepolia
     : form.customRpcUrl.trim() !== "" && form.customChainId.trim() !== "";
 
-  const canProceedConfig = isValidPrivateKey(form.privateKey) &&
-    (form.deployMode === "fresh" || isValidAddress(form.contractAddress));
+  const canProceedConfig = isValidPrivateKey(form.privateKey);
 
-  const canProceedDatabase = form.databaseType === "local"
-    ? form.dbPassword.trim() !== ""
-    : form.dbUsername.trim() !== "" && form.dbPassword.trim() !== "";
+  const canProceedAws = form.awsCredentialId.trim() !== "" &&
+    form.awsRegion.trim() !== "";
 
-  const startDeployment = useCallback(() => {
+  const canProceedDatabase = form.dbUsername.trim() !== "" && isValidRDSPassword(form.dbPassword);
+
+  const startDeployment = useCallback(async () => {
     setStep("deploying");
     setProgress(0);
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < deployTasks.length) {
-        setCurrentTask(deployTasks[i]);
-        setProgress(((i + 1) / deployTasks.length) * 100);
-        i++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => setStep("success"), 400);
+    setError(null);
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    try {
+      // Resolve stackId - use provided or fetch Thanos Sepolia system stack
+      let resolvedStackId = stackId;
+      if (!resolvedStackId) {
+        setCurrentTask("Getting Thanos Sepolia system stack...");
+        const response = await getThanosSepolia();
+        resolvedStackId = response.data?.stack?.id;
+        if (!resolvedStackId) {
+          throw new Error("Failed to get Thanos Sepolia system stack");
+        }
       }
-    }, 700);
-  }, []);
+
+      // Start progress animation
+      let i = 0;
+      intervalId = setInterval(() => {
+        if (i < deployTasks.length - 1) {
+          setCurrentTask(deployTasks[i]);
+          setProgress(((i + 1) / deployTasks.length) * 100);
+          i++;
+        }
+      }, 500);
+
+      // Call the real API
+      await mutation.mutateAsync({
+        stackId: resolvedStackId,
+        useCurrentChain: form.networkMode === "deployed",
+        rpc: form.networkMode === "custom" ? form.customRpcUrl : undefined,
+        chainId: form.networkMode === "custom" ? parseInt(form.customChainId) : undefined,
+        privateKey: form.privateKey,
+        // AWS Infrastructure
+        awsConfig: {
+          accessKeyId: form.awsAccessKeyId,
+          secretAccessKey: form.awsSecretAccessKey,
+          region: form.awsRegion,
+        },
+        // Database
+        databaseConfig: {
+          type: "rds",
+          username: form.dbUsername,
+          password: form.dbPassword,
+        },
+      });
+
+      if (intervalId) clearInterval(intervalId);
+      setProgress(100);
+      setCurrentTask("Deployment started");
+      setTimeout(() => {
+        onOpenChange(false);
+        router.push(`/rollup/${resolvedStackId}?tab=deployments`);
+      }, 1500);
+    } catch (err) {
+      if (intervalId) clearInterval(intervalId);
+      setError(err instanceof Error ? err.message : "Deployment failed");
+      setStep("error");
+    }
+  }, [stackId, form, mutation]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -186,8 +286,8 @@ export function InstallDRBDialog({
         </DialogHeader>
 
         <div className="px-5 py-4">
-          {step === "mode" && (
-            <StepMode onSelect={(mode) => { updateForm("deployMode", mode); setStep("network"); }} />
+          {step === "info" && (
+            <StepInfo onContinue={() => setStep("network")} />
           )}
 
           {step === "network" && (
@@ -204,25 +304,33 @@ export function InstallDRBDialog({
 
           {step === "config" && (
             <StepConfig
-              deployMode={form.deployMode!}
               activeNetwork={activeNetwork}
               contractType={contractType}
               privateKey={form.privateKey}
               showPrivateKey={showPrivateKey}
-              contractAddress={form.contractAddress}
               onPrivateKeyChange={(v) => updateForm("privateKey", v)}
               onTogglePrivateKey={() => setShowPrivateKey(!showPrivateKey)}
-              onContractAddressChange={(v) => updateForm("contractAddress", v)}
+            />
+          )}
+
+          {step === "aws" && (
+            <StepAws
+              credentialId={form.awsCredentialId}
+              awsRegion={form.awsRegion}
+              onCredentialChange={(id, accessKeyId, secretAccessKey) => {
+                updateForm("awsCredentialId", id);
+                updateForm("awsAccessKeyId", accessKeyId);
+                updateForm("awsSecretAccessKey", secretAccessKey);
+              }}
+              onRegionChange={(v) => updateForm("awsRegion", v)}
             />
           )}
 
           {step === "database" && (
             <StepDatabase
-              databaseType={form.databaseType}
               dbUsername={form.dbUsername}
               dbPassword={form.dbPassword}
               showPassword={showDbPassword}
-              onTypeChange={(t) => updateForm("databaseType", t)}
               onUsernameChange={(v) => updateForm("dbUsername", v)}
               onPasswordChange={(v) => updateForm("dbPassword", v)}
               onTogglePassword={() => setShowDbPassword(!showDbPassword)}
@@ -230,16 +338,13 @@ export function InstallDRBDialog({
           )}
 
           {step === "deploying" && (
-            <StepDeploying deployMode={form.deployMode!} progress={progress} currentTask={currentTask} />
+            <StepDeploying progress={progress} currentTask={currentTask} />
           )}
 
           {step === "success" && (
             <StepSuccess
               activeNetwork={activeNetwork}
               contractType={contractType}
-              databaseType={form.databaseType}
-              contractAddress={form.deployMode === "existing" ? form.contractAddress : undefined}
-              deployMode={form.deployMode!}
             />
           )}
 
@@ -248,7 +353,7 @@ export function InstallDRBDialog({
 
         {!["deploying", "success", "error"].includes(step) && (
           <footer className="flex items-center justify-between border-t border-neutral-100 px-5 py-3">
-            {step === "mode" ? (
+            {step === "info" ? (
               <Button variant="ghost" size="sm" onClick={handleClose}>Cancel</Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={goBack}>
@@ -256,23 +361,24 @@ export function InstallDRBDialog({
               </Button>
             )}
 
-            {step !== "mode" && (
-              <Button
-                size="sm"
-                disabled={
-                  (step === "network" && !canProceedNetwork) ||
-                  (step === "config" && !canProceedConfig) ||
-                  (step === "database" && !canProceedDatabase)
-                }
-                onClick={() => {
-                  if (step === "network") setStep("config");
-                  else if (step === "config") setStep("database");
-                  else if (step === "database") startDeployment();
-                }}
-              >
-                {step === "database" ? "Deploy" : "Continue"}
-              </Button>
-            )}
+            <Button
+              size="sm"
+              disabled={
+                (step === "network" && !canProceedNetwork) ||
+                (step === "config" && !canProceedConfig) ||
+                (step === "aws" && !canProceedAws) ||
+                (step === "database" && !canProceedDatabase)
+              }
+              onClick={() => {
+                if (step === "info") setStep("network");
+                else if (step === "network") setStep("config");
+                else if (step === "config") setStep("aws");
+                else if (step === "aws") setStep("database");
+                else if (step === "database") startDeployment();
+              }}
+            >
+              {step === "database" ? "Deploy" : "Continue"}
+            </Button>
           </footer>
         )}
 
@@ -294,7 +400,7 @@ export function InstallDRBDialog({
   );
 }
 
-function StepMode({ onSelect }: { onSelect: (mode: DeployMode) => void }) {
+function StepInfo({ onContinue }: { onContinue: () => void }) {
   const [showInfo, setShowInfo] = useState(false);
 
   return (
@@ -344,14 +450,6 @@ function StepMode({ onSelect }: { onSelect: (mode: DeployMode) => void }) {
             </div>
 
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Node Architecture</p>
-              <p className="mt-1 text-xs text-neutral-600">
-                1 Leader node coordinates with 3 Regular nodes. Each node commits a secret value,
-                then reveals it. The final random number is computed from all revealed values.
-              </p>
-            </div>
-
-            <div>
               <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Use Cases</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {["Gaming", "NFT Minting", "Lotteries", "Fair Selection", "Governance"].map(uc => (
@@ -365,10 +463,14 @@ function StepMode({ onSelect }: { onSelect: (mode: DeployMode) => void }) {
         )}
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm text-neutral-600">Select deployment mode:</p>
-        <OptionCard icon={Rocket} title="Fresh Deployment" description="Deploy new contracts and nodes" onClick={() => onSelect("fresh")} />
-        <OptionCard icon={FileCode} title="Existing Contract" description="Connect to deployed contract" onClick={() => onSelect("existing")} />
+      <div className="rounded-lg bg-success-50 px-3 py-2.5">
+        <div className="flex items-center gap-2 text-xs text-success-600">
+          <Crown className="h-3.5 w-3.5" />
+          <span className="font-medium">Leader Node Deployment</span>
+        </div>
+        <p className="mt-1 text-[11px] text-success-600/80">
+          Deploy the CommitReveal2 contract and start a leader node on dedicated AWS infrastructure.
+        </p>
       </div>
     </div>
   );
@@ -437,19 +539,41 @@ function StepNetwork({
 }
 
 function StepConfig({
-  deployMode, activeNetwork, contractType, privateKey, showPrivateKey, contractAddress,
-  onPrivateKeyChange, onTogglePrivateKey, onContractAddressChange,
+  activeNetwork, contractType, privateKey, showPrivateKey,
+  onPrivateKeyChange, onTogglePrivateKey,
 }: {
-  deployMode: DeployMode;
   activeNetwork: NetworkConfig | null;
   contractType: string;
   privateKey: string;
   showPrivateKey: boolean;
-  contractAddress: string;
   onPrivateKeyChange: (v: string) => void;
   onTogglePrivateKey: () => void;
-  onContractAddressChange: (v: string) => void;
 }) {
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
+
+  // Check balance when private key changes and is valid
+  useEffect(() => {
+    if (!isValidPrivateKey(privateKey) || !activeNetwork?.rpcUrl) {
+      setWalletInfo(null);
+      return;
+    }
+
+    const checkBalance = async () => {
+      setIsCheckingBalance(true);
+      const normalizedKey = privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
+      const info = await getWalletInfo(normalizedKey, activeNetwork.rpcUrl);
+      setWalletInfo(info);
+      setIsCheckingBalance(false);
+    };
+
+    const timeoutId = setTimeout(checkBalance, 500); // Debounce
+    return () => clearTimeout(timeoutId);
+  }, [privateKey, activeNetwork?.rpcUrl]);
+
+  const tokenSymbol = activeNetwork?.nativeToken || "ETH";
+  const hasInsufficientBalance = walletInfo && !walletInfo.error && parseFloat(walletInfo.balance) < MIN_BALANCE;
+
   return (
     <div className="space-y-4">
       {activeNetwork && (
@@ -466,7 +590,7 @@ function StepConfig({
             placeholder="0x..."
             value={privateKey}
             onChange={(e) => onPrivateKeyChange(e.target.value)}
-            className="pr-10 font-mono text-sm"
+            className={cn("pr-10 font-mono text-sm", hasInsufficientBalance && "border-warning-500")}
           />
           <button
             type="button"
@@ -476,38 +600,256 @@ function StepConfig({
             {showPrivateKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <p className="mt-1 text-[11px] text-neutral-400">Must have balance for gas fees</p>
+        <p className="mt-1 text-[11px] text-neutral-400">
+          This wallet deploys the DRB contract and becomes the owner.
+        </p>
+        <p className="mt-0.5 text-[10px] text-neutral-400">
+          Requires {MIN_DEPOSIT}+ {tokenSymbol} deposit + gas fees. Recommended: {MIN_BALANCE} {tokenSymbol}
+        </p>
       </FormField>
 
-      {deployMode === "existing" && (
-        <FormField label="DRB Contract Address">
-          <Input placeholder="0x..." value={contractAddress} onChange={(e) => onContractAddressChange(e.target.value)} className="font-mono text-sm" />
-        </FormField>
+      {/* Wallet Info Display */}
+      {isCheckingBalance && (
+        <div className="flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2">
+          <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+          <span className="text-xs text-neutral-500">Checking wallet balance...</span>
+        </div>
       )}
 
-      {deployMode === "fresh" && (
-        <div className="flex items-center gap-2 rounded-lg bg-success-50 px-3 py-2 text-xs text-success-600">
-          <Check className="h-3.5 w-3.5" />
-          <span>Will deploy {contractType} contract</span>
+      {walletInfo && !isCheckingBalance && !walletInfo.error && (
+        <div className={cn(
+          "rounded-lg border px-3 py-2",
+          hasInsufficientBalance ? "border-warning-200 bg-warning-50" : "border-success-200 bg-success-50"
+        )}>
+          <div className="flex items-center gap-2">
+            <Wallet className={cn("h-4 w-4", hasInsufficientBalance ? "text-warning-600" : "text-success-600")} />
+            <span className="text-xs font-medium text-neutral-700">Wallet Detected</span>
+          </div>
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-neutral-500">Address</span>
+              <code className="text-[11px] text-neutral-700">
+                {walletInfo.address.slice(0, 6)}...{walletInfo.address.slice(-4)}
+              </code>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-neutral-500">Balance</span>
+              <span className={cn("text-[11px] font-medium", hasInsufficientBalance ? "text-warning-600" : "text-success-600")}>
+                {parseFloat(walletInfo.balance).toFixed(4)} {tokenSymbol}
+              </span>
+            </div>
+          </div>
+          {hasInsufficientBalance && (
+            <div className="mt-2">
+              <p className="text-[11px] text-warning-600">
+                Low balance. Minimum {MIN_BALANCE} {tokenSymbol} recommended for deployment.
+              </p>
+              {activeNetwork?.chainId === 111551119090 && (
+                <p className="mt-1 text-[10px] text-warning-500">
+                  Get testnet TON:{" "}
+                  <a
+                    href="https://sepolia.etherscan.io/address/0xd655762c601b9cac8f6644c4841e47e4734d0444#writeContract#F1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-warning-700"
+                  >
+                    Faucet (Sepolia)
+                  </a>
+                  {" → "}
+                  <a
+                    href="https://bridge.tokamak.network"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-warning-700"
+                  >
+                    Bridge to Thanos
+                  </a>
+                </p>
+              )}
+            </div>
+          )}
         </div>
+      )}
+
+      {walletInfo?.error && !isCheckingBalance && (
+        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 px-3 py-2">
+          <AlertCircle className="h-4 w-4 text-error-500" />
+          <span className="text-xs text-error-600">Failed to check balance: {walletInfo.error}</span>
+        </div>
+      )}
+
+      <div className="rounded-lg bg-success-50 px-3 py-2.5">
+        <div className="flex items-center gap-2 text-xs text-success-600">
+          <Check className="h-3.5 w-3.5" />
+          <span>Leader Node Deployment</span>
+        </div>
+        <ul className="mt-1.5 space-y-0.5 text-[11px] text-success-600/80">
+          <li>• Deploy {contractType} contract (you become owner)</li>
+          <li>• {MIN_DEPOSIT} {tokenSymbol} deposit sent with contract deployment</li>
+          <li>• Start leader node on dedicated AWS infrastructure</li>
+        </ul>
+        <p className="mt-1.5 text-[10px] text-success-600/70">
+          Deposit is withdrawable when you uninstall DRB
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StepAws({
+  credentialId,
+  awsRegion,
+  onCredentialChange,
+  onRegionChange,
+}: {
+  credentialId: string;
+  awsRegion: string;
+  onCredentialChange: (id: string, accessKeyId: string, secretAccessKey: string) => void;
+  onRegionChange: (v: string) => void;
+}) {
+  const { awsCredentials, isLoading, refreshCredentials } = useAwsCredentials();
+  const { regions, isLoading: isLoadingRegions, error: regionsError, fetchRegions, clearRegions } = useAwsRegions();
+  const [lastFetchedCredentialId, setLastFetchedCredentialId] = useState("");
+
+  // Fetch regions when credential is selected
+  useEffect(() => {
+    if (credentialId && awsCredentials && credentialId !== lastFetchedCredentialId) {
+      const selectedCredential = awsCredentials.find((cred) => cred.id === credentialId);
+      if (selectedCredential) {
+        onRegionChange(""); // Clear region when credential changes
+        fetchRegions(selectedCredential.accessKeyId, selectedCredential.secretAccessKey);
+        setLastFetchedCredentialId(credentialId);
+      }
+    } else if (!credentialId && lastFetchedCredentialId) {
+      clearRegions();
+      onRegionChange("");
+      setLastFetchedCredentialId("");
+    }
+  }, [credentialId, awsCredentials, lastFetchedCredentialId, fetchRegions, clearRegions, onRegionChange]);
+
+  // Set default region when regions are loaded
+  useEffect(() => {
+    if (regions.length > 0 && !awsRegion && !isLoadingRegions) {
+      const defaultRegion = regions.find((r) => r.value === "us-east-1") || regions[0];
+      onRegionChange(defaultRegion.value);
+    }
+  }, [regions, awsRegion, isLoadingRegions, onRegionChange]);
+
+  const handleCredentialSelect = (id: string) => {
+    const selectedCredential = awsCredentials?.find((cred) => cred.id === id);
+    if (selectedCredential) {
+      onCredentialChange(id, selectedCredential.accessKeyId, selectedCredential.secretAccessKey);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Cloud className="h-4 w-4" />
+        <span>AWS Infrastructure</span>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-md bg-neutral-50 p-2.5">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+        <p className="text-[11px] text-neutral-500">
+          DRB nodes are deployed on AWS infrastructure. Leader nodes use EKS clusters,
+          while regular nodes use EC2 instances. Database uses RDS PostgreSQL.
+        </p>
+      </div>
+
+      {awsCredentials && awsCredentials.length > 0 ? (
+        <>
+          <FormField label="AWS Credentials" icon={Key}>
+            <Select value={credentialId} onValueChange={handleCredentialSelect}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={isLoading ? "Loading..." : "Select AWS credentials"} />
+              </SelectTrigger>
+              <SelectContent>
+                {awsCredentials.map((credential) => (
+                  <SelectItem key={credential.id} value={credential.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{credential.name}</span>
+                      <span className="text-xs text-muted-foreground">{credential.accessKeyId}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          <FormField label="Region" icon={Globe}>
+            <Select
+              value={awsRegion}
+              onValueChange={onRegionChange}
+              disabled={!credentialId || isLoadingRegions}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    !credentialId
+                      ? "Select credentials first"
+                      : isLoadingRegions
+                      ? "Loading regions..."
+                      : "Select a region"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map((region) => (
+                  <SelectItem key={region.value} value={region.value}>
+                    {region.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {regionsError && <p className="mt-1 text-xs text-error-600">{regionsError}</p>}
+          </FormField>
+        </>
+      ) : (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle className="flex items-center gap-2">
+            No AWS credentials found
+            <button
+              type="button"
+              onClick={() => refreshCredentials()}
+              className="text-neutral-400 hover:text-neutral-600"
+            >
+              <Loader2 className={cn("h-3 w-3", isLoading && "animate-spin")} />
+            </button>
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="text-sm text-neutral-600 mb-2">
+              Please add AWS credentials in the Configuration section first.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/configuration" target="_blank" rel="noopener noreferrer">
+                Go to Configuration
+                <Link className="w-3 h-3 ml-1" />
+              </a>
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );
 }
 
 function StepDatabase({
-  databaseType, dbUsername, dbPassword, showPassword,
-  onTypeChange, onUsernameChange, onPasswordChange, onTogglePassword,
+  dbUsername, dbPassword, showPassword,
+  onUsernameChange, onPasswordChange, onTogglePassword,
 }: {
-  databaseType: DatabaseType;
   dbUsername: string;
   dbPassword: string;
   showPassword: boolean;
-  onTypeChange: (t: DatabaseType) => void;
   onUsernameChange: (v: string) => void;
   onPasswordChange: (v: string) => void;
   onTogglePassword: () => void;
 }) {
+  const passwordTouched = dbPassword.length > 0;
+  const passwordValid = isValidRDSPassword(dbPassword);
+  const showPasswordError = passwordTouched && !passwordValid;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -519,32 +861,26 @@ function StepDatabase({
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <p className="text-[11px] text-neutral-500">
           Each DRB node requires a PostgreSQL database to store commit/reveal secrets and round state.
-          Local PostgreSQL is deployed as a Helm chart in your K8s cluster.
+          The database will be provisioned as AWS RDS PostgreSQL in your selected region.
         </p>
       </div>
 
-      <SelectableCard selected={databaseType === "local"} onClick={() => onTypeChange("local")} badge="Recommended">
+      <div className="rounded-lg border border-primary-200 bg-primary-50/50 p-3">
         <div className="flex items-center gap-2">
-          <HardDrive className="h-4 w-4 text-neutral-600" />
-          <span className="text-sm font-medium">Local PostgreSQL</span>
+          <Cloud className="h-4 w-4 text-primary-600" />
+          <span className="text-sm font-medium text-primary-900">AWS RDS PostgreSQL</span>
         </div>
-        <p className="mt-0.5 text-xs text-neutral-500">Deploy via Helm in K8s</p>
-      </SelectableCard>
-
-      <SelectableCard selected={databaseType === "rds"} onClick={() => onTypeChange("rds")}>
-        <div className="flex items-center gap-2">
-          <Cloud className="h-4 w-4 text-neutral-600" />
-          <span className="text-sm font-medium">AWS RDS</span>
-        </div>
-        <p className="mt-0.5 text-xs text-neutral-500">Managed PostgreSQL</p>
-      </SelectableCard>
+        <p className="mt-1 text-xs text-primary-700">Managed database in your AWS region</p>
+      </div>
 
       <div className="space-y-3 pt-2">
-        {databaseType === "rds" && (
-          <FormField label="Username">
-            <Input placeholder="drb_admin" value={dbUsername} onChange={(e) => onUsernameChange(e.target.value)} />
-          </FormField>
-        )}
+        <FormField label="Username">
+          <Input
+            placeholder="postgres"
+            value={dbUsername}
+            onChange={(e) => onUsernameChange(e.target.value)}
+          />
+        </FormField>
 
         <FormField label="Password">
           <div className="relative">
@@ -553,7 +889,7 @@ function StepDatabase({
               placeholder="••••••••"
               value={dbPassword}
               onChange={(e) => onPasswordChange(e.target.value)}
-              className="pr-10"
+              className={cn("pr-10", showPasswordError && "border-error-500 focus-visible:ring-error-500")}
             />
             <button
               type="button"
@@ -563,17 +899,20 @@ function StepDatabase({
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          <p className={cn("mt-1.5 text-[11px]", showPasswordError ? "text-error-600" : "text-neutral-500")}>
+            8-128 characters. Cannot contain: <code className="rounded bg-neutral-100 px-1 text-[10px]">/ &apos; &quot; @ space</code>
+          </p>
         </FormField>
       </div>
     </div>
   );
 }
 
-function StepDeploying({ deployMode, progress, currentTask }: { deployMode: DeployMode; progress: number; currentTask: string }) {
+function StepDeploying({ progress, currentTask }: { progress: number; currentTask: string }) {
   return (
     <div className="py-6 text-center">
       <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary-500" />
-      <p className="mt-3 text-sm font-medium">{deployMode === "fresh" ? "Deploying DRB Network" : "Connecting Nodes"}</p>
+      <p className="mt-3 text-sm font-medium">Deploying Leader Node</p>
       <p className="mt-1 text-xs text-neutral-500">{currentTask}</p>
       <div className="mt-4">
         <Progress value={progress} className="h-1" />
@@ -584,48 +923,46 @@ function StepDeploying({ deployMode, progress, currentTask }: { deployMode: Depl
 }
 
 function StepSuccess({
-  activeNetwork, contractType, databaseType, contractAddress, deployMode,
+  activeNetwork, contractType,
 }: {
   activeNetwork: NetworkConfig | null;
   contractType: string;
-  databaseType: DatabaseType;
-  contractAddress?: string;
-  deployMode: DeployMode;
 }) {
-  const displayAddress = deployMode === "existing" ? contractAddress : demoOutput.contracts.contractAddress;
-
   return (
     <div className="py-2">
       <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-50">
         <Check className="h-5 w-5 text-success-600" />
       </div>
-      <p className="text-center text-sm font-medium text-neutral-900">Deployment Complete</p>
-      <p className="mt-0.5 text-center text-xs text-neutral-500">DRB is active on {activeNetwork?.name || "network"}</p>
+      <p className="text-center text-sm font-medium text-neutral-900">Deployment Started</p>
+      <p className="mt-0.5 text-center text-xs text-neutral-500">
+        Leader node is being deployed on {activeNetwork?.name || "network"}
+      </p>
 
       <div className="mt-4 space-y-3">
         <section>
-          <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">Contract</h4>
+          <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">Configuration</h4>
           <div className="space-y-1.5">
-            <InfoRow label="Address" value={displayAddress || "-"} mono truncate />
-            <InfoRow label="Type" value={contractType} />
-            <InfoRow label="Chain ID" value={String(activeNetwork?.chainId || demoOutput.contracts.chainId)} />
+            <InfoRow label="Node Type" value="Leader Node" />
+            <InfoRow label="Contract" value={contractType} />
+            <InfoRow label="Network" value={activeNetwork?.name || "-"} />
+            <InfoRow label="Chain ID" value={String(activeNetwork?.chainId || "-")} />
           </div>
         </section>
 
         <section>
-          <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">Nodes (4/4 Online)</h4>
-          <div className="space-y-1.5">
-            <InfoRow label="Leader" value={demoOutput.application.leaderNodeUrl} mono truncate />
-            {demoOutput.application.regularNodeUrls.map((url, i) => (
-              <InfoRow key={i} label={`Node ${i + 1}`} value={url} mono truncate />
-            ))}
-          </div>
+          <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">Infrastructure</h4>
+          <InfoRow label="Database" value="AWS RDS PostgreSQL" />
+          <InfoRow label="Compute" value="AWS EKS Cluster" />
         </section>
 
-        <section>
-          <h4 className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400">Database</h4>
-          <InfoRow label="Type" value={databaseType === "rds" ? "AWS RDS PostgreSQL" : "Local PostgreSQL (Helm)"} />
-        </section>
+        <div className="rounded-lg bg-primary-50 p-3">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-primary-500 mt-0.5" />
+            <p className="text-xs text-primary-700">
+              Check the Integrations tab for deployment progress and node endpoint URL once complete.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

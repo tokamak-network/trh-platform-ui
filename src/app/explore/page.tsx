@@ -4,17 +4,19 @@ import { AuthenticatedLayout } from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState } from "react";
-import { DRBServiceCard } from "@/features/drb";
-
-// Demo deployed network configuration (simulates stack's L2 chain)
-const DEMO_DEPLOYED_NETWORK = {
-  rpcUrl: "https://rpc.thanos-sepolia.tokamak.network",
-  chainId: 111551119090,
-  name: "Thanos Sepolia",
-};
+import { DRBServiceCard, THANOS_SEPOLIA } from "@/features/drb";
 
 function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
+
+  // For Alpha: DRB deploys to Thanos Sepolia (public testnet)
+  const thanosSepolia = {
+    rpcUrl: THANOS_SEPOLIA.rpcUrl,
+    chainId: THANOS_SEPOLIA.chainId,
+    name: THANOS_SEPOLIA.name,
+    explorerUrl: THANOS_SEPOLIA.explorerUrl,
+    nativeToken: THANOS_SEPOLIA.nativeToken,
+  };
 
   return (
     <AuthenticatedLayout>
@@ -22,7 +24,7 @@ function ExplorePage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Explore Services</h1>
           <p className="text-gray-600">
-            Deploy add-on services to enhance your L2 chain
+            Deploy services on Thanos Sepolia testnet
           </p>
         </div>
 
@@ -40,10 +42,8 @@ function ExplorePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <DRBServiceCard
-            stackId="mock-stack-id"
-            chainName="My Thanos L2"
-            status="Available"
-            deployedNetwork={DEMO_DEPLOYED_NETWORK}
+            chainName={THANOS_SEPOLIA.name}
+            deployedNetwork={thanosSepolia}
           />
         </div>
       </main>
