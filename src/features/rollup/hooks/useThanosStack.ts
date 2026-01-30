@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import {
   rollupKeys,
   useThanosStackByIdQuery,
@@ -27,20 +27,15 @@ export const useThanosStack = (): UseThanosStackResult => {
     error,
   } = useThanosStacksQuery();
 
-  // Filter out system stacks (e.g., "Thanos Sepolia (System)")
-  const userStacks = useMemo(() => {
-    return stacks.filter((stack) => !stack.name.includes("(System)"));
-  }, [stacks]);
-
   const getStackByStatus = useCallback(
     (status: ThanosStackStatus) => {
-      return userStacks.filter((stack) => stack.status === status);
+      return stacks.filter((stack) => stack.status === status);
     },
-    [userStacks]
+    [stacks]
   );
 
   return {
-    stacks: userStacks,
+    stacks,
     isLoading,
     isError,
     error,

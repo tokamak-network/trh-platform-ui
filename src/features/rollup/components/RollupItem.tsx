@@ -45,6 +45,8 @@ import {
   Layers,
   RotateCcw,
   PauseIcon,
+  Dices,
+  Crown,
 } from "lucide-react";
 import { statusConfig } from "../schemas/rollup";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
@@ -54,6 +56,7 @@ import {
   useResumeRollupMutation,
   useStopRollupMutation,
 } from "../api/mutations";
+import { useDRBDeploymentInfo } from "@/features/drb/api/queries";
 
 // Format rollup type for display
 export const formatRollupType = (type: string): string => {
@@ -119,6 +122,9 @@ export function RollupItem({
   showActions = true,
   className = "",
 }: RollupItemProps) {
+  const isSystemStack = stack?.name?.includes("(System)") || false;
+  const drbInfo = useDRBDeploymentInfo(stack?.id || "");
+
   const statusInfo = statusConfig[stack.status];
   const deleteRollupMutation = useDeleteRollupMutation();
   const resumeRollupMutation = useResumeRollupMutation();
@@ -186,6 +192,8 @@ export function RollupItem({
     setIsStopDialogOpen(false);
   };
 
+  const nodeLabel = drbInfo.nodeType === "leader" ? "Leader" : drbInfo.nodeType === "regular" ? "Regular" : "";
+
   return (
     <Card
       key={stack.id}
@@ -200,55 +208,53 @@ export function RollupItem({
         <div className="flex items-center justify-between px-10">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              {getStatusBadge(stack.status)}
+              {isSystemStack ? (
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600">
+                  <Dices className="w-4 h-4 text-white" />
+                </div>
+              ) : (
+                getStatusBadge(stack.status)
+              )}
               <div>
                 <h3 className="text-lg font-semibold">
-                  {stack.config.chainName}
+                  {isSystemStack ? `DRB ${nodeLabel} Node` : stack.config.chainName}
                 </h3>
                 <div className="flex items-center space-x-4 mt-1">
-                  <Badge
-                    variant={statusInfo.variant}
-                    className={`flex items-center gap-1 ${statusInfo.color}`}
-                  >
-                    <StatusIcon iconName={statusInfo.icon} />
-                    {statusInfo.label}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="flex items-center gap-1 bg-gray-200"
-                  >
-                    <Globe className="w-3 h-3" />
-                    {stack.network}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="flex items-center gap-1 bg-gray-200"
-                  >
-                    <Server className="w-3 h-3" />
-                    {stack.name}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="flex items-center gap-1 bg-blue-100"
-                  >
-                    <Layers className="w-3 h-3" />
-                    {formatRollupType(
-                      stack.type ||
-                        (stack.config?.type ? stack.config.type : "Unknown")
-                    )}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="flex items-center gap-1 text-gray-500"
-                  >
+                  {isSystemStack ? (
+                    <>
+                      <DRBStatusBadge {...drbInfo} />
+                      <Badge variant="outline" className="flex items-center gap-1 bg-purple-50 text-purple-700 border-purple-200">
+                        {drbInfo.nodeType === "leader" ? <Crown className="w-3 h-3 text-amber-500" /> : <Server className="w-3 h-3" />}
+                        {nodeLabel || "DRB"}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 bg-gray-200">
+                        <Globe className="w-3 h-3" />
+                        Thanos Sepolia
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <Badge variant={statusInfo.variant} className={`flex items-center gap-1 ${statusInfo.color}`}>
+                        <StatusIcon iconName={statusInfo.icon} />
+                        {statusInfo.label}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 bg-gray-200">
+                        <Globe className="w-3 h-3" />
+                        {stack.network}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 bg-gray-200">
+                        <Server className="w-3 h-3" />
+                        {stack.name}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1 bg-blue-100">
+                        <Layers className="w-3 h-3" />
+                        {formatRollupType(stack.type || stack.config?.type || "Unknown")}
+                      </Badge>
+                    </>
+                  )}
+                  <Badge variant="outline" className="flex items-center gap-1 text-gray-500">
                     <Clock className="w-3 h-3" />
-                    {formatRelativeTime(
-                      getLastActivityTime(
-                        stack.created_at,
-                        stack.updated_at,
-                        stack.deleted_at
-                      )
-                    )}
+                    {formatRelativeTime(getLastActivityTime(stack.created_at, stack.updated_at, stack.deleted_at))}
                   </Badge>
                 </div>
               </div>
@@ -456,4 +462,11 @@ export function RollupItem({
       </CardContent>
     </Card>
   );
+}
+
+function DRBStatusBadge({ isCompleted, isInProgress, isFailed }: { isCompleted: boolean; isInProgress: boolean; isFailed: boolean }) {
+  if (isCompleted) return <Badge className="bg-green-100 text-green-700 border-green-200 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Active</Badge>;
+  if (isInProgress) return <Badge className="bg-blue-100 text-blue-700 border-blue-200 flex items-center gap-1 animate-pulse"><Loader className="w-3 h-3 animate-spin" />Deploying</Badge>;
+  if (isFailed) return <Badge className="bg-red-100 text-red-700 border-red-200 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Failed</Badge>;
+  return <Badge className="bg-slate-100 text-slate-600 border-slate-200">Not Deployed</Badge>;
 }
