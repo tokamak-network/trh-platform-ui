@@ -348,7 +348,7 @@ export const useConfigureBackupMutation = (options?: {
 };
 
 export const useAttachStorageMutation = (options?: {
-  onSuccess?: () => void;
+  onSuccess?: (data: { task_id: string }) => void;
   onError?: (error: Error) => void;
 }) => {
   return useMutation({
@@ -364,7 +364,7 @@ export const useAttachStorageMutation = (options?: {
         id: "attach-storage",
       });
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
       toast.success("Storage attached successfully!", {
         id: "attach-storage",
       });
@@ -373,7 +373,7 @@ export const useAttachStorageMutation = (options?: {
           queryKey: rollupKeys.backupStatus(id),
         });
       }
-      options?.onSuccess?.();
+      options?.onSuccess?.(data);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to attach storage", {

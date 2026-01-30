@@ -51,7 +51,7 @@ export function TaskProgress({ taskId, title = "Task Progress", onComplete, onEr
                     setError(data.message || "Task failed");
                     if (onError) onError(data.message || "Task failed");
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 // Handle 404 naturally as "pending/not found yet" or error depending on desired UX
                 // If 404, maybe task hasn't started registering yet, or expired.
                 // For now, treat errors as failures if persistent.
