@@ -6,14 +6,18 @@ import { integrationKeys } from "@/features/integrations/api/queries";
 
 type InstallParams = { stackId: string } & InstallDRBRequestBody;
 
-export const useInstallDRBMutation = (options?: { onSuccess?: () => void }) =>
+export const useInstallDRBMutation = () =>
   useMutation({
     mutationFn: ({ stackId, ...body }: InstallParams) => installDRB(stackId, body),
     onMutate: () => toast.loading("Deploying DRB...", { id: "drb" }),
-    onSuccess: (_, { stackId }) => {
+    onSuccess: (response, { stackId }) => {
       toast.success("DRB deployment started", { id: "drb" });
       queryClient.invalidateQueries({ queryKey: integrationKeys.list(stackId) });
-      options?.onSuccess?.();
+      // Also invalidate the new stack if it's different (for regular nodes)
+      const newStackId = response.data?.stackId;
+      if (newStackId && newStackId !== stackId) {
+        queryClient.invalidateQueries({ queryKey: integrationKeys.list(newStackId) });
+      }
     },
     onError: (error: Error) => toast.error(error.message || "Failed to deploy DRB", { id: "drb" }),
   });
