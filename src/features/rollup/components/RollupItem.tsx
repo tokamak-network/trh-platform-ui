@@ -57,6 +57,7 @@ import {
   useStopRollupMutation,
 } from "../api/mutations";
 import { useDRBDeploymentInfo } from "@/features/drb/api/queries";
+import { useUninstallDRBMutation } from "@/features/drb/api/mutations";
 
 // Format rollup type for display
 export const formatRollupType = (type: string): string => {
@@ -129,9 +130,11 @@ export function RollupItem({
   const deleteRollupMutation = useDeleteRollupMutation();
   const resumeRollupMutation = useResumeRollupMutation();
   const stopRollupMutation = useStopRollupMutation();
+  const uninstallDRBMutation = useUninstallDRBMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isResumeDialogOpen, setIsResumeDialogOpen] = React.useState(false);
   const [isStopDialogOpen, setIsStopDialogOpen] = React.useState(false);
+  const [isUninstallDRBDialogOpen, setIsUninstallDRBDialogOpen] = React.useState(false);
 
   // Check if resume button should be active
   const canResume = [
@@ -154,7 +157,10 @@ export function RollupItem({
       ThanosStackStatus.TERMINATING,
       ThanosStackStatus.TERMINATED,
       ThanosStackStatus.PENDING,
-    ].includes(stack.status) || deleteRollupMutation.isPending;
+    ].includes(stack.status) || deleteRollupMutation.isPending || uninstallDRBMutation.isPending;
+
+  // For DRB, also check if deployment is in progress
+  const isDRBUninstallDisabled = isDestroyDisabled || drbInfo.isInProgress;
 
   const handleClick = () => {
     if (onClick) {
@@ -190,6 +196,16 @@ export function RollupItem({
   const handleConfirmStop = () => {
     stopRollupMutation.mutate(stack.id);
     setIsStopDialogOpen(false);
+  };
+
+  const handleUninstallDRBClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsUninstallDRBDialogOpen(true);
+  };
+
+  const handleConfirmUninstallDRB = () => {
+    uninstallDRBMutation.mutate({ stackId: stack.id });
+    setIsUninstallDRBDialogOpen(false);
   };
 
   const nodeLabel = drbInfo.nodeType === "leader" ? "Leader" : drbInfo.nodeType === "regular" ? "Regular" : "";
@@ -410,52 +426,103 @@ export function RollupItem({
                 </>
               )}
 
-              <>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isDestroyDisabled}
-                        onClick={handleDeleteClick}
-                      >
-                        <Trash2 width={16} height={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Destroy Rollup</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <AlertDialog
-                  open={isDeleteDialogOpen}
-                  onOpenChange={setIsDeleteDialogOpen}
-                >
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Destroy Rollup</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to destroy{" "}
-                        {stack.config.chainName}? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                        Cancel
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleConfirmDelete}
-                        disabled={isDestroyDisabled}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
+              {isSystemStack ? (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={isDRBUninstallDisabled}
+                          onClick={handleUninstallDRBClick}
+                        >
+                          <Trash2 width={16} height={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Uninstall DRB Node</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <AlertDialog
+                    open={isUninstallDRBDialogOpen}
+                    onOpenChange={setIsUninstallDRBDialogOpen}
+                  >
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Uninstall DRB Node</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to uninstall this DRB {nodeLabel || ""} Node?
+                          This will destroy all AWS resources (
+                          {drbInfo.nodeType === "leader" ? "EKS cluster, RDS database" : "EC2 instance"}
+                          ) and cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleConfirmUninstallDRB}
+                          disabled={isDRBUninstallDisabled}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Uninstall
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              ) : (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={isDestroyDisabled}
+                          onClick={handleDeleteClick}
+                        >
+                          <Trash2 width={16} height={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Destroy Rollup</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <AlertDialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                  >
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Destroy Rollup</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to destroy{" "}
+                          {stack.config.chainName}? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleConfirmDelete}
+                          disabled={isDestroyDisabled}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
             </div>
           )}
         </div>
