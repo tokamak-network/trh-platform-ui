@@ -19,7 +19,8 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
 
   if (!stack) return null;
 
-  if (isSystemStack && isDRBCompleted && deploymentInfo) {
+  // Show DRB overview for system stacks (both completed and in-progress)
+  if (isSystemStack) {
     return <DRBOverview stack={stack} deploymentInfo={deploymentInfo} nodeType={nodeType} />;
   }
 
@@ -257,7 +258,7 @@ import { DRBDeploymentInfo, DRBNodeType } from "@/features/drb/services/drbServi
 
 interface DRBOverviewProps {
   stack: ThanosStack;
-  deploymentInfo: DRBDeploymentInfo;
+  deploymentInfo?: DRBDeploymentInfo;
   nodeType?: DRBNodeType;
 }
 
@@ -267,8 +268,11 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
     toast.success(`${label} copied`);
   };
 
-  const { leaderInfo, regularNodeInfo } = deploymentInfo;
-  const isLeader = nodeType === "leader";
+  const leaderInfo = deploymentInfo?.leaderInfo;
+  const regularNodeInfo = deploymentInfo?.regularNodeInfo;
+  // Determine node type from stack name if not provided
+  const isLeader = nodeType === "leader" || stack.name?.includes("Leader") || (!nodeType && !stack.name?.includes("Regular"));
+  const isDeploying = !deploymentInfo;
 
   return (
     <TabsContent value="overview" className="space-y-6">
@@ -283,7 +287,16 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-2">
-            {isLeader && leaderInfo && (
+            {isDeploying && (
+              <div className="py-4 text-center">
+                <div className="animate-pulse flex flex-col items-center gap-2">
+                  <Server className="h-8 w-8 text-purple-400" />
+                  <p className="text-sm text-slate-600">Deployment in progress...</p>
+                  <p className="text-xs text-slate-400">Node information will appear once deployment completes</p>
+                </div>
+              </div>
+            )}
+            {!isDeploying && isLeader && leaderInfo && (
               <>
                 <InfoRow
                   label="Leader URL"
@@ -303,6 +316,8 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
                   label="Leader Port"
                   value={leaderInfo.leaderPort.toString()}
                   mono
+                  copyable
+                  onCopy={() => copyToClipboard(leaderInfo.leaderPort.toString(), "Leader Port")}
                 />
                 <InfoRow
                   label="Peer ID"
@@ -322,7 +337,7 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
                 />
               </>
             )}
-            {!isLeader && regularNodeInfo && (
+            {!isDeploying && !isLeader && regularNodeInfo && (
               <>
                 <InfoRow
                   label="Node URL"
@@ -342,6 +357,8 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
                   label="Node Port"
                   value={regularNodeInfo.nodePort.toString()}
                   mono
+                  copyable
+                  onCopy={() => copyToClipboard(regularNodeInfo.nodePort.toString(), "Node Port")}
                 />
                 {regularNodeInfo.nodePeerId && (
                   <InfoRow
@@ -363,14 +380,18 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
                 />
               </>
             )}
-            <InfoRow
-              label="Database"
-              value={deploymentInfo.databaseType === "rds" ? "Amazon RDS (PostgreSQL)" : "Local PostgreSQL"}
-            />
-            <InfoRow
-              label="Deployed"
-              value={formatDate(isLeader ? leaderInfo?.deploymentTimestamp : regularNodeInfo?.deploymentTimestamp)}
-            />
+            {!isDeploying && (
+              <>
+                <InfoRow
+                  label="Database"
+                  value={deploymentInfo?.databaseType === "rds" ? "Amazon RDS (PostgreSQL)" : "Local PostgreSQL"}
+                />
+                <InfoRow
+                  label="Deployed"
+                  value={formatDate(isLeader ? leaderInfo?.deploymentTimestamp : regularNodeInfo?.deploymentTimestamp)}
+                />
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -384,7 +405,15 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-2">
-            {isLeader && leaderInfo && (
+            {isDeploying && (
+              <div className="py-4 text-center">
+                <div className="animate-pulse flex flex-col items-center gap-2">
+                  <Network className="h-8 w-8 text-blue-400" />
+                  <p className="text-sm text-slate-600">Awaiting deployment...</p>
+                </div>
+              </div>
+            )}
+            {!isDeploying && isLeader && leaderInfo && (
               <>
                 <InfoRow
                   label="Contract"
@@ -428,7 +457,7 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
                 />
               </>
             )}
-            {!isLeader && regularNodeInfo && (
+            {!isDeploying && !isLeader && regularNodeInfo && (
               <>
                 <InfoRow
                   label="Contract"
