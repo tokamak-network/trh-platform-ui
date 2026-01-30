@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dices, ArrowUpRight, Server, Database, Crown, Trash2 } from "lucide-react";
+import { Dices, ArrowUpRight, Server, Database, Crown, Trash2, Plus } from "lucide-react";
 import { InstallDRBDialog } from "./InstallDRBDialog";
 import { useDRBDeploymentInfo, useThanosSepolia } from "../api/queries";
 import { useUninstallDRBMutation } from "../api/mutations";
@@ -48,7 +48,6 @@ export function DRBServiceCard({
   const isLoadingStack = !propStackId && isLoadingSystemStack;
   const hasSystemStackError = !propStackId && !!systemStackError;
 
-  // Get real deployment status from API
   const { isCompleted, isInProgress, isFailed, isTerminating, isCancelling, isCancelled, nodeType } = useDRBDeploymentInfo(resolvedStackId || "");
 
   const status = isCompleted
@@ -115,7 +114,7 @@ export function DRBServiceCard({
             </div>
           )}
 
-          <footer className={`pt-2 ${isFailed ? "space-y-3" : "flex items-center justify-between"}`}>
+          <footer className={`pt-2 ${isFailed ? "space-y-3" : "flex flex-wrap items-center justify-between gap-2"}`}>
             <a
               href="https://github.com/tokamak-network/Commit-Reveal2"
               target="_blank"
@@ -126,7 +125,17 @@ export function DRBServiceCard({
               <ArrowUpRight className="h-3 w-3" />
             </a>
 
-            {isCompleted ? (
+            {isCompleted && nodeType === "leader" ? (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => setDialogOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Node
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleViewDetails}>
+                  Details
+                </Button>
+              </div>
+            ) : isCompleted ? (
               <Button variant="outline" size="sm" onClick={handleViewDetails}>
                 View Details
               </Button>
