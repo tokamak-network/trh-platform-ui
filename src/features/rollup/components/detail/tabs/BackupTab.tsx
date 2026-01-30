@@ -620,7 +620,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
 
       {/* Restore Dialog */}
       <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Restore from Backup</DialogTitle>
             <DialogDescription>
@@ -659,7 +659,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 Automatically attach workloads to restored EFS
               </Label>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-2">
               If enabled, the restored EFS will be automatically attached to your workloads (op-geth, op-node) after restoration completes.
             </p>
             {attachWorkloads && (
@@ -690,7 +690,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
 
       {/* Attach Storage Dialog */}
       <Dialog open={attachDialogOpen} onOpenChange={setAttachDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Attach to New Storage</DialogTitle>
             <DialogDescription>
