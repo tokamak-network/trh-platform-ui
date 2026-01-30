@@ -52,7 +52,7 @@ interface NetworkConfig {
 interface InstallDRBDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  stackId?: string; // Optional - will use Thanos Sepolia system stack if not provided
+  stackId?: string;
   chainName?: string;
   deployedNetwork?: NetworkConfig;
 }
@@ -97,16 +97,16 @@ const initialForm: FormState = {
   customRpcUrl: "",
   customChainId: "",
   privateKey: "",
-  // Regular node fields
   leaderIp: "",
-  leaderPort: "61281",
+  leaderPort: "61280",
   leaderPeerId: "",
   leaderEoa: "",
   contractAddress: "",
-  nodePort: "61281",
+  nodePort: "61280",
   eoaPrivateKey: "",
   // EC2 Configuration
-  ec2InstanceType: "t3.medium",
+  // ec2InstanceType: "t3.medium",
+  ec2InstanceType: "t3.small", // match SDK default
   ec2KeyPairName: "",
   ec2SubnetId: "",
   ec2InstanceName: "",
@@ -399,14 +399,13 @@ export function InstallDRBDialog({
       setCurrentTask("Deployment started");
       setTimeout(() => {
         onOpenChange(false);
-        router.push(`/rollup/${resolvedStackId}?tab=deployments`);
       }, 1500);
     } catch (err) {
       if (intervalId) clearInterval(intervalId);
       setError(err instanceof Error ? err.message : "Deployment failed");
       setStep("error");
     }
-  }, [stackId, form, mutation, onOpenChange, router]);
+  }, [stackId, form, mutation, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -475,6 +474,7 @@ export function InstallDRBDialog({
 
           {step === "config" && form.nodeType === "regular" && (
             <StepRegularNodeConfig
+              activeNetwork={activeNetwork}
               nodePort={form.nodePort}
               eoaPrivateKey={form.eoaPrivateKey}
               showPrivateKey={showEoaPrivateKey}
@@ -486,14 +486,8 @@ export function InstallDRBDialog({
 
           {step === "ec2" && form.nodeType === "regular" && (
             <StepEc2Config
-              instanceType={form.ec2InstanceType}
               keyPairName={form.ec2KeyPairName}
-              subnetId={form.ec2SubnetId}
-              instanceName={form.ec2InstanceName}
-              onInstanceTypeChange={(v) => updateForm("ec2InstanceType", v)}
               onKeyPairNameChange={(v) => updateForm("ec2KeyPairName", v)}
-              onSubnetIdChange={(v) => updateForm("ec2SubnetId", v)}
-              onInstanceNameChange={(v) => updateForm("ec2InstanceName", v)}
             />
           )}
 
@@ -968,23 +962,22 @@ function StepLeaderConnection({
       <div className="flex items-start gap-2 rounded-md bg-neutral-50 p-2.5">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <p className="text-[11px] text-neutral-500">
-          Enter the connection details from an existing DRB leader node. You can find this information
-          in the leader node&apos;s deployment dashboard.
+          Copy the connection details from the leader node&apos;s Overview tab in the Rollup dashboard.
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Leader IP">
+        <FormField label="Leader IP / Hostname">
           <Input
-            placeholder="192.168.1.1"
+            placeholder="k8s-drb-xxx.elb.amazonaws.com"
             value={leaderIp}
             onChange={(e) => onLeaderIpChange(e.target.value)}
-            className="font-mono text-sm"
+            className="font-mono text-xs"
           />
         </FormField>
         <FormField label="Leader Port">
           <Input
-            placeholder="61281"
+            placeholder="61280"
             value={leaderPort}
             onChange={(e) => onLeaderPortChange(e.target.value)}
             className="font-mono text-sm"
@@ -994,41 +987,39 @@ function StepLeaderConnection({
 
       <FormField label="Leader Peer ID">
         <Input
-          placeholder="16Uiu2HAmXn..."
+          placeholder="12D3KooWKVrw..."
           value={leaderPeerId}
           onChange={(e) => onLeaderPeerIdChange(e.target.value)}
-          className="font-mono text-sm"
+          className="font-mono text-xs"
         />
       </FormField>
 
-      <FormField label="Leader EOA Address">
+      <FormField label="Leader EOA">
         <Input
-          placeholder="0x..."
+          placeholder="0x8d56E94a..."
           value={leaderEoa}
           onChange={(e) => onLeaderEoaChange(e.target.value)}
-          className="font-mono text-sm"
+          className="font-mono text-xs"
         />
       </FormField>
 
       <FormField label="Contract Address">
         <Input
-          placeholder="0x..."
+          placeholder="0xfe55b104..."
           value={contractAddress}
           onChange={(e) => onContractAddressChange(e.target.value)}
-          className="font-mono text-sm"
+          className="font-mono text-xs"
         />
-        <p className="mt-1 text-[11px] text-neutral-400">
-          CommitReveal2L2 contract address on the target network
-        </p>
       </FormField>
     </div>
   );
 }
 
 function StepRegularNodeConfig({
-  nodePort, eoaPrivateKey, showPrivateKey,
+  activeNetwork, nodePort, eoaPrivateKey, showPrivateKey,
   onNodePortChange, onEoaPrivateKeyChange, onTogglePrivateKey,
 }: {
+  activeNetwork: NetworkConfig | null;
   nodePort: string;
   eoaPrivateKey: string;
   showPrivateKey: boolean;
@@ -1036,6 +1027,30 @@ function StepRegularNodeConfig({
   onEoaPrivateKeyChange: (v: string) => void;
   onTogglePrivateKey: () => void;
 }) {
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
+
+  useEffect(() => {
+    if (!isValidPrivateKey(eoaPrivateKey) || !activeNetwork?.rpcUrl) {
+      setWalletInfo(null);
+      return;
+    }
+
+    const checkBalance = async () => {
+      setIsCheckingBalance(true);
+      const normalizedKey = eoaPrivateKey.startsWith("0x") ? eoaPrivateKey : `0x${eoaPrivateKey}`;
+      const info = await getWalletInfo(normalizedKey, activeNetwork.rpcUrl);
+      setWalletInfo(info);
+      setIsCheckingBalance(false);
+    };
+
+    const timeoutId = setTimeout(checkBalance, 500);
+    return () => clearTimeout(timeoutId);
+  }, [eoaPrivateKey, activeNetwork?.rpcUrl]);
+
+  const tokenSymbol = activeNetwork?.nativeToken || "ETH";
+  const hasInsufficientBalance = walletInfo && !walletInfo.error && parseFloat(walletInfo.balance) < MIN_BALANCE;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -1043,15 +1058,22 @@ function StepRegularNodeConfig({
         <span>Regular Node Configuration</span>
       </div>
 
+      {activeNetwork && (
+        <div className="rounded-lg bg-neutral-50 px-3 py-2">
+          <span className="text-[10px] uppercase tracking-wider text-neutral-400">Network</span>
+          <p className="font-mono text-sm">{activeNetwork.name} · #{activeNetwork.chainId}</p>
+        </div>
+      )}
+
       <FormField label="Node Port">
         <Input
-          placeholder="61281"
+          placeholder="61280"
           value={nodePort}
           onChange={(e) => onNodePortChange(e.target.value)}
           className="font-mono text-sm"
         />
         <p className="mt-1 text-[11px] text-neutral-400">
-          Port for the DRB node to listen on (default: 61281)
+          Port for the DRB node to listen on (default: 61280)
         </p>
       </FormField>
 
@@ -1077,6 +1099,58 @@ function StepRegularNodeConfig({
         </p>
       </FormField>
 
+      {isCheckingBalance && (
+        <div className="flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2">
+          <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+          <span className="text-xs text-neutral-500">Checking wallet balance...</span>
+        </div>
+      )}
+
+      {walletInfo && !isCheckingBalance && !walletInfo.error && (
+        <div className={cn(
+          "rounded-lg px-3 py-2",
+          hasInsufficientBalance ? "bg-warning-50 border border-warning-200" : "bg-success-50 border border-success-200"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-neutral-500" />
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-neutral-400">Wallet</span>
+                <p className="font-mono text-xs">{walletInfo.address.slice(0, 6)}...{walletInfo.address.slice(-4)}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[11px] text-neutral-500">Balance</span>
+              <span className={cn("text-[11px] font-medium ml-1", hasInsufficientBalance ? "text-warning-600" : "text-success-600")}>
+                {parseFloat(walletInfo.balance).toFixed(4)} {tokenSymbol}
+              </span>
+            </div>
+          </div>
+          {hasInsufficientBalance && (
+            <div className="mt-2">
+              <p className="text-[11px] text-warning-600">
+                Low balance. Minimum {MIN_BALANCE} {tokenSymbol} recommended.
+              </p>
+              {activeNetwork?.chainId === 111551119090 && (
+                <p className="mt-1 text-[10px] text-warning-500">
+                  Get testnet TON:{" "}
+                  <a href="https://faucet.thanos-sepolia.tokamak.network" target="_blank" rel="noopener noreferrer" className="underline">
+                    Thanos Sepolia Faucet
+                  </a>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {walletInfo && !isCheckingBalance && walletInfo.error && (
+        <div className="flex items-center gap-2 rounded-lg border border-error-200 bg-error-50 px-3 py-2">
+          <AlertCircle className="h-4 w-4 text-error-500" />
+          <span className="text-xs text-error-600">Failed to check balance: {walletInfo.error}</span>
+        </div>
+      )}
+
       <div className="rounded-lg bg-primary-50 px-3 py-2.5">
         <div className="flex items-center gap-2 text-xs text-primary-600">
           <Server className="h-3.5 w-3.5" />
@@ -1093,46 +1167,25 @@ function StepRegularNodeConfig({
 }
 
 function StepEc2Config({
-  instanceType, keyPairName, subnetId, instanceName,
-  onInstanceTypeChange, onKeyPairNameChange, onSubnetIdChange, onInstanceNameChange,
+  keyPairName,
+  onKeyPairNameChange,
 }: {
-  instanceType: string;
   keyPairName: string;
-  subnetId: string;
-  instanceName: string;
-  onInstanceTypeChange: (v: string) => void;
   onKeyPairNameChange: (v: string) => void;
-  onSubnetIdChange: (v: string) => void;
-  onInstanceNameChange: (v: string) => void;
 }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Cpu className="h-4 w-4" />
-        <span>EC2 Instance Configuration</span>
+        <span>EC2 Configuration</span>
       </div>
 
       <div className="flex items-start gap-2 rounded-md bg-neutral-50 p-2.5">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
         <p className="text-[11px] text-neutral-500">
-          Configure the AWS EC2 instance where the regular node will be deployed.
+          Regular node will be deployed on a t3.small EC2 instance in your selected AWS region.
         </p>
       </div>
-
-      <FormField label="Instance Type">
-        <Select value={instanceType} onValueChange={onInstanceTypeChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select instance type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="t3.medium">t3.medium (2 vCPU, 4 GB)</SelectItem>
-            <SelectItem value="t3.large">t3.large (2 vCPU, 8 GB)</SelectItem>
-            <SelectItem value="t3.xlarge">t3.xlarge (4 vCPU, 16 GB)</SelectItem>
-            <SelectItem value="m5.large">m5.large (2 vCPU, 8 GB)</SelectItem>
-            <SelectItem value="m5.xlarge">m5.xlarge (4 vCPU, 16 GB)</SelectItem>
-          </SelectContent>
-        </Select>
-      </FormField>
 
       <FormField label="SSH Key Pair Name">
         <Input
@@ -1141,28 +1194,8 @@ function StepEc2Config({
           onChange={(e) => onKeyPairNameChange(e.target.value)}
         />
         <p className="mt-1 text-[11px] text-neutral-400">
-          Existing AWS EC2 key pair name for SSH access
+          Existing AWS EC2 key pair for SSH access to the instance
         </p>
-      </FormField>
-
-      <FormField label="Subnet ID (Optional)">
-        <Input
-          placeholder="subnet-12345678"
-          value={subnetId}
-          onChange={(e) => onSubnetIdChange(e.target.value)}
-          className="font-mono text-sm"
-        />
-        <p className="mt-1 text-[11px] text-neutral-400">
-          Leave empty to use default VPC subnet
-        </p>
-      </FormField>
-
-      <FormField label="Instance Name (Optional)">
-        <Input
-          placeholder="drb-regular-node"
-          value={instanceName}
-          onChange={(e) => onInstanceNameChange(e.target.value)}
-        />
       </FormField>
     </div>
   );
