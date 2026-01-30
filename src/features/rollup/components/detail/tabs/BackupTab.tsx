@@ -23,6 +23,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -78,6 +87,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   const [backupPvPvc, setBackupPvPvc] = useState<boolean>(true);
   const [backupDownloadPending, setBackupDownloadPending] = useState(false);
   const [backupDownloaded, setBackupDownloaded] = useState(false);
+  const [showSyncWarning, setShowSyncWarning] = useState(false);
 
   // Backup configuration state
   const [backupTime, setBackupTime] = useState("02:30");
@@ -748,8 +758,8 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                   {backupDownloadPending
                     ? "Generating..."
                     : backupDownloaded
-                    ? "Download Again"
-                    : "Generate & Download Backup"}
+                      ? "Download Again"
+                      : "Generate & Download Backup"}
                 </Button>
                 {backupDownloaded && (
                   <p className="text-xs text-muted-foreground">
@@ -841,6 +851,9 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 if (data?.result) {
                   setRestoreResult(data.result);
                 }
+                if (attachWorkloads) {
+                  setShowSyncWarning(true);
+                }
               }}
               onError={(err) => {
                 setError(`Restore failed: ${err}`);
@@ -868,7 +881,9 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 setSuccess("Storage attached successfully!");
                 setTimeout(() => setAttachTaskId(null), 2000);
                 setTimeout(() => setSuccess(null), 5000);
+                setTimeout(() => setSuccess(null), 5000);
                 refetchStatus();
+                setShowSyncWarning(true);
               }}
               onError={(err) => {
                 setError(`Attach failed: ${err}`);
@@ -959,7 +974,6 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Snapshot Progress Dialog */}
       <Dialog open={!!snapshotTaskId} onOpenChange={(open) => !open && setSnapshotTaskId(null)}>
         <DialogContent>
           <DialogHeader>
@@ -986,6 +1000,21 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showSyncWarning} onOpenChange={setShowSyncWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Operation Completed</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please note that it may take some time for block synchronization to complete.
+              The system will catch up shortly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowSyncWarning(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
