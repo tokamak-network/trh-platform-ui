@@ -80,7 +80,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   const [attachConfirmOpen, setAttachConfirmOpen] = useState(false);
   const [selectedRecoveryPoint, setSelectedRecoveryPoint] = useState<string>("");
   const [restoreTaskId, setRestoreTaskId] = useState<string | null>(null);
-  const [restoreResult, setRestoreResult] = useState<any | null>(null);
+  const [restoreResult, setRestoreResult] = useState<Record<string, unknown> | null>(null);
   const [snapshotTaskId, setSnapshotTaskId] = useState<string | null>(null);
   const [attachTaskId, setAttachTaskId] = useState<string | null>(null);
   const [attachWorkloads, setAttachWorkloads] = useState<boolean>(false);
@@ -200,8 +200,8 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
 
   const attachStorageMutation = useAttachStorageMutation({
     onSuccess: (data) => {
-      if (data && (data as any).task_id) {
-        setAttachTaskId((data as any).task_id);
+      if (data && (data as { task_id?: string }).task_id) {
+        setAttachTaskId((data as { task_id?: string }).task_id!);
       }
       setSuccess("Attach started successfully!");
       setError(null);
@@ -330,13 +330,13 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
   }
 
   const getSuggested = (key: string, fallback: string) => {
-    const value = (restoreResult as any)?.[key];
+    const value = (restoreResult as Record<string, unknown>)?.[key];
     if (typeof value === "string" && value.trim() !== "") return value;
     return fallback;
   };
 
   const suggestedEfs =
-    getSuggested("SuggestedEFSID", (restoreResult as any)?.NewEFSID || "");
+    getSuggested("SuggestedEFSID", ((restoreResult as Record<string, unknown>)?.NewEFSID as string) || "");
   const suggestedPvcs = getSuggested("SuggestedPVCs", "op-geth,op-node");
   const suggestedStss = getSuggested("SuggestedSTSs", "op-geth,op-node");
 
@@ -849,7 +849,7 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
                 setTimeout(() => setSuccess(null), 5000);
                 refetchStatus();
                 if (data?.result) {
-                  setRestoreResult(data.result);
+                  setRestoreResult(data.result as Record<string, unknown>);
                 }
                 if (attachWorkloads) {
                   setShowSyncWarning(true);
