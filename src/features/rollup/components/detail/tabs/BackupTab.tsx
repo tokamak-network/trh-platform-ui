@@ -652,6 +652,14 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
             <p className="text-xs text-muted-foreground">
               If enabled, the restored EFS will be automatically attached to your workloads (op-geth, op-node) after restoration completes.
             </p>
+            {attachWorkloads && (
+              <Alert className="mt-3 border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-xs text-blue-800">
+                  <strong>Note:</strong> When auto-attach is enabled, your current PV/PVC configurations will be automatically backed up before switching to the restored EFS. This ensures you can recover your previous storage configuration if needed.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
           <DialogFooter>
             <Button

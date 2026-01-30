@@ -20,6 +20,7 @@ interface TaskStatus {
     percentage: number;
     message: string;
     updatedAt?: string;
+    startedAt?: string;
     result?: unknown;
 }
 
@@ -28,6 +29,25 @@ export function TaskProgress({ taskId, title = "Task Progress", onComplete, onEr
     const [status, setStatus] = useState<string>("pending");
     const [message, setMessage] = useState<string>("Initializing...");
     const [error, setError] = useState<string | null>(null);
+    const [startedAt, setStartedAt] = useState<string | null>(null);
+    const [elapsedTime, setElapsedTime] = useState<string>("00:00");
+
+    useEffect(() => {
+        if (!startedAt) return;
+
+        const interval = setInterval(() => {
+            const start = new Date(startedAt).getTime();
+            const now = new Date().getTime();
+            const diff = Math.floor((now - start) / 1000);
+
+            const safeDiff = Math.max(0, diff);
+            const minutes = Math.floor(safeDiff / 60).toString().padStart(2, '0');
+            const seconds = (safeDiff % 60).toString().padStart(2, '0');
+            setElapsedTime(`${minutes}:${seconds}`);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [startedAt, status]);
 
     useEffect(() => {
         if (!taskId) return;
@@ -42,6 +62,9 @@ export function TaskProgress({ taskId, title = "Task Progress", onComplete, onEr
                 setProgress(data.percentage);
                 setStatus(data.status);
                 setMessage(data.message);
+                if (data.startedAt) {
+                    setStartedAt(data.startedAt);
+                }
 
                 if (data.status === "completed" || data.status === "success" || data.percentage >= 100) {
                     clearInterval(pollInterval);
@@ -68,6 +91,7 @@ export function TaskProgress({ taskId, title = "Task Progress", onComplete, onEr
                 <CardTitle className="text-sm font-medium flex items-center justify-between">
                     {title}
                     <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-muted-foreground mr-1">{elapsedTime}</span>
                         <span className="text-xs text-muted-foreground">{Math.round(progress)}%</span>
                         {status === "pending" || status === "running" ? (
                             <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />
