@@ -123,9 +123,13 @@ export interface GetDRBInfoResponse {
   failureReason?: string;
 }
 
+export interface InstallDRBResponse {
+  stackId: string;
+}
+
 // Stack-based DRB deployment
 export const installDRB = (stackId: string, body: InstallDRBRequestBody) =>
-  apiPost(`stacks/thanos/${stackId}/integrations/drb`, body);
+  apiPost<InstallDRBResponse>(`stacks/thanos/${stackId}/integrations/drb`, body);
 
 export const uninstallDRB = (stackId: string) =>
   apiDelete(`stacks/thanos/${stackId}/integrations/drb`);
