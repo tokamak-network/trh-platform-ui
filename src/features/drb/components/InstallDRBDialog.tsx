@@ -19,6 +19,7 @@ import {
   Dices, Crown, Globe, Key, Eye, EyeOff, Database,
   Cloud, Check, Loader2, AlertCircle, ChevronLeft,
   ChevronDown, ChevronUp, Info, Shield, Shuffle, Users, Blocks, Wallet, Link,
+  Server, Cpu, Network,
 } from "lucide-react";
 import {
   Select,
@@ -56,14 +57,30 @@ interface InstallDRBDialogProps {
   deployedNetwork?: NetworkConfig;
 }
 
-type Step = "info" | "network" | "config" | "aws" | "database" | "deploying" | "success" | "error";
+type Step = "mode" | "info" | "network" | "config" | "leaderConnection" | "ec2" | "aws" | "database" | "deploying" | "success" | "error";
 type NetworkMode = "deployed" | "custom";
+type NodeType = "leader" | "regular";
 
 interface FormState {
+  nodeType: NodeType;
   networkMode: NetworkMode;
   customRpcUrl: string;
   customChainId: string;
+  // Leader node fields
   privateKey: string;
+  // Regular node fields
+  leaderIp: string;
+  leaderPort: string;
+  leaderPeerId: string;
+  leaderEoa: string;
+  contractAddress: string;
+  nodePort: string;
+  eoaPrivateKey: string;
+  // EC2 Configuration (for regular nodes)
+  ec2InstanceType: string;
+  ec2KeyPairName: string;
+  ec2SubnetId: string;
+  ec2InstanceName: string;
   // AWS Infrastructure (from saved configuration)
   awsCredentialId: string;
   awsAccessKeyId: string;
@@ -75,10 +92,25 @@ interface FormState {
 }
 
 const initialForm: FormState = {
+  nodeType: "leader",
   networkMode: "deployed",
   customRpcUrl: "",
   customChainId: "",
   privateKey: "",
+  // Regular node fields
+  leaderIp: "",
+  leaderPort: "61281",
+  leaderPeerId: "",
+  leaderEoa: "",
+  contractAddress: "",
+  nodePort: "61281",
+  eoaPrivateKey: "",
+  // EC2 Configuration
+  ec2InstanceType: "t3.medium",
+  ec2KeyPairName: "",
+  ec2SubnetId: "",
+  ec2InstanceName: "",
+  // aws
   awsCredentialId: "",
   awsAccessKeyId: "",
   awsSecretAccessKey: "",
@@ -141,11 +173,12 @@ export function InstallDRBDialog({
   deployedNetwork,
 }: InstallDRBDialogProps) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("info");
+  const [step, setStep] = useState<Step>("mode");
   const [form, setForm] = useState<FormState>(initialForm);
   const [progress, setProgress] = useState(0);
   const [currentTask, setCurrentTask] = useState("");
   const [showPrivateKey, setShowPrivateKey] = useState(false);
+  const [showEoaPrivateKey, setShowEoaPrivateKey] = useState(false);
   const [showDbPassword, setShowDbPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -156,26 +189,68 @@ export function InstallDRBDialog({
   }, []);
 
   const handleClose = useCallback(() => {
-    setStep("info");
+    setStep("mode");
     setForm(initialForm);
     setProgress(0);
     setCurrentTask("");
     setShowPrivateKey(false);
+    setShowEoaPrivateKey(false);
     setShowDbPassword(false);
     setError(null);
     onOpenChange(false);
   }, [onOpenChange]);
 
   const goBack = useCallback(() => {
-    const backMap: Partial<Record<Step, Step>> = {
+    // diff back navigation based on node type
+    const leaderBackMap: Partial<Record<Step, Step>> = {
+      info: "mode",
       network: "info",
       config: "network",
       aws: "config",
       database: "aws",
     };
+    const regularBackMap: Partial<Record<Step, Step>> = {
+      info: "mode",
+      network: "info",
+      leaderConnection: "network",
+      config: "leaderConnection",
+      ec2: "config",
+      aws: "ec2",
+      database: "aws",
+    };
+    const backMap = form.nodeType === "regular" ? regularBackMap : leaderBackMap;
     const prev = backMap[step];
     if (prev) setStep(prev);
-  }, [step]);
+  }, [step, form.nodeType]);
+
+  // navigation to next step
+  const goNext = useCallback(() => {
+    if (form.nodeType === "regular") {
+      // regular node flow : mode -> info -> network -> leaderConnection -> config -> ec2 -> aws -> database
+      const nextMap: Partial<Record<Step, Step>> = {
+        mode: "info",
+        info: "network",
+        network: "leaderConnection",
+        leaderConnection: "config",
+        config: "ec2",
+        ec2: "aws",
+        aws: "database",
+      };
+      const next = nextMap[step];
+      if (next) setStep(next);
+    } else {
+      // LEADER node flow : mode -> info -> network -> config -> aws -> database
+      const nextMap: Partial<Record<Step, Step>> = {
+        mode: "info",
+        info: "network",
+        network: "config",
+        config: "aws",
+        aws: "database",
+      };
+      const next = nextMap[step];
+      if (next) setStep(next);
+    }
+  }, [step, form.nodeType]);
 
   // Default to Thanos Sepolia if no deployed network provided
   const defaultNetwork = deployedNetwork || {
@@ -185,10 +260,16 @@ export function InstallDRBDialog({
     nativeToken: THANOS_SEPOLIA.nativeToken,
   };
 
+  // Extracts first RPC URL for display and wallet checks
+  const getFirstRpcUrl = (input: string) => {
+    const urls = input.split(/[\n,]/).map(u => u.trim()).filter(u => u.length > 0);
+    return urls[0] || "";
+  };
+
   const activeNetwork = form.networkMode === "deployed"
     ? defaultNetwork
     : form.networkMode === "custom" && form.customRpcUrl && form.customChainId
-    ? { rpcUrl: form.customRpcUrl, chainId: parseInt(form.customChainId), name: `Chain ${form.customChainId}`, nativeToken: "ETH" }
+    ? { rpcUrl: getFirstRpcUrl(form.customRpcUrl), chainId: parseInt(form.customChainId), name: `Chain ${form.customChainId}`, nativeToken: "ETH" }
     : defaultNetwork;
 
   const contractType = activeNetwork && (activeNetwork.chainId === 1 || activeNetwork.chainId === 11155111)
@@ -199,7 +280,22 @@ export function InstallDRBDialog({
     ? true // Always valid - uses deployedNetwork or defaults to Thanos Sepolia
     : form.customRpcUrl.trim() !== "" && form.customChainId.trim() !== "";
 
-  const canProceedConfig = isValidPrivateKey(form.privateKey);
+  // For leader nodes, validate private key; for regular nodes, validate EOA private key
+  const canProceedConfig = form.nodeType === "regular"
+    ? isValidPrivateKey(form.eoaPrivateKey)
+    : isValidPrivateKey(form.privateKey);
+
+  // Leader connection validation (for regular nodes)
+  const canProceedLeaderConnection = form.leaderIp.trim() !== "" &&
+    form.leaderPort.trim() !== "" &&
+    form.leaderPeerId.trim() !== "" &&
+    form.leaderEoa.trim() !== "" &&
+    form.contractAddress.trim() !== "" &&
+    isValidAddress(form.leaderEoa) &&
+    isValidAddress(form.contractAddress);
+
+  // EC2 configuration validation (for regular nodes)
+  const canProceedEc2 = form.ec2KeyPairName.trim() !== "";
 
   const canProceedAws = form.awsCredentialId.trim() !== "" &&
     form.awsRegion.trim() !== "";
@@ -235,26 +331,68 @@ export function InstallDRBDialog({
         }
       }, 500);
 
-      // Call the real API
-      await mutation.mutateAsync({
+      const isRegularNode = form.nodeType === "regular";
+      const useDeployedNetwork = form.networkMode === "deployed" && !isRegularNode;
+
+      // Convert newline separated URLs to comma separated
+      const formatRpcUrls = (input: string) => {
+        return input
+          .split(/[\n,]/)
+          .map(url => url.trim())
+          .filter(url => url.length > 0)
+          .join(",");
+      };
+
+      const rpcUrls = !useDeployedNetwork
+        ? formatRpcUrls(form.customRpcUrl || defaultNetwork.rpcUrl)
+        : undefined;
+
+      const baseRequest = {
         stackId: resolvedStackId,
-        useCurrentChain: form.networkMode === "deployed",
-        rpc: form.networkMode === "custom" ? form.customRpcUrl : undefined,
-        chainId: form.networkMode === "custom" ? parseInt(form.customChainId) : undefined,
-        privateKey: form.privateKey,
-        // AWS Infrastructure
+        nodeType: form.nodeType,
+        useCurrentChain: useDeployedNetwork,
+        rpc: rpcUrls,
+        chainId: !useDeployedNetwork ? (form.customChainId ? parseInt(form.customChainId) : defaultNetwork.chainId) : undefined,
         awsConfig: {
           accessKeyId: form.awsAccessKeyId,
           secretAccessKey: form.awsSecretAccessKey,
           region: form.awsRegion,
         },
-        // Database
         databaseConfig: {
-          type: "rds",
+          type: "rds" as const,
           username: form.dbUsername,
           password: form.dbPassword,
         },
-      });
+      };
+
+      if (form.nodeType === "regular") {
+        // Regular node request
+        await mutation.mutateAsync({
+          ...baseRequest,
+          // Leader connection info
+          leaderIp: form.leaderIp,
+          leaderPort: parseInt(form.leaderPort),
+          leaderPeerId: form.leaderPeerId,
+          leaderEoa: form.leaderEoa,
+          contractAddress: form.contractAddress,
+          // Regular node config
+          nodePort: parseInt(form.nodePort),
+          eoaPrivateKey: form.eoaPrivateKey,
+          // EC2 config
+          ec2Config: {
+            instanceType: form.ec2InstanceType || undefined,
+            keyPairName: form.ec2KeyPairName,
+            subnetId: form.ec2SubnetId || undefined,
+            instanceName: form.ec2InstanceName || undefined,
+          },
+        });
+      } else {
+        // Leader node request
+        await mutation.mutateAsync({
+          ...baseRequest,
+          privateKey: form.privateKey,
+        });
+      }
 
       if (intervalId) clearInterval(intervalId);
       setProgress(100);
@@ -268,7 +406,7 @@ export function InstallDRBDialog({
       setError(err instanceof Error ? err.message : "Deployment failed");
       setStep("error");
     }
-  }, [stackId, form, mutation]);
+  }, [stackId, form, mutation, onOpenChange, router]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -286,8 +424,15 @@ export function InstallDRBDialog({
         </DialogHeader>
 
         <div className="px-5 py-4">
+          {step === "mode" && (
+            <StepMode
+              nodeType={form.nodeType}
+              onNodeTypeChange={(type) => updateForm("nodeType", type)}
+            />
+          )}
+
           {step === "info" && (
-            <StepInfo onContinue={() => setStep("network")} />
+            <StepInfo nodeType={form.nodeType} />
           )}
 
           {step === "network" && (
@@ -302,7 +447,22 @@ export function InstallDRBDialog({
             />
           )}
 
-          {step === "config" && (
+          {step === "leaderConnection" && form.nodeType === "regular" && (
+            <StepLeaderConnection
+              leaderIp={form.leaderIp}
+              leaderPort={form.leaderPort}
+              leaderPeerId={form.leaderPeerId}
+              leaderEoa={form.leaderEoa}
+              contractAddress={form.contractAddress}
+              onLeaderIpChange={(v) => updateForm("leaderIp", v)}
+              onLeaderPortChange={(v) => updateForm("leaderPort", v)}
+              onLeaderPeerIdChange={(v) => updateForm("leaderPeerId", v)}
+              onLeaderEoaChange={(v) => updateForm("leaderEoa", v)}
+              onContractAddressChange={(v) => updateForm("contractAddress", v)}
+            />
+          )}
+
+          {step === "config" && form.nodeType === "leader" && (
             <StepConfig
               activeNetwork={activeNetwork}
               contractType={contractType}
@@ -310,6 +470,30 @@ export function InstallDRBDialog({
               showPrivateKey={showPrivateKey}
               onPrivateKeyChange={(v) => updateForm("privateKey", v)}
               onTogglePrivateKey={() => setShowPrivateKey(!showPrivateKey)}
+            />
+          )}
+
+          {step === "config" && form.nodeType === "regular" && (
+            <StepRegularNodeConfig
+              nodePort={form.nodePort}
+              eoaPrivateKey={form.eoaPrivateKey}
+              showPrivateKey={showEoaPrivateKey}
+              onNodePortChange={(v) => updateForm("nodePort", v)}
+              onEoaPrivateKeyChange={(v) => updateForm("eoaPrivateKey", v)}
+              onTogglePrivateKey={() => setShowEoaPrivateKey(!showEoaPrivateKey)}
+            />
+          )}
+
+          {step === "ec2" && form.nodeType === "regular" && (
+            <StepEc2Config
+              instanceType={form.ec2InstanceType}
+              keyPairName={form.ec2KeyPairName}
+              subnetId={form.ec2SubnetId}
+              instanceName={form.ec2InstanceName}
+              onInstanceTypeChange={(v) => updateForm("ec2InstanceType", v)}
+              onKeyPairNameChange={(v) => updateForm("ec2KeyPairName", v)}
+              onSubnetIdChange={(v) => updateForm("ec2SubnetId", v)}
+              onInstanceNameChange={(v) => updateForm("ec2InstanceName", v)}
             />
           )}
 
@@ -353,7 +537,7 @@ export function InstallDRBDialog({
 
         {!["deploying", "success", "error"].includes(step) && (
           <footer className="flex items-center justify-between border-t border-neutral-100 px-5 py-3">
-            {step === "info" ? (
+            {step === "mode" ? (
               <Button variant="ghost" size="sm" onClick={handleClose}>Cancel</Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={goBack}>
@@ -366,15 +550,17 @@ export function InstallDRBDialog({
               disabled={
                 (step === "network" && !canProceedNetwork) ||
                 (step === "config" && !canProceedConfig) ||
+                (step === "leaderConnection" && !canProceedLeaderConnection) ||
+                (step === "ec2" && !canProceedEc2) ||
                 (step === "aws" && !canProceedAws) ||
                 (step === "database" && !canProceedDatabase)
               }
               onClick={() => {
-                if (step === "info") setStep("network");
-                else if (step === "network") setStep("config");
-                else if (step === "config") setStep("aws");
-                else if (step === "aws") setStep("database");
-                else if (step === "database") startDeployment();
+                if (step === "database") {
+                  startDeployment();
+                } else {
+                  goNext();
+                }
               }}
             >
               {step === "database" ? "Deploy" : "Continue"}
@@ -400,8 +586,59 @@ export function InstallDRBDialog({
   );
 }
 
-function StepInfo({ onContinue }: { onContinue: () => void }) {
+function StepMode({
+  nodeType,
+  onNodeTypeChange,
+}: {
+  nodeType: NodeType;
+  onNodeTypeChange: (type: NodeType) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Dices className="h-4 w-4" />
+        <span>Select deployment type</span>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-md bg-neutral-50 p-2.5">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+        <p className="text-[11px] text-neutral-500">
+          Choose whether to deploy a new DRB network (leader node) or join an existing one (regular node).
+        </p>
+      </div>
+
+      <SelectableCard
+        selected={nodeType === "leader"}
+        onClick={() => onNodeTypeChange("leader")}
+      >
+        <div className="flex items-center gap-2">
+          <Crown className="h-4 w-4 text-success-600" />
+          <p className="text-sm font-medium">Leader Node</p>
+        </div>
+        <p className="mt-1 text-xs text-neutral-500">
+          Deploy contracts and start a new DRB network. Requires AWS EKS infrastructure.
+        </p>
+      </SelectableCard>
+
+      <SelectableCard
+        selected={nodeType === "regular"}
+        onClick={() => onNodeTypeChange("regular")}
+      >
+        <div className="flex items-center gap-2">
+          <Server className="h-4 w-4 text-primary-600" />
+          <p className="text-sm font-medium">Regular Node</p>
+        </div>
+        <p className="mt-1 text-xs text-neutral-500">
+          Join an existing DRB network. Requires leader connection info and AWS EC2 instance.
+        </p>
+      </SelectableCard>
+    </div>
+  );
+}
+
+function StepInfo({ nodeType }: { nodeType: NodeType }) {
   const [showInfo, setShowInfo] = useState(false);
+  const isLeader = nodeType === "leader";
 
   return (
     <div className="space-y-4">
@@ -463,13 +700,15 @@ function StepInfo({ onContinue }: { onContinue: () => void }) {
         )}
       </div>
 
-      <div className="rounded-lg bg-success-50 px-3 py-2.5">
-        <div className="flex items-center gap-2 text-xs text-success-600">
-          <Crown className="h-3.5 w-3.5" />
-          <span className="font-medium">Leader Node Deployment</span>
+      <div className={cn("rounded-lg px-3 py-2.5", isLeader ? "bg-success-50" : "bg-primary-50")}>
+        <div className={cn("flex items-center gap-2 text-xs", isLeader ? "text-success-600" : "text-primary-600")}>
+          {isLeader ? <Crown className="h-3.5 w-3.5" /> : <Server className="h-3.5 w-3.5" />}
+          <span className="font-medium">{isLeader ? "Leader Node Deployment" : "Regular Node Deployment"}</span>
         </div>
-        <p className="mt-1 text-[11px] text-success-600/80">
-          Deploy the CommitReveal2 contract and start a leader node on dedicated AWS infrastructure.
+        <p className={cn("mt-1 text-[11px]", isLeader ? "text-success-600/80" : "text-primary-600/80")}>
+          {isLeader
+            ? "Deploy the CommitReveal2 contract and start a leader node on dedicated AWS infrastructure."
+            : "Join an existing DRB network by connecting to a leader node. Runs on AWS EC2 instance."}
         </p>
       </div>
     </div>
@@ -519,15 +758,23 @@ function StepNetwork({
         </SelectableCard>
       )}
 
-      <SelectableCard selected={networkMode === "custom"} onClick={() => onNetworkModeChange("custom")}>
+      <SelectableCard selected={networkMode === "custom"} onClick={() => onNetworkModeChange("custom")} disabled>
         <p className="text-sm font-medium">Custom Network</p>
         <p className="text-xs text-neutral-500">Any EVM-compatible chain</p>
       </SelectableCard>
 
       {networkMode === "custom" && (
         <div className="space-y-3 pt-2">
-          <FormField label="RPC URL">
-            <Input placeholder="https://..." value={customRpcUrl} onChange={(e) => onRpcChange(e.target.value)} className="font-mono text-sm" />
+          <FormField label="RPC URL(s)">
+            <textarea
+              placeholder="https://rpc.example.com"
+              value={customRpcUrl}
+              onChange={(e) => onRpcChange(e.target.value)}
+              className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <p className="mt-1 text-[11px] text-neutral-400">
+              Add multiple URLs (one per line) for automatic failover if primary fails.
+            </p>
           </FormField>
           <FormField label="Chain ID">
             <Input placeholder="1, 11155111, etc." value={customChainId} onChange={(e) => onChainIdChange(e.target.value)} className="font-mono text-sm" />
@@ -692,6 +939,231 @@ function StepConfig({
           Deposit is withdrawable when you uninstall DRB
         </p>
       </div>
+    </div>
+  );
+}
+
+function StepLeaderConnection({
+  leaderIp, leaderPort, leaderPeerId, leaderEoa, contractAddress,
+  onLeaderIpChange, onLeaderPortChange, onLeaderPeerIdChange, onLeaderEoaChange, onContractAddressChange,
+}: {
+  leaderIp: string;
+  leaderPort: string;
+  leaderPeerId: string;
+  leaderEoa: string;
+  contractAddress: string;
+  onLeaderIpChange: (v: string) => void;
+  onLeaderPortChange: (v: string) => void;
+  onLeaderPeerIdChange: (v: string) => void;
+  onLeaderEoaChange: (v: string) => void;
+  onContractAddressChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Network className="h-4 w-4" />
+        <span>Leader Node Connection</span>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-md bg-neutral-50 p-2.5">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+        <p className="text-[11px] text-neutral-500">
+          Enter the connection details from an existing DRB leader node. You can find this information
+          in the leader node&apos;s deployment dashboard.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <FormField label="Leader IP">
+          <Input
+            placeholder="192.168.1.1"
+            value={leaderIp}
+            onChange={(e) => onLeaderIpChange(e.target.value)}
+            className="font-mono text-sm"
+          />
+        </FormField>
+        <FormField label="Leader Port">
+          <Input
+            placeholder="61281"
+            value={leaderPort}
+            onChange={(e) => onLeaderPortChange(e.target.value)}
+            className="font-mono text-sm"
+          />
+        </FormField>
+      </div>
+
+      <FormField label="Leader Peer ID">
+        <Input
+          placeholder="16Uiu2HAmXn..."
+          value={leaderPeerId}
+          onChange={(e) => onLeaderPeerIdChange(e.target.value)}
+          className="font-mono text-sm"
+        />
+      </FormField>
+
+      <FormField label="Leader EOA Address">
+        <Input
+          placeholder="0x..."
+          value={leaderEoa}
+          onChange={(e) => onLeaderEoaChange(e.target.value)}
+          className="font-mono text-sm"
+        />
+      </FormField>
+
+      <FormField label="Contract Address">
+        <Input
+          placeholder="0x..."
+          value={contractAddress}
+          onChange={(e) => onContractAddressChange(e.target.value)}
+          className="font-mono text-sm"
+        />
+        <p className="mt-1 text-[11px] text-neutral-400">
+          CommitReveal2L2 contract address on the target network
+        </p>
+      </FormField>
+    </div>
+  );
+}
+
+function StepRegularNodeConfig({
+  nodePort, eoaPrivateKey, showPrivateKey,
+  onNodePortChange, onEoaPrivateKeyChange, onTogglePrivateKey,
+}: {
+  nodePort: string;
+  eoaPrivateKey: string;
+  showPrivateKey: boolean;
+  onNodePortChange: (v: string) => void;
+  onEoaPrivateKeyChange: (v: string) => void;
+  onTogglePrivateKey: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Server className="h-4 w-4" />
+        <span>Regular Node Configuration</span>
+      </div>
+
+      <FormField label="Node Port">
+        <Input
+          placeholder="61281"
+          value={nodePort}
+          onChange={(e) => onNodePortChange(e.target.value)}
+          className="font-mono text-sm"
+        />
+        <p className="mt-1 text-[11px] text-neutral-400">
+          Port for the DRB node to listen on (default: 61281)
+        </p>
+      </FormField>
+
+      <FormField label="Node Private Key" icon={Key}>
+        <div className="relative">
+          <Input
+            type={showPrivateKey ? "text" : "password"}
+            placeholder="0x..."
+            value={eoaPrivateKey}
+            onChange={(e) => onEoaPrivateKeyChange(e.target.value)}
+            className="pr-10 font-mono text-sm"
+          />
+          <button
+            type="button"
+            onClick={onTogglePrivateKey}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+          >
+            {showPrivateKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-400">
+          Private key for this node&apos;s EOA (Externally Owned Account)
+        </p>
+      </FormField>
+
+      <div className="rounded-lg bg-primary-50 px-3 py-2.5">
+        <div className="flex items-center gap-2 text-xs text-primary-600">
+          <Server className="h-3.5 w-3.5" />
+          <span className="font-medium">Regular Node Deployment</span>
+        </div>
+        <ul className="mt-1.5 space-y-0.5 text-[11px] text-primary-600/80">
+          <li>• Join existing DRB network as a participating node</li>
+          <li>• Deploy on AWS EC2 instance</li>
+          <li>• Connect to leader node for coordination</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function StepEc2Config({
+  instanceType, keyPairName, subnetId, instanceName,
+  onInstanceTypeChange, onKeyPairNameChange, onSubnetIdChange, onInstanceNameChange,
+}: {
+  instanceType: string;
+  keyPairName: string;
+  subnetId: string;
+  instanceName: string;
+  onInstanceTypeChange: (v: string) => void;
+  onKeyPairNameChange: (v: string) => void;
+  onSubnetIdChange: (v: string) => void;
+  onInstanceNameChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Cpu className="h-4 w-4" />
+        <span>EC2 Instance Configuration</span>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-md bg-neutral-50 p-2.5">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+        <p className="text-[11px] text-neutral-500">
+          Configure the AWS EC2 instance where the regular node will be deployed.
+        </p>
+      </div>
+
+      <FormField label="Instance Type">
+        <Select value={instanceType} onValueChange={onInstanceTypeChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select instance type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="t3.medium">t3.medium (2 vCPU, 4 GB)</SelectItem>
+            <SelectItem value="t3.large">t3.large (2 vCPU, 8 GB)</SelectItem>
+            <SelectItem value="t3.xlarge">t3.xlarge (4 vCPU, 16 GB)</SelectItem>
+            <SelectItem value="m5.large">m5.large (2 vCPU, 8 GB)</SelectItem>
+            <SelectItem value="m5.xlarge">m5.xlarge (4 vCPU, 16 GB)</SelectItem>
+          </SelectContent>
+        </Select>
+      </FormField>
+
+      <FormField label="SSH Key Pair Name">
+        <Input
+          placeholder="my-key-pair"
+          value={keyPairName}
+          onChange={(e) => onKeyPairNameChange(e.target.value)}
+        />
+        <p className="mt-1 text-[11px] text-neutral-400">
+          Existing AWS EC2 key pair name for SSH access
+        </p>
+      </FormField>
+
+      <FormField label="Subnet ID (Optional)">
+        <Input
+          placeholder="subnet-12345678"
+          value={subnetId}
+          onChange={(e) => onSubnetIdChange(e.target.value)}
+          className="font-mono text-sm"
+        />
+        <p className="mt-1 text-[11px] text-neutral-400">
+          Leave empty to use default VPC subnet
+        </p>
+      </FormField>
+
+      <FormField label="Instance Name (Optional)">
+        <Input
+          placeholder="drb-regular-node"
+          value={instanceName}
+          onChange={(e) => onInstanceNameChange(e.target.value)}
+        />
+      </FormField>
     </div>
   );
 }
@@ -980,29 +1452,14 @@ function StepError({ error }: { error: string | null }) {
   );
 }
 
-function OptionCard({ icon: Icon, title, description, onClick }: { icon: React.ElementType; title: string; description: string; onClick: () => void }) {
+function SelectableCard({ selected, onClick, badge, disabled, children }: { selected: boolean; onClick: () => void; badge?: string; disabled?: boolean; children: React.ReactNode }) {
   return (
     <button
-      onClick={onClick}
-      className="group flex w-full items-start gap-3 rounded-lg border border-neutral-200 bg-white p-3 text-left transition-all hover:border-primary-300 hover:bg-primary-50/50"
-    >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-neutral-100 transition-colors group-hover:bg-primary-100">
-        <Icon className="h-4 w-4 text-neutral-600 group-hover:text-primary-600" />
-      </div>
-      <div>
-        <p className="text-sm font-medium text-neutral-900">{title}</p>
-        <p className="text-xs text-neutral-500">{description}</p>
-      </div>
-    </button>
-  );
-}
-
-function SelectableCard({ selected, onClick, badge, children }: { selected: boolean; onClick: () => void; badge?: string; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={cn(
         "relative flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-all",
+        disabled ? "cursor-not-allowed opacity-50" : "",
         selected ? "border-primary-400 bg-primary-50/50" : "border-neutral-200 bg-white hover:border-neutral-300"
       )}
     >

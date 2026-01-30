@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dices, ArrowUpRight, Server, Database } from "lucide-react";
+import { Dices, ArrowUpRight, Server, Database, Crown, Trash2 } from "lucide-react";
 import { InstallDRBDialog } from "./InstallDRBDialog";
 import { useDRBDeploymentInfo, useThanosSepolia } from "../api/queries";
+import { useUninstallDRBMutation } from "../api/mutations";
 
 interface NetworkConfig {
   rpcUrl: string;
@@ -39,6 +40,7 @@ export function DRBServiceCard({
 }: DRBServiceCardProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const uninstallMutation = useUninstallDRBMutation();
 
   // If no stackId provided, use Thanos Sepolia system stack
   const { data: systemStack, isLoading: isLoadingSystemStack, error: systemStackError } = useThanosSepolia();
@@ -47,7 +49,7 @@ export function DRBServiceCard({
   const hasSystemStackError = !propStackId && !!systemStackError;
 
   // Get real deployment status from API
-  const { isCompleted, isInProgress, isFailed, isTerminating, isCancelling, isCancelled } = useDRBDeploymentInfo(resolvedStackId || "");
+  const { isCompleted, isInProgress, isFailed, isTerminating, isCancelling, isCancelled, nodeType } = useDRBDeploymentInfo(resolvedStackId || "");
 
   const status = isCompleted
     ? "Active"
@@ -71,7 +73,7 @@ export function DRBServiceCard({
 
   return (
     <>
-      <article className="group relative w-full max-w-sm overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:border-neutral-300 hover:shadow-lg">
+      <article className="group relative w-full max-w-md overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:border-neutral-300 hover:shadow-lg">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-400 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
         <div className="p-5">
@@ -95,7 +97,11 @@ export function DRBServiceCard({
           </p>
 
           <div className="mb-4 grid grid-cols-2 gap-2">
-            <Spec icon={Server} label="Nodes" value="Leader Node" />
+            <Spec
+              icon={nodeType === "regular" ? Server : Crown}
+              label="Node Type"
+              value={nodeType === "regular" ? "Regular Node" : "Leader Node"}
+            />
             <Spec icon={Database} label="Storage" value="PostgreSQL" />
           </div>
 
@@ -109,7 +115,7 @@ export function DRBServiceCard({
             </div>
           )}
 
-          <footer className="flex items-center justify-between pt-2">
+          <footer className={`pt-2 ${isFailed ? "space-y-3" : "flex items-center justify-between"}`}>
             <a
               href="https://github.com/tokamak-network/Commit-Reveal2"
               target="_blank"
@@ -132,6 +138,26 @@ export function DRBServiceCard({
               <Button variant="outline" size="sm" disabled>
                 {isTerminating ? "Removing..." : "Cancelling..."}
               </Button>
+            ) : isFailed ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    if (resolvedStackId) {
+                      uninstallMutation.mutate({ stackId: resolvedStackId });
+                    }
+                  }}
+                  disabled={uninstallMutation.isPending}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  {uninstallMutation.isPending ? "Removing..." : "Remove"}
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={handleViewDetails}>
+                  View Logs
+                </Button>
+              </div>
             ) : hasSystemStackError ? (
               <Button size="sm" variant="destructive" disabled>
                 Error Loading

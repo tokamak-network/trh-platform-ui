@@ -48,6 +48,7 @@ export interface IntegrationInfo {
     }>;
   }>;
   // DRB (Distributed Randomness Beacon) metadata
+  nodeType?: "leader" | "regular";
   contract?: {
     contractAddress: string;
     contractName: "CommitReveal2" | "CommitReveal2L2";
@@ -71,7 +72,25 @@ export interface IntegrationInfo {
     clusterName: string;
     namespace: string;
   };
-  databaseType?: "rds";
+  regularNodeInfo?: {
+    nodeUrl: string;
+    nodeIp: string;
+    nodePort: number;
+    nodePeerId?: string;
+    nodeEoa: string;
+    instanceId?: string;
+    instanceType?: string;
+    region: string;
+    chainId: number;
+    rpcUrl: string;
+    leaderIp: string;
+    leaderPort: number;
+    leaderPeerId: string;
+    leaderEoa: string;
+    contractAddress: string;
+    deploymentTimestamp: string;
+  };
+  databaseType?: "rds" | "local";
 }
 
 export interface Integration {

@@ -9,20 +9,53 @@ export const THANOS_SEPOLIA = {
   nativeToken: "TON",
 } as const;
 
+// Node type for drb deployment
+export type DRBNodeType = "leader" | "regular";
+
+// ec2 configuration for regular nodes
+export interface DRBEC2Config {
+  instanceType?: string;
+  keyPairName: string;
+  subnetId?: string;
+  instanceName?: string;
+}
+
 export interface InstallDRBRequestBody {
+  // node type "leader" or "regular"
+  nodeType: DRBNodeType;
+
+  // Network Configuration
   useCurrentChain: boolean;
   rpc?: string;
   chainId?: number;
-  privateKey: string;
-  // AWS Infrastructure
+
+  // Deployer Configuration for leader node
+  privateKey?: string;
+
+  // Leader Connection for regular nodes
+  leaderIp?: string;
+  leaderPort?: number;
+  leaderPeerId?: string;
+  leaderEoa?: string;
+  contractAddress?: string;
+
+  // Regular Node Configuration
+  nodePort?: number;
+  eoaPrivateKey?: string;
+
+  // aws Infrastructure
   awsConfig: {
     accessKeyId: string;
     secretAccessKey: string;
     region: string;
   };
+
+  // ec2 configuration for regular nodes
+  ec2Config?: DRBEC2Config;
+
   // Database
   databaseConfig: {
-    type: "rds";
+    type: "rds" | "local";
     username: string;
     password: string;
   };
@@ -54,11 +87,40 @@ export interface DRBLeaderInfo {
   namespace: string;
 }
 
+export interface DRBRegularNodeInfo {
+  nodeUrl: string;
+  nodeIp: string;
+  nodePort: number;
+  nodePeerId?: string;
+  nodeEoa: string;
+  instanceId?: string;
+  instanceType?: string;
+  region: string;
+  chainId: number;
+  rpcUrl: string;
+  leaderIp: string;
+  leaderPort: number;
+  leaderPeerId: string;
+  leaderEoa: string;
+  contractAddress: string;
+  deploymentTimestamp: string;
+}
+
 export interface DRBDeploymentInfo {
-  contract: DRBContractInfo;
-  application: DRBApplicationInfo;
+  nodeType: DRBNodeType;
+  contract?: DRBContractInfo;
+  application?: DRBApplicationInfo;
   leaderInfo?: DRBLeaderInfo;
-  databaseType: "rds";
+  regularNodeInfo?: DRBRegularNodeInfo;
+  databaseType: "rds" | "local";
+}
+
+export interface GetDRBInfoResponse {
+  status: "pending" | "in_progress" | "installed" | "failed" | "not_installed" | "terminating" | "cancelling" | "cancelled";
+  message?: string;
+  nodeType?: DRBNodeType;
+  deployment?: DRBDeploymentInfo;
+  failureReason?: string;
 }
 
 // Stack-based DRB deployment
@@ -67,6 +129,10 @@ export const installDRB = (stackId: string, body: InstallDRBRequestBody) =>
 
 export const uninstallDRB = (stackId: string) =>
   apiDelete(`stacks/thanos/${stackId}/integrations/drb`);
+
+// Get drb deployment info and status
+export const getDRBInfo = (stackId: string) =>
+  apiGet<GetDRBInfoResponse>(`stacks/thanos/${stackId}/integrations/drb`);
 
 // Get Thanos Sepolia system stack (creates if doesn't exist)
 export const getThanosSepolia = () =>
