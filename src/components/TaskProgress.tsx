@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { RefreshCw, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiClient } from "@/lib/api";
 
@@ -84,6 +84,12 @@ export function TaskProgress({ taskId, title = "Task Progress", onComplete, onEr
                 <p className="text-xs text-muted-foreground truncate" title={message}>
                     {message}
                 </p>
+                <div className="flex items-start gap-2 mt-2 p-2 bg-blue-50/50 rounded-md border border-blue-100">
+                    <Info className="w-3 h-3 text-blue-500 mt-0.5 shrink-0" />
+                    <p className="text-[10px] text-blue-600 leading-tight">
+                        Closing this window will NOT stop the process running in the background.
+                    </p>
+                </div>
 
                 {error && (
                     <Alert variant="destructive" className="mt-2 py-2">
