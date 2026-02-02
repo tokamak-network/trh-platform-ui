@@ -177,22 +177,9 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     setError(null);
     setSuccess(null);
 
-    const awsCreds = getAwsCredentials();
     createSnapshotMutation.mutate({
       id: stack.id,
-      request: awsCreds,
     });
-  };
-
-  // Extract AWS credentials from stack config
-  const getAwsCredentials = () => {
-    if (!stack?.config) return {};
-
-    return {
-      awsAccessKey: stack.config.awsAccessKey || undefined,
-      awsSecretAccessKey: stack.config.awsSecretAccessKey || undefined,
-      awsRegion: stack.config.awsRegion || undefined,
-    };
   };
 
   const handleRestoreBackup = () => {
@@ -201,13 +188,11 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     setSuccess(null);
     setRestoreResult(null);
 
-    const awsCreds = getAwsCredentials();
     restoreBackupMutation.mutate({
       id: stack.id,
       request: {
         recoveryPointID: selectedRecoveryPoint,
         attach: attachWorkloads,
-        ...awsCreds,
       },
     });
   };
@@ -217,11 +202,9 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     setError(null);
     setSuccess(null);
 
-    const awsCreds = getAwsCredentials();
     const request: BackupConfigureRequest = {
       daily: backupTime,
       keep: retentionDays,
-      ...awsCreds,
     };
 
     configureBackupMutation.mutate({ id: stack.id, request });
@@ -232,7 +215,6 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     setError(null);
     setSuccess(null);
 
-    const awsCreds = getAwsCredentials();
     const shouldRunServerBackup =
       serverBackupOverride ?? (backupPvPvc && !backupDownloaded);
     const request: BackupAttachRequest = {
@@ -240,7 +222,6 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
       pvcs: pvcs || undefined,
       stss: stss || undefined,
       backupPvPvc: shouldRunServerBackup,
-      ...awsCreds,
     };
 
     attachStorageMutation.mutate({ id: stack.id, request });

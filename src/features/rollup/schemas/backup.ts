@@ -40,9 +40,6 @@ export interface BackupRestoreRequest {
   attach?: boolean; // Automatically attach workloads to restored EFS
   pvcs?: string;
   stss?: string;
-  awsAccessKey?: string;
-  awsSecretAccessKey?: string;
-  awsRegion?: string;
 }
 
 export interface BackupStatusResponse {

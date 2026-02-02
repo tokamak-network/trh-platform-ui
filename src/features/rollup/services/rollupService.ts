@@ -448,10 +448,9 @@ export const getBackupCheckpoints = async (
 
 // Create a backup snapshot
 export const createBackupSnapshot = async (
-  id: string,
-  request?: { awsAccessKey?: string; awsSecretAccessKey?: string; awsRegion?: string }
+  id: string
 ): Promise<{ task_id: string }> => {
-  const response = await apiPost<{ task_id: string }>(`stacks/thanos/${id}/integrations/backup/snapshot`, request || {});
+  const response = await apiPost<{ task_id: string }>(`stacks/thanos/${id}/integrations/backup/snapshot`, {});
   return response.data;
 };
 

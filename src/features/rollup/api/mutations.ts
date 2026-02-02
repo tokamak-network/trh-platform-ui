@@ -238,13 +238,7 @@ export const useCreateSnapshotMutation = (options?: {
   onError?: (error: Error) => void;
 }) => {
   return useMutation({
-    mutationFn: ({
-      id,
-      request,
-    }: {
-      id: string;
-      request?: { awsAccessKey?: string; awsSecretAccessKey?: string; awsRegion?: string };
-    }) => createBackupSnapshot(id, request),
+    mutationFn: ({ id }: { id: string }) => createBackupSnapshot(id),
     onMutate: () => {
       toast.loading("Creating backup snapshot...", {
         id: "create-snapshot",
