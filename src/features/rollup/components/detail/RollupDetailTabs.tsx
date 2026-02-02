@@ -14,6 +14,9 @@ import {
   MetadataTab,
 } from "./tabs";
 import { ComponentsTab } from "@/features/integrations";
+import { InteractTab } from "@/features/drb/components/InteractTab";
+import { MonitoringTab as DRBMonitoringTab } from "@/features/drb/components/MonitoringTab";
+import { useDRBDeploymentInfo } from "@/features/drb/api/queries";
 
 interface RollupDetailTabsProps {
   stack?: ThanosStack;
@@ -28,6 +31,32 @@ export function RollupDetailTabs({
 
   // as System stacks like Ddrbs Thanos Sepolia dont need rollupspecific tabs
   const isSystemStack = stack?.name?.includes("(System)") || false;
+
+  // Get DRB deployment info for system stacks
+  const { deploymentInfo, nodeType } = useDRBDeploymentInfo(stack?.id || "");
+
+  // Extract contract addresses for drbs tabs
+  const drbContracts = React.useMemo(() => {
+    if (!isSystemStack || !deploymentInfo) return null;
+
+    if (nodeType === "leader" && deploymentInfo.leaderInfo) {
+      return {
+        commitReveal2Address: deploymentInfo.leaderInfo.commitReveal2L2Address,
+        consumerExampleAddress: deploymentInfo.leaderInfo.consumerExampleV2Address,
+        rpcUrl: deploymentInfo.leaderInfo.rpcUrl,
+      };
+    }
+
+    if (nodeType === "regular" && deploymentInfo.regularNodeInfo) {
+      return {
+        commitReveal2Address: deploymentInfo.regularNodeInfo.contractAddress,
+        consumerExampleAddress: undefined, // reg nodes dont deploy consumer
+        rpcUrl: deploymentInfo.regularNodeInfo.rpcUrl,
+      };
+    }
+
+    return null;
+  }, [isSystemStack, deploymentInfo, nodeType]);
 
   const handleTabChange = (value: string) => {
     // Get the current pathname and search params
@@ -47,7 +76,7 @@ export function RollupDetailTabs({
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className={`grid w-full ${isSystemStack ? "grid-cols-2" : "grid-cols-5"} bg-white/60 backdrop-blur-sm border-0 shadow-lg`}>
+      <TabsList className={`grid w-full ${isSystemStack ? "grid-cols-4" : "grid-cols-5"} bg-white/60 backdrop-blur-sm border-0 shadow-lg`}>
         <TabsTrigger
           value="overview"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -60,6 +89,22 @@ export function RollupDetailTabs({
         >
           Deployment History
         </TabsTrigger>
+        {isSystemStack && (
+          <>
+            <TabsTrigger
+              value="interact"
+              className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+            >
+              Interact
+            </TabsTrigger>
+            <TabsTrigger
+              value="drb-monitoring"
+              className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+            >
+              Monitoring
+            </TabsTrigger>
+          </>
+        )}
         {!isSystemStack && (
           <>
             <TabsTrigger
@@ -105,6 +150,22 @@ export function RollupDetailTabs({
       <TabsContent value="deployments" className="space-y-6">
         <DeploymentsTab stack={stack} />
       </TabsContent>
+
+      {isSystemStack && (
+        <InteractTab
+          commitReveal2Address={drbContracts?.commitReveal2Address}
+          consumerExampleAddress={drbContracts?.consumerExampleAddress}
+          rpcUrl={drbContracts?.rpcUrl}
+        />
+      )}
+
+      {isSystemStack && (
+        <DRBMonitoringTab
+          commitReveal2Address={drbContracts?.commitReveal2Address}
+          consumerExampleAddress={drbContracts?.consumerExampleAddress}
+          rpcUrl={drbContracts?.rpcUrl}
+        />
+      )}
 
       {!isSystemStack && (
         <>

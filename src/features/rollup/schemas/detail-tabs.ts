@@ -6,7 +6,9 @@ export type RollupDetailTab =
   | "settings"
   | "logs"
   | "metadata"
-  | "contracts";
+  | "contracts"
+  | "interact"
+  | "drb-monitoring";
 
 import { ThanosStack } from "./thanos";
 
