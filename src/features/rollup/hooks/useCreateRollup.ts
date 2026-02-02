@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -48,6 +48,8 @@ export function useCreateRollup() {
     resolver: zodResolver(createRollupSchema),
     defaultValues: state.formData || defaultFormData,
   });
+
+  const [showChecklist, setShowChecklist] = useState(false);
 
   // Load saved data when component mounts
   useEffect(() => {
@@ -118,6 +120,15 @@ export function useCreateRollup() {
 
   const goToNextStep = async () => {
     if (state.currentStep === STEPS.length) {
+      const formData = form.getValues();
+      if (formData.networkAndChain.network === "mainnet") {
+        const isValid = await form.trigger();
+        if (isValid) {
+          setShowChecklist(true);
+        }
+        return;
+      }
+
       await handleDeployRollup();
       return;
     }
@@ -207,5 +218,8 @@ export function useCreateRollup() {
     goToPreviousStep,
     onBack,
     isDeploying: deployMutation.isPending,
+    showChecklist,
+    setShowChecklist,
+    handleDeployRollup,
   };
 }

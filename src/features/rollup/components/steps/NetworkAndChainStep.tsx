@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Network, Database, Settings, Info } from "lucide-react";
+import { Network, Database, Settings, Info, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -35,6 +35,7 @@ export function NetworkAndChainStep() {
   const formData = watch();
   const advancedConfig = watch("networkAndChain.advancedConfig");
   const selectedNetwork = watch("networkAndChain.network");
+  const reuseDeployment = watch("networkAndChain.reuseDeployment");
 
   // Get RPC URLs from configuration
   const { rpcUrls, addRpcUrl } = useRpcUrls();
@@ -75,6 +76,10 @@ export function NetworkAndChainStep() {
   const handleNetworkChange = async (value: string) => {
     setValue("networkAndChain.network", value);
     await trigger("networkAndChain.network" as const);
+  };
+
+  const handleReuseDeploymentChange = (checked: boolean) => {
+    setValue("networkAndChain.reuseDeployment", checked);
   };
 
   const handleChainNameChange = async (
@@ -151,6 +156,21 @@ export function NetworkAndChainStep() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
+            {selectedNetwork === "mainnet" && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-red-900">
+                    Mainnet Production Environment
+                  </h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    You are deploying to the mainnet production environment.
+                    This operation will consume real assets and cannot be
+                    undone. Please double-check all configurations.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Network Selection */}
               <Card className="bg-slate-50 border-slate-200 shadow-sm">
@@ -175,11 +195,10 @@ export function NetworkAndChainStep() {
                       onValueChange={handleNetworkChange}
                     >
                       <SelectTrigger
-                        className={`mt-1 ${
-                          errors.networkAndChain?.network
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.network
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       >
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
@@ -234,11 +253,10 @@ export function NetworkAndChainStep() {
                       placeholder="e.g. my-l2-chain"
                       value={formData.networkAndChain?.chainName}
                       onChange={handleChainNameChange}
-                      className={`mt-1 ${
-                        errors.networkAndChain?.chainName
-                          ? "border-red-500"
-                          : ""
-                      }`}
+                      className={`mt-1 ${errors.networkAndChain?.chainName
+                        ? "border-red-500"
+                        : ""
+                        }`}
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       A unique name for your L2 chain. Must start with a letter
@@ -298,6 +316,28 @@ export function NetworkAndChainStep() {
               />
             </div>
 
+            {selectedNetwork === "mainnet" && (
+              <div className="flex items-center space-x-2 p-4 bg-slate-50 rounded-lg border border-slate-200 mb-4">
+                <Checkbox
+                  id="reuse-deployment"
+                  checked={reuseDeployment}
+                  onCheckedChange={handleReuseDeploymentChange}
+                />
+                <div className="flex flex-col">
+                  <Label
+                    htmlFor="reuse-deployment"
+                    className="text-sm font-medium text-slate-900"
+                  >
+                    Reuse Existing Deployment
+                  </Label>
+                  <p className="text-xs text-slate-500">
+                    Check this if you want to connect to an existing contract
+                    deployment instead of deploying new ones.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Advanced Configuration Toggle */}
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -353,11 +393,10 @@ export function NetworkAndChainStep() {
                         placeholder="2"
                         value={formData.networkAndChain?.l2BlockTime}
                         onChange={handleL2BlockTimeChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.l2BlockTime
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.l2BlockTime
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.l2BlockTime && (
                         <p className="text-xs text-red-500 mt-1">
@@ -398,11 +437,10 @@ export function NetworkAndChainStep() {
                         placeholder="1440"
                         value={formData.networkAndChain?.batchSubmissionFreq}
                         onChange={handleBatchSubmissionFreqChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.batchSubmissionFreq
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.batchSubmissionFreq
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.batchSubmissionFreq && (
                         <p className="text-xs text-red-500 mt-1">
@@ -444,11 +482,10 @@ export function NetworkAndChainStep() {
                         placeholder="240"
                         value={formData.networkAndChain?.outputRootFreq}
                         onChange={handleOutputRootFreqChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.outputRootFreq
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.outputRootFreq
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.outputRootFreq && (
                         <p className="text-xs text-red-500 mt-1">
@@ -488,11 +525,10 @@ export function NetworkAndChainStep() {
                         placeholder="12"
                         value={formData.networkAndChain?.challengePeriod}
                         onChange={handleChallengePeriodChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.challengePeriod
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.challengePeriod
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.challengePeriod && (
                         <p className="text-xs text-red-500 mt-1">

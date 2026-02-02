@@ -2,6 +2,7 @@
 
 import { AuthenticatedLayout } from "@/components/layout";
 import { CreateRollupStepper } from "@/features/rollup/components/CreateRollupStepper";
+import { PreDeploymentChecklistDialog } from "@/features/rollup/components/PreDeploymentChecklistDialog";
 import { useCreateRollup } from "@/features/rollup/hooks/useCreateRollup";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,9 @@ function CreateRollupContent() {
     goToNextStep,
     goToPreviousStep,
     isDeploying,
+    showChecklist,
+    setShowChecklist,
+    handleDeployRollup,
   } = useCreateRollup();
 
   const handleSkipDaoCandidate = () => {
@@ -73,7 +77,16 @@ function CreateRollupContent() {
 
             <FormProvider {...form}>{renderStepContent()}</FormProvider>
           </div>
+          {/* Pre-Deployment Checklist Dialog */}
+          <PreDeploymentChecklistDialog
+            open={showChecklist}
+            onOpenChange={setShowChecklist}
+            onConfirm={handleDeployRollup}
+            isDeploying={isDeploying}
+            network="mainnet"
+          />
         </div>
+
 
         {/* Fixed footer */}
         <div className="fixed bottom-0 right-0 left-[250px] bg-white">
