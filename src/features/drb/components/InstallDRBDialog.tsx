@@ -137,10 +137,10 @@ const isValidRDSPassword = (password: string) => {
   return !forbidden.test(password);
 };
 
-// DRB contract requires minimum 0.01 TON deposit during deployment (activationThreshold)
-// Plus gas fees for contract deployment and node setup
-const MIN_DEPOSIT = 0.01; // Contract activation threshold
-const MIN_BALANCE = 0.5; // Recommended: deposit (0.01) + gas fees (~0.1-0.2) + buffer
+// DRB contract requires operator stake (activationThreshold) to activate as an operator
+// The stake is a security deposit that can be slashed for misbehavior, but is fully refundable on deactivation
+const OPERATOR_STAKE = 0.01; // Hardcoded in contract's NetworkHelperConfig (activationThreshold)
+const MIN_BALANCE = 0.5; // Recommended: operator stake (0.01) + gas fees (~0.1-0.2) + buffer
 
 async function getWalletInfo(privateKey: string, rpcUrl: string): Promise<WalletInfo> {
   try {
@@ -842,10 +842,10 @@ function StepConfig({
           </button>
         </div>
         <p className="mt-1 text-[11px] text-neutral-400">
-          This wallet deploys the DRB contract and becomes the owner.
+          This wallet deploys the DRB contract and becomes the owner + first operator.
         </p>
         <p className="mt-0.5 text-[10px] text-neutral-400">
-          Requires {MIN_DEPOSIT}+ {tokenSymbol} deposit + gas fees. Recommended: {MIN_BALANCE} {tokenSymbol}
+          Requires {OPERATOR_STAKE} {tokenSymbol} operator stake + gas fees. Recommended: {MIN_BALANCE} {tokenSymbol}
         </p>
       </FormField>
 
@@ -925,12 +925,12 @@ function StepConfig({
           <span>Leader Node Deployment</span>
         </div>
         <ul className="mt-1.5 space-y-0.5 text-[11px] text-success-600/80">
-          <li>• Deploy {contractType} contract (you become owner)</li>
-          <li>• {MIN_DEPOSIT} {tokenSymbol} deposit sent with contract deployment</li>
+          <li>• Deploy {contractType} contract (you become owner + operator #1)</li>
+          <li>• {OPERATOR_STAKE} {tokenSymbol} operator stake (security deposit for slashing)</li>
           <li>• Start leader node on dedicated AWS infrastructure</li>
         </ul>
         <p className="mt-1.5 text-[10px] text-success-600/70">
-          Deposit is withdrawable when you uninstall DRB
+          Operator stake is fully refundable when you deactivate/uninstall
         </p>
       </div>
     </div>

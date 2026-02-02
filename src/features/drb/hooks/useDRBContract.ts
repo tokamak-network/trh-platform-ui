@@ -136,7 +136,7 @@ export function useDRBContract({
   }, [commitReveal2Address, consumerExampleAddress, getProvider]);
 
   const estimateRequestPrice = useCallback(
-    async (callbackGasLimit: number = 100000): Promise<bigint> => {
+    async (): Promise<bigint> => {
       if (!commitReveal2Address) return BigInt(0);
 
       try {
@@ -147,6 +147,20 @@ export function useDRBContract({
           provider
         );
 
+        let callbackGasLimit = 100000;
+        if (consumerExampleAddress) {
+          const consumerExample = new ethers.Contract(
+            consumerExampleAddress,
+            ConsumerExampleV2_ABI,
+            provider
+          );
+          try {
+            callbackGasLimit = Number(await consumerExample.CALLBACK_GAS_LIMIT());
+          } catch {
+            // fallback to default if contract doesn't have this function
+          }
+        }
+
         const gasPrice = (await provider.getFeeData()).gasPrice || BigInt(1000000000);
         const price = await commitReveal2.estimateRequestPrice(callbackGasLimit, gasPrice);
         return price as bigint;
@@ -154,7 +168,7 @@ export function useDRBContract({
         return BigInt(0);
       }
     },
-    [commitReveal2Address, getProvider]
+    [commitReveal2Address, consumerExampleAddress, getProvider]
   );
 
   const requestRandomNumber = useCallback(

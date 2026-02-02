@@ -21,7 +21,7 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
 
   // Show DRB overview for system stacks (both completed and in-progress)
   if (isSystemStack) {
-    return <DRBOverview stack={stack} deploymentInfo={deploymentInfo} nodeType={nodeType} />;
+    return <DRBOverview stack={stack} deploymentInfo={deploymentInfo ?? undefined} nodeType={nodeType} />;
   }
 
   const rollup = {
@@ -388,7 +388,7 @@ function DRBOverview({ stack, deploymentInfo, nodeType }: DRBOverviewProps) {
                 />
                 <InfoRow
                   label="Deployed"
-                  value={formatDate(isLeader ? leaderInfo?.deploymentTimestamp : regularNodeInfo?.deploymentTimestamp)}
+                  value={formatDate((isLeader ? leaderInfo?.deploymentTimestamp : regularNodeInfo?.deploymentTimestamp) || "")}
                 />
               </>
             )}

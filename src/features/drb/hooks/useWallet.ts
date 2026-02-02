@@ -83,8 +83,9 @@ export function useWallet(): UseWalletReturn {
     checkConnection();
 
     if (typeof window !== "undefined" && window.ethereum) {
-      const handleAccountsChanged = (accounts: string[]) => {
-        if (accounts.length === 0) {
+      const handleAccountsChanged = (...args: unknown[]) => {
+        const accounts = args[0] as string[];
+        if (!accounts || accounts.length === 0) {
           setState({
             isConnected: false,
             address: null,
