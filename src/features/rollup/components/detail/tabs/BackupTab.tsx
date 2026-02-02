@@ -18,16 +18,18 @@ import {
   useAttachStorageMutation,
 } from "../../../api/mutations";
 import { BackupConfigureRequest, BackupAttachRequest } from "../../../schemas/backup";
-import { BackupStatusCard } from "./BackupTabComponents/BackupStatusCard";
-import { BackupActionsCard } from "./BackupTabComponents/BackupActionsCard";
-import { RecentSnapshotsCard } from "./BackupTabComponents/RecentSnapshotsCard";
-import { BackupConfigurationCard } from "./BackupTabComponents/BackupConfigurationCard";
-import { RestoreBackupDialog } from "./BackupTabComponents/RestoreBackupDialog";
-import { AttachStorageDialog } from "./BackupTabComponents/AttachStorageDialog";
-import { AttachBackupReminderDialog } from "./BackupTabComponents/AttachBackupReminderDialog";
-import { RestoreOutputDialog } from "./BackupTabComponents/RestoreOutputDialog";
-import { TaskProgressDialog } from "./TaskProgressDialog";
-import { SyncWarningDialog } from "./SyncWarningDialog";
+import {
+  BackupStatusCard,
+  BackupActionsCard,
+  RecentSnapshotsCard,
+  BackupConfigurationCard,
+  RestoreBackupDialog,
+  AttachStorageDialog,
+  AttachBackupReminderDialog,
+  RestoreOutputDialog,
+  TaskProgressDialog,
+  SyncWarningDialog,
+} from "./BackupTabComponents";
 
 export function BackupTab({ stack }: RollupDetailTabProps) {
   const [error, setError] = useState<string | null>(null);
