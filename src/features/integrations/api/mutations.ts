@@ -18,92 +18,99 @@ import {
 import { queryClient } from "@/providers/query-provider";
 import { integrationKeys } from "./queries";
 
-export const useUninstallIntegrationMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({
-      stackId,
-      type,
-    }: {
-      stackId: string;
-      type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
-    }) => uninstallIntegration(stackId, type),
-    onMutate: () => {
-      toast.loading("Uninstalling component...", {
-        id: "uninstall-integration",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Uninstall initiated successfully", {
-        id: "uninstall-integration",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to uninstall component", {
-        id: "uninstall-integration",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+/**
+ * Generic factory function to create mutation hooks with common toast and query invalidation logic
+ */
+function createMutationHook<TData, TVariables, TError = Error>(config: {
+  mutationFn: (variables: TVariables) => Promise<TData>;
+  toastId: string;
+  loadingMessage: string;
+  successMessage: string;
+  errorMessage: string;
+  invalidateQueries?: (variables: TVariables) => void;
+}) {
+  return (
+    options?: {
+      onSuccess?: (data: TData, variables: TVariables) => void;
+      onError?: (error: TError) => void;
+    }
+  ) => {
+    return useMutation<TData, TError, TVariables>({
+      mutationFn: config.mutationFn,
+      onMutate: () => {
+        toast.loading(config.loadingMessage, {
+          id: config.toastId,
+        });
+      },
+      onSuccess: (data, variables) => {
+        toast.success(config.successMessage, {
+          id: config.toastId,
+        });
+        config.invalidateQueries?.(variables);
+        options?.onSuccess?.(data, variables);
+      },
+      onError: (error: TError) => {
+        toast.error(
+          error instanceof Error
+            ? error.message || config.errorMessage
+            : config.errorMessage,
+          {
+            id: config.toastId,
+          }
+        );
+        options?.onError?.(error);
+      },
+    });
+  };
+}
 
-export const useInstallBridgeMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({ stackId }: { stackId: string }) =>
-      installBridgeIntegration(stackId),
-    onMutate: () => {
-      toast.loading("Installing Bridge...", { id: "install-bridge" });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Bridge installation initiated", { id: "install-bridge" });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to install bridge", {
-        id: "install-bridge",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useUninstallIntegrationMutation = createMutationHook<
+  void,
+  { stackId: string; type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" }
+>({
+  mutationFn: ({ stackId, type }) => uninstallIntegration(stackId, type),
+  toastId: "uninstall-integration",
+  loadingMessage: "Uninstalling component...",
+  successMessage: "Uninstall initiated successfully",
+  errorMessage: "Failed to uninstall component",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
-export const useInstallUptimeMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({ stackId }: { stackId: string }) =>
-      installUptimeIntegration(stackId),
-    onMutate: () => {
-      toast.loading("Installing System Pulse...", { id: "install-system-pulse" });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("System Pulse installation initiated", { id: "install-system-pulse" });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to install System Pulse", {
-        id: "install-system-pulse",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useInstallBridgeMutation = createMutationHook<
+  void,
+  { stackId: string }
+>({
+  mutationFn: ({ stackId }) => installBridgeIntegration(stackId),
+  toastId: "install-bridge",
+  loadingMessage: "Installing Bridge...",
+  successMessage: "Bridge installation initiated",
+  errorMessage: "Failed to install bridge",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
+
+export const useInstallUptimeMutation = createMutationHook<
+  void,
+  { stackId: string }
+>({
+  mutationFn: ({ stackId }) => installUptimeIntegration(stackId),
+  toastId: "install-system-pulse",
+  loadingMessage: "Installing System Pulse...",
+  successMessage: "System Pulse installation initiated",
+  errorMessage: "Failed to install System Pulse",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
 export interface InstallBlockExplorerVariables {
   stackId: string;
@@ -113,40 +120,27 @@ export interface InstallBlockExplorerVariables {
   walletConnectId: string;
 }
 
-export const useInstallBlockExplorerMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: (variables: InstallBlockExplorerVariables) =>
-      installBlockExplorerIntegration(variables.stackId, {
-        databaseUsername: variables.databaseUsername,
-        databasePassword: variables.databasePassword,
-        coinmarketcapKey: variables.coinmarketcapKey,
-        walletConnectId: variables.walletConnectId,
-      }),
-    onMutate: () => {
-      toast.loading("Installing Block Explorer...", {
-        id: "install-block-explorer",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Block Explorer installation initiated", {
-        id: "install-block-explorer",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to install Block Explorer", {
-        id: "install-block-explorer",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useInstallBlockExplorerMutation = createMutationHook<
+  void,
+  InstallBlockExplorerVariables
+>({
+  mutationFn: (variables) =>
+    installBlockExplorerIntegration(variables.stackId, {
+      databaseUsername: variables.databaseUsername,
+      databasePassword: variables.databasePassword,
+      coinmarketcapKey: variables.coinmarketcapKey,
+      walletConnectId: variables.walletConnectId,
+    }),
+  toastId: "install-block-explorer",
+  loadingMessage: "Installing Block Explorer...",
+  successMessage: "Block Explorer installation initiated",
+  errorMessage: "Failed to install Block Explorer",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
 export interface InstallMonitoringVariables {
   stackId: string;
@@ -168,69 +162,42 @@ export interface InstallMonitoringVariables {
   };
 }
 
-export const useInstallMonitoringMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: (variables: InstallMonitoringVariables) =>
-      installMonitoringIntegration(variables.stackId, {
-        grafanaPassword: variables.grafanaPassword,
-        loggingEnabled: variables.loggingEnabled,
-        alertManager: variables.alertManager,
-      }),
-    onMutate: () => {
-      toast.loading("Installing Monitoring...", {
-        id: "install-monitoring",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Monitoring installation initiated", {
-        id: "install-monitoring",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to install Monitoring", {
-        id: "install-monitoring",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useInstallMonitoringMutation = createMutationHook<
+  void,
+  InstallMonitoringVariables
+>({
+  mutationFn: (variables) =>
+    installMonitoringIntegration(variables.stackId, {
+      grafanaPassword: variables.grafanaPassword,
+      loggingEnabled: variables.loggingEnabled,
+      alertManager: variables.alertManager,
+    }),
+  toastId: "install-monitoring",
+  loadingMessage: "Installing Monitoring...",
+  successMessage: "Monitoring installation initiated",
+  errorMessage: "Failed to install Monitoring",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
-export const useUninstallMonitoringMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({ stackId }: { stackId: string }) =>
-      uninstallMonitoringIntegration(stackId),
-    onMutate: () => {
-      toast.loading("Uninstalling Monitoring...", {
-        id: "uninstall-monitoring",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Monitoring uninstall initiated", {
-        id: "uninstall-monitoring",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to uninstall Monitoring", {
-        id: "uninstall-monitoring",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useUninstallMonitoringMutation = createMutationHook<
+  void,
+  { stackId: string }
+>({
+  mutationFn: ({ stackId }) => uninstallMonitoringIntegration(stackId),
+  toastId: "uninstall-monitoring",
+  loadingMessage: "Uninstalling Monitoring...",
+  successMessage: "Monitoring uninstall initiated",
+  errorMessage: "Failed to uninstall Monitoring",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
 export interface RegisterDaoCandidateVariables {
   stackId: string;
@@ -239,99 +206,58 @@ export interface RegisterDaoCandidateVariables {
   nameInfo?: string;
 }
 
-export const useRegisterDaoCandidateMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: (variables: RegisterDaoCandidateVariables) =>
-      registerDaoCandidateIntegration(variables.stackId, {
-        amount: variables.amount,
-        memo: variables.memo,
-        nameInfo: variables.nameInfo,
-      }),
-    onMutate: () => {
-      toast.loading("Registering DAO Candidate...", {
-        id: "register-dao-candidate",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("DAO Candidate registration initiated", {
-        id: "register-dao-candidate",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to register DAO Candidate", {
-        id: "register-dao-candidate",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useRegisterDaoCandidateMutation = createMutationHook<
+  void,
+  RegisterDaoCandidateVariables
+>({
+  mutationFn: (variables) =>
+    registerDaoCandidateIntegration(variables.stackId, {
+      amount: variables.amount,
+      memo: variables.memo,
+      nameInfo: variables.nameInfo,
+    }),
+  toastId: "register-dao-candidate",
+  loadingMessage: "Registering DAO Candidate...",
+  successMessage: "DAO Candidate registration initiated",
+  errorMessage: "Failed to register DAO Candidate",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
-export const useDisableEmailAlertMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({ stackId }: { stackId: string }) =>
-      disableEmailAlert(stackId),
-    onMutate: () => {
-      toast.loading("Disabling email alerts...", {
-        id: "disable-email-alert",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Email alerts disabled successfully", {
-        id: "disable-email-alert",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to disable email alerts", {
-        id: "disable-email-alert",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useDisableEmailAlertMutation = createMutationHook<
+  void,
+  { stackId: string }
+>({
+  mutationFn: ({ stackId }) => disableEmailAlert(stackId),
+  toastId: "disable-email-alert",
+  loadingMessage: "Disabling email alerts...",
+  successMessage: "Email alerts disabled successfully",
+  errorMessage: "Failed to disable email alerts",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
-export const useDisableTelegramAlertMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({ stackId }: { stackId: string }) =>
-      disableTelegramAlert(stackId),
-    onMutate: () => {
-      toast.loading("Disabling telegram alerts...", {
-        id: "disable-telegram-alert",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Telegram alerts disabled successfully", {
-        id: "disable-telegram-alert",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to disable telegram alerts", {
-        id: "disable-telegram-alert",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useDisableTelegramAlertMutation = createMutationHook<
+  void,
+  { stackId: string }
+>({
+  mutationFn: ({ stackId }) => disableTelegramAlert(stackId),
+  toastId: "disable-telegram-alert",
+  loadingMessage: "Disabling telegram alerts...",
+  successMessage: "Telegram alerts disabled successfully",
+  errorMessage: "Failed to disable telegram alerts",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
 export interface ConfigureTelegramAlertVariables {
   stackId: string;
@@ -339,38 +265,25 @@ export interface ConfigureTelegramAlertVariables {
   criticalReceivers: Array<{ ChatId: string }>;
 }
 
-export const useConfigureTelegramAlertMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: (variables: ConfigureTelegramAlertVariables) =>
-      configureTelegramAlert(variables.stackId, {
-        apiToken: variables.apiToken,
-        criticalReceivers: variables.criticalReceivers,
-      }),
-    onMutate: () => {
-      toast.loading("Configuring Telegram alerts...", {
-        id: "configure-telegram-alert",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Telegram alerts configured successfully", {
-        id: "configure-telegram-alert",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to configure Telegram alerts", {
-        id: "configure-telegram-alert",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useConfigureTelegramAlertMutation = createMutationHook<
+  void,
+  ConfigureTelegramAlertVariables
+>({
+  mutationFn: (variables) =>
+    configureTelegramAlert(variables.stackId, {
+      apiToken: variables.apiToken,
+      criticalReceivers: variables.criticalReceivers,
+    }),
+  toastId: "configure-telegram-alert",
+  loadingMessage: "Configuring Telegram alerts...",
+  successMessage: "Telegram alerts configured successfully",
+  errorMessage: "Failed to configure Telegram alerts",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
 export interface ConfigureEmailAlertVariables {
   stackId: string;
@@ -380,107 +293,58 @@ export interface ConfigureEmailAlertVariables {
   alertReceivers: string[];
 }
 
-export const useConfigureEmailAlertMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: (variables: ConfigureEmailAlertVariables) =>
-      configureEmailAlert(variables.stackId, {
-        smtpSmarthost: variables.smtpSmarthost,
-        smtpFrom: variables.smtpFrom,
-        smtpAuthPassword: variables.smtpAuthPassword,
-        alertReceivers: variables.alertReceivers,
-      }),
-    onMutate: () => {
-      toast.loading("Configuring email alerts...", {
-        id: "configure-email-alert",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Email alerts configured successfully", {
-        id: "configure-email-alert",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to configure email alerts", {
-        id: "configure-email-alert",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useConfigureEmailAlertMutation = createMutationHook<
+  void,
+  ConfigureEmailAlertVariables
+>({
+  mutationFn: (variables) =>
+    configureEmailAlert(variables.stackId, {
+      smtpSmarthost: variables.smtpSmarthost,
+      smtpFrom: variables.smtpFrom,
+      smtpAuthPassword: variables.smtpAuthPassword,
+      alertReceivers: variables.alertReceivers,
+    }),
+  toastId: "configure-email-alert",
+  loadingMessage: "Configuring email alerts...",
+  successMessage: "Email alerts configured successfully",
+  errorMessage: "Failed to configure email alerts",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
-export const useCancelIntegrationMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({
-      stackId,
-      integrationId,
-    }: {
-      stackId: string;
-      integrationId: string;
-    }) => cancelIntegration(stackId, integrationId),
-    onMutate: () => {
-      toast.loading("Cancelling installation...", {
-        id: "cancel-integration",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Installation cancelled successfully", {
-        id: "cancel-integration",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to cancel installation", {
-        id: "cancel-integration",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useCancelIntegrationMutation = createMutationHook<
+  void,
+  { stackId: string; integrationId: string }
+>({
+  mutationFn: ({ stackId, integrationId }) =>
+    cancelIntegration(stackId, integrationId),
+  toastId: "cancel-integration",
+  loadingMessage: "Cancelling installation...",
+  successMessage: "Installation cancelled successfully",
+  errorMessage: "Failed to cancel installation",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
 
-export const useRetryIntegrationMutation = (options?: {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}) => {
-  return useMutation({
-    mutationFn: ({
-      stackId,
-      integrationId,
-    }: {
-      stackId: string;
-      integrationId: string;
-    }) => retryIntegration(stackId, integrationId),
-    onMutate: () => {
-      toast.loading("Retrying installation...", {
-        id: "retry-integration",
-      });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success("Installation retry initiated successfully", {
-        id: "retry-integration",
-      });
-      queryClient.invalidateQueries({
-        queryKey: integrationKeys.list(variables.stackId),
-      });
-      options?.onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to retry installation", {
-        id: "retry-integration",
-      });
-      options?.onError?.(error);
-    },
-  });
-};
+export const useRetryIntegrationMutation = createMutationHook<
+  void,
+  { stackId: string; integrationId: string }
+>({
+  mutationFn: ({ stackId, integrationId }) =>
+    retryIntegration(stackId, integrationId),
+  toastId: "retry-integration",
+  loadingMessage: "Retrying installation...",
+  successMessage: "Installation retry initiated successfully",
+  errorMessage: "Failed to retry installation",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
