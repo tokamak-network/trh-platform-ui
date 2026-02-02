@@ -8,9 +8,8 @@ import axios, {
 import { env } from "next-runtime-env";
 
 // API base configuration
-const API_BASE_URL = `${
-  env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
-}/api/v1/`;
+const API_BASE_URL = `${env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
+  }/api/v1/`;
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
@@ -18,6 +17,8 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
+    // Bypass ngrok browser warning page
+    "ngrok-skip-browser-warning": "69420",
   },
 });
 
