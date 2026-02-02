@@ -192,6 +192,35 @@ export function ChainConfigurationForm({
             )}
           </div>
 
+          {/* Read-only Configuration Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+            <div className="space-y-2">
+              <Label className="text-slate-500">L2 Block Time (Immutable)</Label>
+              <Input
+                value={stack.config.l2BlockTime?.toString() || ""}
+                disabled
+                className="bg-slate-50"
+              />
+              <p className="text-xs text-slate-500">
+                This value cannot be changed after deployment.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-500">
+                Challenge Period (Immutable)
+              </Label>
+              <Input
+                value={stack.config.challengePeriod?.toString() || ""}
+                disabled
+                className="bg-slate-50"
+              />
+              <p className="text-xs text-slate-500">
+                This value cannot be changed after deployment.
+              </p>
+            </div>
+          </div>
+
           {/* Submit Button */}
           <div className="flex justify-end">
             <Button

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { ChainConfigurationForm } from "./ChainConfigurationForm";
+import { DangerZone } from "./DangerZone";
 import { ThanosStack } from "../../../schemas/thanos";
 
 export function SettingsTab({ stack }: RollupDetailTabProps) {
@@ -30,6 +31,7 @@ export function SettingsTab({ stack }: RollupDetailTabProps) {
         stack={currentStack}
         onUpdate={handleStackUpdate}
       />
+      <DangerZone stack={currentStack} />
     </div>
   );
 }
