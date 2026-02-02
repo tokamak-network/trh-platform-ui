@@ -1,62 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Database,
-  HardDrive,
-  RefreshCw,
-  Upload,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Server,
-  Shield,
-  Info,
-  Copy,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { downloadThanosPvPvcBackup } from "../../../services/rollupService";
 import {
@@ -70,7 +18,16 @@ import {
   useAttachStorageMutation,
 } from "../../../api/mutations";
 import { BackupConfigureRequest, BackupAttachRequest } from "../../../schemas/backup";
-import { TaskProgress } from "@/components/TaskProgress";
+import { BackupStatusCard } from "./BackupTabComponents/BackupStatusCard";
+import { BackupActionsCard } from "./BackupTabComponents/BackupActionsCard";
+import { RecentSnapshotsCard } from "./BackupTabComponents/RecentSnapshotsCard";
+import { BackupConfigurationCard } from "./BackupTabComponents/BackupConfigurationCard";
+import { RestoreBackupDialog } from "./BackupTabComponents/RestoreBackupDialog";
+import { AttachStorageDialog } from "./BackupTabComponents/AttachStorageDialog";
+import { AttachBackupReminderDialog } from "./BackupTabComponents/AttachBackupReminderDialog";
+import { RestoreOutputDialog } from "./BackupTabComponents/RestoreOutputDialog";
+import { TaskProgressDialog } from "./TaskProgressDialog";
+import { SyncWarningDialog } from "./SyncWarningDialog";
 
 export function BackupTab({ stack }: RollupDetailTabProps) {
   const [error, setError] = useState<string | null>(null);
@@ -227,7 +184,6 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
 
   // Extract AWS credentials from stack config
   const getAwsCredentials = () => {
-    console.log("stack.config", stack?.config);
     if (!stack?.config) return {};
 
     return {
@@ -356,6 +312,13 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
     }
   };
 
+  const handleOpenAttachForm = () => {
+    setEfsId(suggestedEfs);
+    setPvcs(suggestedPvcs);
+    setStss(suggestedStss);
+    setAttachDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {error && (
@@ -389,632 +352,163 @@ export function BackupTab({ stack }: RollupDetailTabProps) {
 
       {/* Top row: Backup Status and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Backup Status Card */}
-        <Card className="border-0 shadow-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5" />
-                Backup Status
-              </CardTitle>
-              {backupStatus?.IsProtected ? (
-                <Badge className="bg-green-100 text-green-800">Protected</Badge>
-              ) : (
-                <Badge className="bg-red-100 text-red-800">Not Protected</Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {backupStatus ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Region:</span>
-                  <span className="text-sm font-medium">{backupStatus.Region}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Namespace:</span>
-                  <span className="text-sm font-medium">{backupStatus.Namespace}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Account ID:</span>
-                  <span className="text-sm font-medium">{backupStatus.AccountID}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">EFS ARN:</span>
-                  <span className="text-sm font-medium truncate ml-2">{backupStatus.ARN}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Protected:</span>
-                  <span className="text-sm font-medium">{backupStatus.IsProtected ? "Yes" : "No"}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Latest Recovery Point:</span>
-                  <span className="text-sm font-medium">{backupStatus.LatestRecoveryPoint}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Next Backup:</span>
-                  <span className="text-sm font-medium">{backupStatus.NextBackupTime}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Schedule:</span>
-                  <span className="text-sm font-medium">{backupStatus.BackupSchedule}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Vaults:</span>
-                  <span className="text-sm font-medium truncate ml-2">
-                    {backupStatus.BackupVaults?.join(", ")}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Expiry:</span>
-                  <span className="text-sm font-medium">{backupStatus.ExpectedExpiryDate}</span>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                {statusError ? "Failed to load backup status" : "No backup configured"}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Backup Actions Card */}
-        <Card className="border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Backup Actions
-            </CardTitle>
-            <CardDescription>Manage your rollup backups</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              onClick={handleCreateSnapshot}
-              disabled={createSnapshotMutation.isPending}
-              className="w-full"
-              variant="outline"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {createSnapshotMutation.isPending ? "Creating..." : "Create Snapshots"}
-            </Button>
-            <Button
-              onClick={() => setRestoreDialogOpen(true)}
-              disabled={!checkpoints || checkpoints.length === 0}
-              className="w-full"
-              variant="outline"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Restore from Backup
-            </Button>
-            <Button
-              onClick={() => setAttachDialogOpen(true)}
-              disabled={!backupStatus?.IsProtected}
-              className="w-full"
-              variant="outline"
-            >
-              <HardDrive className="w-4 h-4 mr-2" />
-              Attach to New Storage
-            </Button>
-          </CardContent>
-        </Card>
+        <BackupStatusCard
+          backupStatus={backupStatus}
+          statusError={statusError}
+        />
+        <BackupActionsCard
+          backupStatus={backupStatus}
+          checkpoints={checkpoints}
+          onCreateSnapshot={handleCreateSnapshot}
+          onRestore={() => setRestoreDialogOpen(true)}
+          onAttach={() => setAttachDialogOpen(true)}
+          isCreatingSnapshot={createSnapshotMutation.isPending}
+        />
       </div>
 
       {/* Recent Snapshots Section */}
-      <Card className="border-0 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Recent Snapshots
-            {!backupStatus?.IsProtected && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="start">
-                    <p className="max-w-xs text-xs">
-                      To see recent checkpoints, configure backup for this chain.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </CardTitle>
-          <CardDescription>
-            Recent backup checkpoints and recovery points
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingCheckpoints ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
-            </div>
-          ) : checkpoints && checkpoints.length > 0 ? (
-            <div className="space-y-2">
-              {checkpoints.map((checkpoint) => (
-                <div
-                  key={checkpoint.RecoveryPointARN}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{checkpoint.Vault}</div>
-                    <div className="text-xs text-muted-foreground">{checkpoint.RecoveryPointARN}</div>
-                    <div className="text-xs text-muted-foreground">{checkpoint.Created}</div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800">
-                    {checkpoint.Status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              {checkpointsError ? "Failed to load checkpoints" : "No snapshots available"}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <RecentSnapshotsCard
+        backupStatus={backupStatus}
+        checkpoints={checkpoints}
+        isLoading={isLoadingCheckpoints}
+        error={checkpointsError}
+      />
 
       {/* Backup Configuration Section */}
-      <Card className="border-0 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Server className="w-5 h-5" />
-            Backup Configuration
-            {!backupStatus?.IsProtected && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="start">
-                    <p className="max-w-xs text-xs">
-                      Backups are not yet protected. Configure backup for this
-                      chain to enable automatic scheduling and recovery points.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </CardTitle>
-          <CardDescription>Configure automatic backup settings</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Auto Backup</Label>
-            <Badge variant={backupStatus?.IsProtected ? "default" : "secondary"}>
-              {backupStatus?.IsProtected ? "Enabled" : "Disabled"}
-            </Badge>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="backupTime">Backup Time (UTC)</Label>
-            <Input
-              id="backupTime"
-              type="time"
-              value={backupTime}
-              disabled={!backupStatus?.IsProtected}
-              onChange={(e) => setBackupTime(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="retentionPeriod">Retention Period (days)</Label>
-            <Input
-              id="retentionPeriod"
-              type="number"
-              value={retentionDays}
-              disabled={!backupStatus?.IsProtected}
-              onChange={(e) => setRetentionDays(e.target.value)}
-              min="1"
-              max="365"
-            />
-          </div>
-          <Button
-            onClick={handleConfigureBackup}
-            disabled={configureBackupMutation.isPending || !backupStatus?.IsProtected}
-            className="w-full"
-          >
-            {configureBackupMutation.isPending ? "Updating..." : "Configure Backup"}
-          </Button>
-        </CardContent>
-      </Card>
+      <BackupConfigurationCard
+        backupStatus={backupStatus}
+        backupTime={backupTime}
+        retentionDays={retentionDays}
+        onBackupTimeChange={setBackupTime}
+        onRetentionDaysChange={setRetentionDays}
+        onConfigure={handleConfigureBackup}
+        isPending={configureBackupMutation.isPending}
+      />
 
       {/* Restore Dialog */}
-      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Restore from Backup</DialogTitle>
-            <DialogDescription>
-              Select a recovery point to restore your rollup data
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="recoveryPoint">Recovery Point</Label>
-              <Select
-                value={selectedRecoveryPoint}
-                onValueChange={setSelectedRecoveryPoint}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a recovery point" />
-                </SelectTrigger>
-                <SelectContent>
-                  {checkpoints?.map((checkpoint) => (
-                    <SelectItem
-                      key={checkpoint.RecoveryPointARN}
-                      value={checkpoint.RecoveryPointARN}
-                    >
-                      {checkpoint.Vault} - {checkpoint.Created}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="attachWorkloads"
-                checked={attachWorkloads}
-                onCheckedChange={(checked) => setAttachWorkloads(!!checked)}
-              />
-              <Label htmlFor="attachWorkloads" className="text-sm font-normal cursor-pointer">
-                Automatically attach workloads to restored EFS
-              </Label>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              If enabled, the restored EFS will be automatically attached to your workloads (op-geth, op-node) after restoration completes.
-            </p>
-            {attachWorkloads && (
-              <Alert className="mt-3 border-blue-200 bg-blue-50">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-xs text-blue-800">
-                  <strong>Note:</strong> When auto-attach is enabled, your current PV/PVC configurations will be automatically backed up before switching to the restored EFS. This ensures you can recover your previous storage configuration if needed.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRestoreDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleRestoreBackup}
-              disabled={!selectedRecoveryPoint || restoreBackupMutation.isPending}
-            >
-              {restoreBackupMutation.isPending ? "Restoring..." : "Restore"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RestoreBackupDialog
+        open={restoreDialogOpen}
+        onOpenChange={setRestoreDialogOpen}
+        checkpoints={checkpoints}
+        selectedRecoveryPoint={selectedRecoveryPoint}
+        onRecoveryPointChange={setSelectedRecoveryPoint}
+        attachWorkloads={attachWorkloads}
+        onAttachWorkloadsChange={setAttachWorkloads}
+        onRestore={handleRestoreBackup}
+        isPending={restoreBackupMutation.isPending}
+      />
 
       {/* Attach Storage Dialog */}
-      <Dialog open={attachDialogOpen} onOpenChange={setAttachDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Attach to New Storage</DialogTitle>
-            <DialogDescription>
-              Configure storage attachment for backup
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="efsId">EFS ID</Label>
-              <Input
-                id="efsId"
-                placeholder="fs-xxxxxxxxxx"
-                value={efsId}
-                onChange={(e) => setEfsId(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pvcs">Persistent Volume Claims (PVCs)</Label>
-              <Input
-                id="pvcs"
-                placeholder="pvc-name-1,pvc-name-2"
-                value={pvcs}
-                onChange={(e) => setPvcs(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="stss">StatefulSets (STSs)</Label>
-              <Input
-                id="stss"
-                placeholder="sts-name-1,sts-name-2"
-                value={stss}
-                onChange={(e) => setStss(e.target.value)}
-              />
-            </div>
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="backupPvPvc"
-                checked={backupPvPvc}
-                onCheckedChange={(checked) => setBackupPvPvc(Boolean(checked))}
-              />
-              <div className="grid gap-1.5 leading-none">
-                <Label htmlFor="backupPvPvc">Back up PV/PVC definitions before attach</Label>
-                <p className="text-xs text-muted-foreground">
-                  Runs the PV/PVC backup script before updating volume handles.
-                </p>
-              </div>
-            </div>
-            {backupPvPvc && (
-              <div className="space-y-2 rounded-md border p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">PV/PVC Backup</span>
-                  <Badge variant={backupDownloaded ? "default" : "secondary"}>
-                    {backupDownloaded ? "Downloaded" : "Recommended"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Generate the YAML backup and download it before attaching storage.
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleDownloadPvPvcBackup}
-                  disabled={backupDownloadPending}
-                >
-                  {backupDownloadPending
-                    ? "Generating..."
-                    : backupDownloaded
-                      ? "Download Again"
-                      : "Generate & Download Backup"}
-                </Button>
-                {backupDownloaded && (
-                  <p className="text-xs text-muted-foreground">
-                    Backup downloaded. Attach will skip server-side backup.
-                  </p>
-                )}
-                {!backupDownloaded && (
-                  <p className="text-xs text-muted-foreground">
-                    You can continue without downloading, but a backup is recommended.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setAttachDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAttachStorage}
-              disabled={
-                attachStorageMutation.isPending || backupDownloadPending
-              }
-            >
-              {attachStorageMutation.isPending ? "Attaching..." : "Attach"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AttachStorageDialog
+        open={attachDialogOpen}
+        onOpenChange={setAttachDialogOpen}
+        efsId={efsId}
+        pvcs={pvcs}
+        stss={stss}
+        onEfsIdChange={setEfsId}
+        onPvcsChange={setPvcs}
+        onStssChange={setStss}
+        backupPvPvc={backupPvPvc}
+        onBackupPvPvcChange={setBackupPvPvc}
+        backupDownloaded={backupDownloaded}
+        backupDownloadPending={backupDownloadPending}
+        onDownloadBackup={handleDownloadPvPvcBackup}
+        onAttach={handleAttachStorage}
+        isPending={attachStorageMutation.isPending}
+      />
 
       {/* Attach Backup Reminder Dialog */}
-      <Dialog open={attachConfirmOpen} onOpenChange={setAttachConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>PV/PVC Backup Recommended</DialogTitle>
-            <DialogDescription>
-              You enabled PV/PVC backup but have not downloaded it. You can download now or continue without downloading.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setAttachConfirmOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                await handleDownloadPvPvcBackup();
-                setAttachConfirmOpen(false);
-              }}
-              disabled={backupDownloadPending}
-            >
-              {backupDownloadPending ? "Generating..." : "Download Backup"}
-            </Button>
-            <Button
-              onClick={() => {
-                setAttachConfirmOpen(false);
-                startAttachStorage();
-              }}
-            >
-              Continue Without Download
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* Progress Dialog */}
-      <Dialog open={!!restoreTaskId} onOpenChange={(open) => !open && setRestoreTaskId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Restore in Progress</DialogTitle>
-            <DialogDescription>
-              Please wait while the backup is being restored.
-            </DialogDescription>
-          </DialogHeader>
-          {restoreTaskId && (
-            <TaskProgress
-              taskId={restoreTaskId}
-              title="Restoring Backup"
-              onComplete={(data) => {
-                setSuccess("Restore completed successfully!");
-                setTimeout(() => setRestoreTaskId(null), 2000);
-                setTimeout(() => setSuccess(null), 5000);
-                refetchStatus();
-                if (data?.result) {
-                  setRestoreResult(data.result as Record<string, unknown>);
-                }
-                if (attachWorkloads) {
-                  setShowSyncWarning(true);
-                }
-              }}
-              onError={(err) => {
-                setError(`Restore failed: ${err}`);
-                // keep dialog open or close?
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <AttachBackupReminderDialog
+        open={attachConfirmOpen}
+        onOpenChange={setAttachConfirmOpen}
+        onDownload={async () => {
+          await handleDownloadPvPvcBackup();
+          setAttachConfirmOpen(false);
+        }}
+        onContinue={() => {
+          setAttachConfirmOpen(false);
+          startAttachStorage();
+        }}
+        isDownloadPending={backupDownloadPending}
+      />
+      {/* Restore Progress Dialog */}
+      <TaskProgressDialog
+        open={!!restoreTaskId}
+        onOpenChange={(open) => !open && setRestoreTaskId(null)}
+        taskId={restoreTaskId}
+        title="Restore in Progress"
+        description="Please wait while the backup is being restored."
+        onComplete={(data) => {
+          setSuccess("Restore completed successfully!");
+          setTimeout(() => setRestoreTaskId(null), 2000);
+          setTimeout(() => setSuccess(null), 5000);
+          refetchStatus();
+          if (data && typeof data === "object" && "result" in data) {
+            setRestoreResult(data.result as Record<string, unknown>);
+          }
+          if (attachWorkloads) {
+            setShowSyncWarning(true);
+          }
+        }}
+        onError={(err) => {
+          setError(`Restore failed: ${err}`);
+        }}
+      />
 
       {/* Attach Progress Dialog */}
-      <Dialog open={!!attachTaskId} onOpenChange={(open) => !open && setAttachTaskId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Attach in Progress</DialogTitle>
-            <DialogDescription>
-              Please wait while the storage is being attached.
-            </DialogDescription>
-          </DialogHeader>
-          {attachTaskId && (
-            <TaskProgress
-              taskId={attachTaskId}
-              title="Attaching Storage"
-              onComplete={() => {
-                setSuccess("Storage attached successfully!");
-                setTimeout(() => setAttachTaskId(null), 2000);
-                setTimeout(() => setSuccess(null), 5000);
-                setTimeout(() => setSuccess(null), 5000);
-                refetchStatus();
-                setShowSyncWarning(true);
-              }}
-              onError={(err) => {
-                setError(`Attach failed: ${err}`);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <TaskProgressDialog
+        open={!!attachTaskId}
+        onOpenChange={(open) => !open && setAttachTaskId(null)}
+        taskId={attachTaskId}
+        title="Attach in Progress"
+        description="Please wait while the storage is being attached."
+        onComplete={() => {
+          setSuccess("Storage attached successfully!");
+          setTimeout(() => setAttachTaskId(null), 2000);
+          setTimeout(() => setSuccess(null), 5000);
+          refetchStatus();
+          setShowSyncWarning(true);
+        }}
+        onError={(err) => {
+          setError(`Attach failed: ${err}`);
+        }}
+      />
 
       {/* Restore Output Dialog */}
-      <Dialog
+      <RestoreOutputDialog
         open={!!restoreResult && !attachWorkloads}
         onOpenChange={(open) => !open && setRestoreResult(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Restore Output (Attach Later)</DialogTitle>
-            <DialogDescription>
-              Copy these values and keep them for attaching later.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">EFS ID:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {suggestedEfs || "-"}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyField("EFS ID", suggestedEfs)}
-                  aria-label="Copy EFS ID"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">PVCs:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {suggestedPvcs || "-"}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyField("PVCs", suggestedPvcs)}
-                  aria-label="Copy PVCs"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">STSs:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {suggestedStss || "-"}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyField("STSs", suggestedStss)}
-                  aria-label="Copy STSs"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEfsId(suggestedEfs);
-                setPvcs(suggestedPvcs);
-                setStss(suggestedStss);
-                setAttachDialogOpen(true);
-              }}
-            >
-              Open Attach Form
-            </Button>
-            <Button variant="outline" onClick={() => setRestoreResult(null)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        suggestedEfs={suggestedEfs}
+        suggestedPvcs={suggestedPvcs}
+        suggestedStss={suggestedStss}
+        onCopy={copyField}
+        onOpenAttachForm={handleOpenAttachForm}
+      />
 
-      <Dialog open={!!snapshotTaskId} onOpenChange={(open) => !open && setSnapshotTaskId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Snapshot in Progress</DialogTitle>
-            <DialogDescription>
-              Please wait while the backup snapshot is being created.
-            </DialogDescription>
-          </DialogHeader>
-          {snapshotTaskId && (
-            <TaskProgress
-              taskId={snapshotTaskId}
-              title="Creating Snapshot"
-              onComplete={() => {
-                setSuccess("Snapshot created successfully!");
-                setTimeout(() => setSnapshotTaskId(null), 2000);
-                setTimeout(() => setSuccess(null), 5000);
-                refetchCheckpoints();
-                refetchStatus();
-              }}
-              onError={(err) => {
-                setError(`Snapshot failed: ${err}`);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Snapshot Progress Dialog */}
+      <TaskProgressDialog
+        open={!!snapshotTaskId}
+        onOpenChange={(open) => !open && setSnapshotTaskId(null)}
+        taskId={snapshotTaskId}
+        title="Snapshot in Progress"
+        description="Please wait while the backup snapshot is being created."
+        onComplete={() => {
+          setSuccess("Snapshot created successfully!");
+          setTimeout(() => setSnapshotTaskId(null), 2000);
+          setTimeout(() => setSuccess(null), 5000);
+          refetchCheckpoints();
+          refetchStatus();
+        }}
+        onError={(err) => {
+          setError(`Snapshot failed: ${err}`);
+        }}
+      />
 
-      <AlertDialog open={showSyncWarning} onOpenChange={setShowSyncWarning}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Operation Completed</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please note that it may take some time for block synchronization to complete.
-              The system will catch up shortly.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowSyncWarning(false)}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Sync Warning Dialog */}
+      <SyncWarningDialog
+        open={showSyncWarning}
+        onOpenChange={setShowSyncWarning}
+      />
     </div>
   );
 }
