@@ -19,6 +19,7 @@ interface PreDeploymentChecklistDialogProps {
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
     isDeploying: boolean;
+    network: string;
 }
 
 export function PreDeploymentChecklistDialog({
@@ -26,6 +27,7 @@ export function PreDeploymentChecklistDialog({
     onOpenChange,
     onConfirm,
     isDeploying,
+    network,
 }: PreDeploymentChecklistDialogProps) {
     const checklistItems = [
         {
@@ -77,7 +79,7 @@ export function PreDeploymentChecklistDialog({
                         Pre-Deployment Checklist
                     </DialogTitle>
                     <DialogDescription>
-                        You are deploying to <span className="font-bold text-foreground">Mainnet</span>.
+                        You are deploying to <span className="font-bold text-foreground capitalize">{network}</span>.
                         Please verify the following critical items before proceeding.
                     </DialogDescription>
                 </DialogHeader>

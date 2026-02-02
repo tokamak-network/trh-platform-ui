@@ -8,7 +8,6 @@ import {
   getThanosDeploymentLogs,
   getRegisterMetadataDAO,
 } from "../services/rollupService";
-import { getIntegrations } from "@/features/integrations/services/integrationService";
 
 export const rollupKeys = {
   all: ["rollups"] as const,

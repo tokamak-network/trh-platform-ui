@@ -46,6 +46,9 @@ const defaultFormData: CreateRollupFormData = {
     awsRegion: "",
   },
   daoCandidate: undefined,
+  confirmation: {
+    agreedToMainnetRisks: false,
+  },
 };
 
 const initialState: RollupCreationState = {

@@ -91,8 +91,6 @@ export function MetadataTab({ stack }: RollupDetailTabProps) {
   // Query to fetch existing metadata
   const {
     data: existingMetadata,
-    isLoading: isLoadingMetadata,
-    error: queryError,
   } = useRegisterMetadataDAOQuery(stack?.id);
 
   // Mutation to create/update metadata

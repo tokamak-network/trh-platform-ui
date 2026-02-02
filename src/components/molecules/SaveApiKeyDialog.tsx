@@ -29,7 +29,6 @@ export function SaveApiKeyDialog({
   onSave,
   apiKey,
   type,
-  defaultName = "",
 }: SaveApiKeyDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>("");

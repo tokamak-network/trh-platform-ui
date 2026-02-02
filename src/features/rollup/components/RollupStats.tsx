@@ -2,23 +2,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Activity,
   CheckCircle,
-  DollarSign,
   TrendingUp,
-  Users,
 } from "lucide-react";
 
 interface RollupStatsProps {
   totalRollups: number;
   activeRollups: number;
-  totalUsers: string;
-  totalTVL: string;
 }
 
 export function RollupStats({
   totalRollups,
   activeRollups,
-  totalUsers,
-  totalTVL,
 }: RollupStatsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">

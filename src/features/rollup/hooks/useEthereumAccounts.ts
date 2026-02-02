@@ -96,9 +96,10 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } finally {
       setIsLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedPhraseStr, rpcUrl]);
 
-  // Use effect with proper dependency array
+  // Use effect with proper dependency array - seedPhraseStr contains seedPhrase changes
   useEffect(() => {
     // Only generate accounts if we have all 12 words filled
     if (seedPhrase.length === 12 && !seedPhrase.some((word) => !word)) {
@@ -110,6 +111,7 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } else {
       setAccounts([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedPhraseStr, generateAccounts]);
 
   // Function to refresh balances only

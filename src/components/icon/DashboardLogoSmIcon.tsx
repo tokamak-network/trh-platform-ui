@@ -1,8 +1,6 @@
 import * as React from "react";
 
-export const DashboardLogoSmIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
-  props
-) => (
+export const DashboardLogoSmIcon: React.FC<React.SVGProps<SVGSVGElement>> = () => (
   <svg
     width="212"
     height="36"

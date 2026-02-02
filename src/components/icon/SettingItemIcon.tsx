@@ -2,7 +2,7 @@ import * as React from "react";
 
 export const SettingItemIcon: React.FC<
   { isSelected?: boolean } & React.SVGProps<SVGSVGElement>
-> = ({ isSelected, ...props }) => {
+> = ({ isSelected }) => {
   if (isSelected) {
     return (
       <svg

@@ -9,12 +9,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -25,11 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  MoreHorizontal,
-  Play,
   Pause,
-  Settings,
-  Eye,
   Clock,
   ExternalLink,
   Trash2,
