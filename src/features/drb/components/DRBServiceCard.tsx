@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dices, ArrowUpRight, Server, Database, Crown, Trash2, Plus } from "lucide-react";
+import { Dices, ArrowUpRight, Server, Database, Crown, Trash2, Plus, Shield, Zap } from "lucide-react";
 import { InstallDRBDialog } from "./InstallDRBDialog";
 import { useDRBDeploymentInfo, useThanosSepolia } from "../api/queries";
 import { useUninstallDRBMutation } from "../api/mutations";
@@ -72,7 +72,7 @@ export function DRBServiceCard({
 
   return (
     <>
-      <article className="group relative w-full max-w-md overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:border-neutral-300 hover:shadow-lg">
+      <article className="group relative w-full max-w-[480px] overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:border-neutral-300 hover:shadow-lg">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-400 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
         <div className="p-5">
@@ -95,13 +95,22 @@ export function DRBServiceCard({
             Verifiable on-chain randomness via Commit-Reveal2 protocol. Deploy on any EVM chain.
           </p>
 
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <Spec
-              icon={nodeType === "regular" ? Server : Crown}
-              label="Node Type"
-              value={nodeType === "regular" ? "Regular Node" : "Leader Node"}
-            />
-            <Spec icon={Database} label="Storage" value="PostgreSQL" />
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            {status === "Available" || status === "Cancelled" ? (
+              <>
+                <Spec icon={Shield} label="Protocol" value="Commit-Reveal2" />
+                <Spec icon={Zap} label="Compatibility" value="Any EVM Chain" />
+              </>
+            ) : (
+              <>
+                <Spec
+                  icon={nodeType === "regular" ? Server : Crown}
+                  label="Node Type"
+                  value={nodeType === "regular" ? "Regular Node" : "Leader Node"}
+                />
+                <Spec icon={Database} label="Storage" value="PostgreSQL" />
+              </>
+            )}
           </div>
 
           {deployedNetwork && (
