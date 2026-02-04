@@ -7,11 +7,11 @@ import axios, {
 } from "axios";
 import { env } from "next-runtime-env";
 
-// API base configuration
-const baseUrl = env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000";
-const API_BASE_URL = `${baseUrl.replace(/\/$/, "")}/api/v1/`;
+// API base configuration using Next.js Rewrites (Proxy)
+// This solves CORS issues by proxying requests through the Next.js server
+const API_BASE_URL = "/api/proxy/";
 
-console.log("Configured API Base URL:", API_BASE_URL);
+console.log("Using API Proxy URL:", API_BASE_URL);
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
