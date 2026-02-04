@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -103,18 +103,22 @@ export function useCreateRollup() {
     },
   });
 
-  const handleDeployRollup = async () => {
+  // Validation types from rollupService
+  const [estimatedCost, setEstimatedCost] = useState<{
+    deploymentGasEth: string;
+  } | undefined>(undefined);
+
+  const validateAndEstimateDeployment = useCallback(async () => {
     // Validate all form fields before deployment
     const isValid = await form.trigger();
     if (!isValid) {
-      return;
+      return false;
     }
 
     const formData = form.getValues();
 
-    // Pre-deployment Validation
     try {
-      toast.loading("Validating deployment parameters...", { id: "validate-deployment" });
+      toast.loading("Validating deployment parameters...");
 
       const validationPayload = {
         network: formData.networkAndChain.network,
@@ -157,33 +161,43 @@ export function useCreateRollup() {
       const validationResult = await validateDeployment(validationPayload);
 
       if (!validationResult.allValid) {
+        toast.dismiss();
         const errors = Object.entries(validationResult.checks)
           .filter(([, check]) => !check.valid)
           .map(([key, check]) => `${key}: ${check.error}`)
           .join("\n");
 
         toast.error(`Validation Failed:\n${errors}`, {
-          id: "validate-deployment",
           duration: 5000,
         });
-        return;
+        return false;
       }
 
-      toast.success("Validation passed!", { id: "validate-deployment" });
-    } catch (error) {
-      console.error("Validation error:", error);
-      toast.error("Validation service unavailable. Proceeding with caution...", {
-        id: "validate-deployment",
-      });
-      // Optionally return here to enforce validation success
-    }
+      // Update estimated cost if valid
+      if (validationResult.estimatedCost) {
+        setEstimatedCost(validationResult.estimatedCost);
+      }
 
+      toast.dismiss();
+      toast.success("Validation passed!");
+      return true;
+    } catch (error) {
+      toast.dismiss();
+      console.error("Validation error:", error);
+      toast.error("Validation service unavailable. Proceeding with caution...");
+      // Optionally return true to allow deployment if validation service fails
+      return true;
+    }
+  }, [form, setEstimatedCost]);
+
+  const handleDeployRollup = async () => {
+    const isValid = await validateAndEstimateDeployment();
+    if (!isValid) return;
+
+    const formData = form.getValues();
     const request = convertFormToDeploymentRequest(formData);
 
     form.setError("root", { message: "" });
-
-    // Use the mutation directly - the isSubmitting state will be handled by the button's disabled state
-    // which checks for deployMutation.isPending
     await deployMutation.mutateAsync(request);
   };
 
@@ -201,6 +215,7 @@ export function useCreateRollup() {
       await handleDeployRollup();
       return;
     }
+
 
     // Validate current step fields
     let isValid = false;
@@ -309,6 +324,7 @@ export function useCreateRollup() {
           // If daoCandidate is undefined (skipped), validation passes
           isValid = true;
         }
+
         break;
       default:
         isValid = true;
@@ -341,5 +357,7 @@ export function useCreateRollup() {
     showChecklist,
     setShowChecklist,
     handleDeployRollup,
+    estimatedCost,
+    validateAndEstimateDeployment,
   };
 }

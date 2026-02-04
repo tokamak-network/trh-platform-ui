@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AuthenticatedLayout } from "@/components/layout";
 import { CreateRollupStepper } from "@/features/rollup/components/CreateRollupStepper";
 import { PreDeploymentChecklistDialog } from "@/features/rollup/components/PreDeploymentChecklistDialog";
@@ -28,7 +29,16 @@ function CreateRollupContent() {
     showChecklist,
     setShowChecklist,
     handleDeployRollup,
+    estimatedCost,
+    validateAndEstimateDeployment,
   } = useCreateRollup();
+
+  // Validate and estimate cost when entering Step 4
+  useEffect(() => {
+    if (currentStep === 4) {
+      validateAndEstimateDeployment();
+    }
+  }, [currentStep, validateAndEstimateDeployment]);
 
   const handleSkipDaoCandidate = () => {
     form.setValue("daoCandidate", undefined);
@@ -47,7 +57,7 @@ function CreateRollupContent() {
       case 3:
         return <DaoCandidateStep />;
       case 4:
-        return <ReviewAndDeployStep />;
+        return <ReviewAndDeployStep estimatedCost={estimatedCost} />;
       default:
         return null;
     }

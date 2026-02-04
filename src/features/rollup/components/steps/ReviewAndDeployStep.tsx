@@ -26,7 +26,15 @@ interface Section {
   data: DataItem[];
 }
 
-export function ReviewAndDeployStep() {
+interface CostEstimation {
+  deploymentGasEth: string;
+}
+
+interface ReviewAndDeployStepProps {
+  estimatedCost?: CostEstimation;
+}
+
+export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps) {
   const { watch, setValue } = useFormContext<CreateRollupFormData>();
   const formData = watch();
   const [showSecretKey, setShowSecretKey] = useState(false);
@@ -136,6 +144,30 @@ export function ReviewAndDeployStep() {
           })}
         </CardContent>
       </Card>
+
+      {/* Estimated Cost */}
+      {estimatedCost && (
+        <Card className="border-blue-200 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl text-blue-900">
+              <span className="text-2xl">💰</span>
+              Estimated Deployment Cost
+            </CardTitle>
+            <CardDescription className="text-blue-700">
+              Estimated gas cost for the deployment
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500">Deployment Gas</p>
+                <p className="text-2xl font-bold text-slate-900">{estimatedCost.deploymentGasEth} ETH</p>
+                <p className="text-xs text-slate-400">One-time cost</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Deployment Actions */}
       <Card>

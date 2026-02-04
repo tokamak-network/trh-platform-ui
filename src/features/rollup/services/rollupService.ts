@@ -39,8 +39,6 @@ export interface ValidateDeploymentResponse {
   checks: Record<string, ValidationCheckResult>;
   estimatedCost?: {
     deploymentGasEth: string;
-    monthlyAwsEth: string;
-    totalFirstMonthEth: string;
   };
 }
 
