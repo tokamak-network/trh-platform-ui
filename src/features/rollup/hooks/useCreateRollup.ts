@@ -13,6 +13,7 @@ import {
 } from "../schemas/create-rollup";
 import { useRollupCreationContext, defaultFormData } from "../context/RollupCreationContext";
 import { toast } from "react-hot-toast";
+import { ethers } from "ethers";
 
 export const STEPS = [
   {
@@ -226,6 +227,57 @@ export function useCreateRollup() {
             ? advancedFields
             : []),
         ]);
+
+        if (isValid) {
+          const formData = form.getValues();
+          const rpcUrl = formData.networkAndChain.l1RpcUrl;
+
+          try {
+            toast.loading("Verifying RPC connection...", { id: "check-rpc" });
+            // Create a provider and fetch network to check ChainID
+            // Use static provider to avoid potential network detection delays
+            const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { staticNetwork: null });
+
+            // Set a timeout for the request to avoid hanging
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("RPC Connection Timed out")), 5000)
+            );
+
+            const networkPromise = provider.getNetwork();
+            const network = await Promise.race([networkPromise, timeoutPromise]) as ethers.Network;
+
+            const chainId = Number(network.chainId);
+            const isMainnet = chainId === 1;
+            const isSepolia = chainId === 11155111;
+
+            if (formData.networkAndChain.network === "mainnet") {
+              if (!isMainnet) {
+                throw new Error(`Chain ID mismatch: Got ${chainId}, expected 1 (Mainnet)`);
+              }
+            } else if (formData.networkAndChain.network === "testnet") {
+              if (!isSepolia) {
+                // For testnet, strictly enforce Sepolia as SDK targets it by default
+                throw new Error(`Chain ID mismatch: Got ${chainId}, expected 11155111 (Sepolia)`);
+              }
+            }
+
+            toast.success("RPC Connection Verified", { id: "check-rpc" });
+          } catch (error) {
+            console.error("RPC Check Error:", error);
+            // Allow bypassing strict RPC check if it's a CORS issue or other network error, 
+            // but for Mainnet we should be strict. 
+            // Here we prioritize safety: Block on error.
+            let msg = "Unknown RPC validation error";
+            if (error instanceof Error) {
+              msg = error.message;
+              if ("code" in error && (error as { code: unknown }).code === "NETWORK_ERROR") {
+                msg = "Network Error (CORS or Invalid URL)";
+              }
+            }
+            toast.error(`RPC Validation Failed:\n${msg}`, { id: "check-rpc" });
+            return; // Block going to next step
+          }
+        }
         break;
       case 2: // Account & AWS step
         isValid = await form.trigger([
