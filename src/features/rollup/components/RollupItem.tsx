@@ -35,7 +35,10 @@ import {
   Layers,
   RotateCcw,
   PauseIcon,
+  AlertTriangle,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { statusConfig } from "../schemas/rollup";
 import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 import { getLastActivityTime, formatRelativeTime } from "../utils/dateUtils";
@@ -116,6 +119,9 @@ export function RollupItem({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isResumeDialogOpen, setIsResumeDialogOpen] = React.useState(false);
   const [isStopDialogOpen, setIsStopDialogOpen] = React.useState(false);
+  const [confirmName, setConfirmName] = React.useState("");
+
+  const isMainnet = stack.network === "mainnet";
 
   // Check if resume button should be active
   const canResume = [
@@ -148,13 +154,18 @@ export function RollupItem({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setConfirmName("");
     setIsDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = () => {
+    if (isMainnet && confirmName !== stack.name) return;
     deleteRollupMutation.mutate(stack.id);
     setIsDeleteDialogOpen(false);
+    setConfirmName("");
   };
+
+  const isDeleteConfirmDisabled = isMainnet && confirmName !== stack.name;
 
   const handleResumeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -415,23 +426,54 @@ export function RollupItem({
                 </TooltipProvider>
                 <AlertDialog
                   open={isDeleteDialogOpen}
-                  onOpenChange={setIsDeleteDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open);
+                    if (!open) setConfirmName("");
+                  }}
                 >
                   <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Destroy Rollup</AlertDialogTitle>
+                      <AlertDialogTitle className={isMainnet ? "flex items-center gap-2 text-red-600" : ""}>
+                        {isMainnet && <AlertTriangle className="h-5 w-5" />}
+                        Destroy Rollup
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
                         Are you sure you want to destroy{" "}
                         {stack.config.chainName}? This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+
+                    {isMainnet && (
+                      <div className="py-4">
+                        <div className="bg-red-50 p-3 rounded-md border border-red-200 mb-4">
+                          <p className="text-sm text-red-800 font-medium">
+                            This is a Mainnet environment.
+                          </p>
+                          <p className="text-xs text-red-700 mt-1">
+                            To confirm, please type the rollup name: <span className="font-bold select-all">{stack.name}</span>
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirm-name">Rollup Name</Label>
+                          <Input
+                            id="confirm-name"
+                            value={confirmName}
+                            onChange={(e) => setConfirmName(e.target.value)}
+                            placeholder={stack.name}
+                            autoComplete="off"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <AlertDialogFooter>
                       <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
                         Cancel
                       </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleConfirmDelete}
-                        disabled={isDestroyDisabled}
+                        disabled={isDestroyDisabled || isDeleteConfirmDisabled}
                         className="bg-red-600 hover:bg-red-700 text-white"
                       >
                         Delete
