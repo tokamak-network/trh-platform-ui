@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
-// Helper to ensure API URL has protocol
+// Helper to ensure API URL has protocol and no trailing slash
 const getApiBaseUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!url) return "http://localhost:8000";
+  let url = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  // Remove trailing slashes
+  url = url.replace(/\/+$/, "");
+
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   return `https://${url}`;
 };
