@@ -21,7 +21,6 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
 import { useFormContext, useController } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { useEthereumAccounts, wordList } from "../../hooks/useEthereumAccounts";
@@ -75,6 +74,14 @@ export function AccountSetup() {
     defaultValue: "",
   });
 
+  const { field: networkField } = useController({
+    name: "networkAndChain.network",
+    control,
+    defaultValue: "",
+  });
+
+  const isMainnet = networkField.value === "mainnet";
+
   const { accounts, isLoading, error, refreshBalances } = useEthereumAccounts(
     seedPhraseField.value,
     l1RpcUrlField.value
@@ -125,7 +132,7 @@ export function AccountSetup() {
       } else {
         // Single word update - allow partial words for manual typing
         const word = value.trim().toLowerCase();
-        
+
         // Allow empty string (for deletion) or any input for manual typing
         // We'll validate complete words later when generating accounts
         const newSeedPhrase = [...seedPhraseField.value];
@@ -201,7 +208,7 @@ export function AccountSetup() {
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <p className="text-xs text-slate-500">
-              Enter your 12-word seed phrase. You can type manually or paste the entire phrase. 
+              Enter your 12-word seed phrase. You can type manually or paste the entire phrase.
               Words highlighted in yellow are not valid BIP39 words.
             </p>
             <div className="grid grid-cols-3 gap-3">
@@ -215,11 +222,10 @@ export function AccountSetup() {
                       handleSeedPhraseChange(index, e.target.value)
                     }
                     placeholder="•••••"
-                    className={`text-sm ${
-                      word && !wordList.includes(word) && word.length > 2
+                    className={`text-sm ${word && !wordList.includes(word) && word.length > 2
                         ? "border-yellow-300 bg-yellow-50"
                         : ""
-                    }`}
+                      }`}
                     list={`wordlist-${index}`}
                   />
                   <datalist id={`wordlist-${index}`}>
@@ -271,9 +277,8 @@ export function AccountSetup() {
 
       {/* Account Selection */}
       <div
-        className={`space-y-4 transition-opacity duration-200 ${
-          !seedPhraseConfirmed ? "opacity-50 pointer-events-none" : ""
-        }`}
+        className={`space-y-4 transition-opacity duration-200 ${!seedPhraseConfirmed ? "opacity-50 pointer-events-none" : ""
+          }`}
       >
         {isLoading && (
           <div className="flex items-center justify-center p-4">
@@ -322,14 +327,9 @@ export function AccountSetup() {
                 value={adminAccountField.value || undefined}
                 onValueChange={(value) => {
                   adminAccountField.onChange(value);
-                  const accountIndex = accounts.findIndex(
-                    (acc) => acc.address === value
-                  );
-                  if (accountIndex !== -1) {
-                    setValue(
-                      "accountAndAws.adminPrivateKey",
-                      accounts[accountIndex].privateKey
-                    );
+                  const account = accounts.find((acc) => acc.address === value);
+                  if (account) {
+                    setValue("accountAndAws.adminPrivateKey", account.privateKey);
                   }
                 }}
                 disabled={
@@ -382,14 +382,9 @@ export function AccountSetup() {
                 value={proposerAccountField.value || undefined}
                 onValueChange={(value) => {
                   proposerAccountField.onChange(value);
-                  const accountIndex = accounts.findIndex(
-                    (acc) => acc.address === value
-                  );
-                  if (accountIndex !== -1) {
-                    setValue(
-                      "accountAndAws.proposerPrivateKey",
-                      accounts[accountIndex].privateKey
-                    );
+                  const account = accounts.find((acc) => acc.address === value);
+                  if (account) {
+                    setValue("accountAndAws.proposerPrivateKey", account.privateKey);
                   }
                 }}
                 disabled={
@@ -442,14 +437,9 @@ export function AccountSetup() {
                 value={batchAccountField.value || undefined}
                 onValueChange={(value) => {
                   batchAccountField.onChange(value);
-                  const accountIndex = accounts.findIndex(
-                    (acc) => acc.address === value
-                  );
-                  if (accountIndex !== -1) {
-                    setValue(
-                      "accountAndAws.batchPrivateKey",
-                      accounts[accountIndex].privateKey
-                    );
+                  const account = accounts.find((acc) => acc.address === value);
+                  if (account) {
+                    setValue("accountAndAws.batchPrivateKey", account.privateKey);
                   }
                 }}
                 disabled={
@@ -553,21 +543,32 @@ export function AccountSetup() {
               )}
             </div>
 
-            {/* Info Message */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-              <p className="text-sm text-slate-700">
-                Make sure each selected account has sufficient ETH balance for
-                their operations. The accounts will be used to sign transactions
-                for their respective roles. See{" "}
-                <Link
-                  href={THANOS_STACK_PREREQUISITE_GUIDE_URL}
-                  target="_blank"
-                  className="text-blue-700 underline"
-                >
-                  here
-                </Link>
-                {" "}for more details.
-              </p>
+            {/* Info Message - Red for mainnet, Blue for testnet */}
+            <div className={`rounded-lg p-4 mt-6 ${isMainnet
+                ? "bg-red-50 border border-red-300"
+                : "bg-blue-50 border border-blue-200"
+              }`}>
+              <div className="flex items-start gap-3">
+                {isMainnet && (
+                  <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                )}
+                <p className={`text-sm ${isMainnet ? "text-red-700" : "text-slate-700"}`}>
+                  {isMainnet
+                    ? "For mainnet deployment, ensure each account (Admin, Proposer, Batcher) has sufficient ETH for gas fees and operations."
+                    : "Make sure each selected account has sufficient ETH balance for their operations."
+                  }
+                  {" "}Please refer to the{" "}
+                  <a
+                    href={THANOS_STACK_PREREQUISITE_GUIDE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`pointer-events-auto ${isMainnet ? "text-red-800 underline font-medium" : "text-blue-700 underline"}`}
+                  >
+                    Guidelines
+                  </a>
+                  {" "}for recommended balance requirements.
+                </p>
+              </div>
             </div>
           </>
         )}
