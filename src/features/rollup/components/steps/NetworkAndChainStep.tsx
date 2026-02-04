@@ -48,14 +48,22 @@ export function NetworkAndChainStep() {
     (rpc) => rpc.network === networkFilter && rpc.type === "BeaconChain"
   );
 
+  // Mainnet fixed parameters
+  const MAINNET_CHALLENGE_PERIOD = "604800"; // 7 days in seconds
+  const TESTNET_CHALLENGE_PERIOD = "12"; // 12 seconds for testnet
+
   const handleAdvancedConfigChange = (checked: boolean) => {
     setValue("networkAndChain.advancedConfig", checked);
     if (checked) {
       // Set default values for advanced fields when they become visible
+      // Use mainnet fixed value if mainnet is selected
+      const challengePeriod = selectedNetwork === "mainnet"
+        ? MAINNET_CHALLENGE_PERIOD
+        : TESTNET_CHALLENGE_PERIOD;
       setValue("networkAndChain.l2BlockTime", "2");
       setValue("networkAndChain.batchSubmissionFreq", "1440");
       setValue("networkAndChain.outputRootFreq", "240");
-      setValue("networkAndChain.challengePeriod", "12");
+      setValue("networkAndChain.challengePeriod", challengePeriod);
       // Trigger validation for advanced fields
       trigger([
         "networkAndChain.l2BlockTime",
@@ -74,7 +82,17 @@ export function NetworkAndChainStep() {
 
   const handleNetworkChange = async (value: string) => {
     setValue("networkAndChain.network", value);
+    // Update challenge period based on network if advanced config is enabled
+    if (advancedConfig) {
+      const challengePeriod = value === "mainnet"
+        ? MAINNET_CHALLENGE_PERIOD
+        : TESTNET_CHALLENGE_PERIOD;
+      setValue("networkAndChain.challengePeriod", challengePeriod);
+    }
     await trigger("networkAndChain.network" as const);
+    if (advancedConfig) {
+      await trigger("networkAndChain.challengePeriod" as const);
+    }
   };
 
   const handleReuseDeploymentChange = (checked: boolean) => {
@@ -509,7 +527,10 @@ export function NetworkAndChainStep() {
                             <TooltipContent>
                               <p>
                                 The period during which outputs can be
-                                challenged (in seconds). Default is 12 seconds.
+                                challenged (in seconds).
+                                {selectedNetwork === "mainnet"
+                                  ? " Fixed to 604800 seconds (7 days) for mainnet."
+                                  : " Default is 12 seconds for testnet."}
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -521,14 +542,20 @@ export function NetworkAndChainStep() {
                         type="number"
                         min="1"
                         step="1"
-                        placeholder="12"
+                        placeholder={selectedNetwork === "mainnet" ? "604800" : "12"}
                         value={formData.networkAndChain?.challengePeriod}
                         onChange={handleChallengePeriodChange}
+                        disabled={selectedNetwork === "mainnet"}
                         className={`mt-1 ${errors.networkAndChain?.challengePeriod
                           ? "border-red-500"
                           : ""
-                          }`}
+                          } ${selectedNetwork === "mainnet" ? "bg-slate-100 cursor-not-allowed" : ""}`}
                       />
+                      {selectedNetwork === "mainnet" && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Fixed to 7 days (604800 seconds) for mainnet security.
+                        </p>
+                      )}
                       {errors.networkAndChain?.challengePeriod && (
                         <p className="text-xs text-red-500 mt-1">
                           {errors.networkAndChain.challengePeriod.message}

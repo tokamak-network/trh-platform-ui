@@ -110,6 +110,20 @@ export const networkAndChainSchema = z
       message: "Challenge Period must be a positive integer",
       path: ["challengePeriod"],
     }
+  )
+  .refine(
+    (data) => {
+      // Mainnet requires fixed challenge period of 604800 seconds (7 days)
+      if (data.network === "mainnet" && data.challengePeriod) {
+        const num = Number(data.challengePeriod);
+        return num === 604800;
+      }
+      return true;
+    },
+    {
+      message: "Mainnet requires Challenge Period to be exactly 604800 seconds (7 days)",
+      path: ["challengePeriod"],
+    }
   );
 
 // Account & AWS Setup Schema
