@@ -24,11 +24,8 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
   // Memoize the account generation function
   const generateAccounts = useCallback(async () => {
     // Only proceed if we have all 12 words
-    if (
-      !seedPhraseStr ||
-      seedPhrase.some((word) => !word) ||
-      seedPhrase.length !== 12
-    ) {
+    const words = seedPhraseStr.split(" ");
+    if (!seedPhraseStr || words.length !== 12 || words.some((word) => !word)) {
       setAccounts([]);
       return;
     }
@@ -96,13 +93,13 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } finally {
       setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedPhraseStr, rpcUrl]);
 
-  // Use effect with proper dependency array - seedPhraseStr contains seedPhrase changes
+  // Use effect with proper dependency array
   useEffect(() => {
     // Only generate accounts if we have all 12 words filled
-    if (seedPhrase.length === 12 && !seedPhrase.some((word) => !word)) {
+    const words = seedPhraseStr.split(" ");
+    if (words.length === 12 && !words.some((word) => !word)) {
       const timer = setTimeout(() => {
         generateAccounts();
       }, 500);
@@ -111,7 +108,6 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
     } else {
       setAccounts([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedPhraseStr, generateAccounts]);
 
   // Function to refresh balances only

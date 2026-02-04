@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
     Card,
     CardDescription,
@@ -23,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { AlertTriangle, Trash2, PauseCircle, Loader2 } from "lucide-react";
 import { ThanosStack, ThanosStackStatus } from "../../../schemas/thanos";
 import { deleteRollup, stopRollup } from "../../../services/rollupService";
+import { rollupKeys } from "../../../api/queries";
 import toast from "react-hot-toast";
 
 interface DangerZoneProps {
@@ -31,6 +33,7 @@ interface DangerZoneProps {
 
 export function DangerZone({ stack }: DangerZoneProps) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [actionType, setActionType] = useState<"delete" | "stop" | null>(null);
     const [confirmName, setConfirmName] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -57,8 +60,8 @@ export function DangerZone({ stack }: DangerZoneProps) {
                 await stopRollup(stack.id);
                 toast.success("Rollup stop initiated");
                 handleClose();
-                // Ideally trigger a refresh of the parent component here
-                window.location.reload();
+                // Refresh the stack data
+                queryClient.invalidateQueries({ queryKey: rollupKeys.thanosStack(stack.id) });
             }
         } catch (error) {
             console.error(`Failed to ${actionType} rollup:`, error);
