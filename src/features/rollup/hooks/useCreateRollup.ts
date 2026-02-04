@@ -157,8 +157,8 @@ export function useCreateRollup() {
 
       if (!validationResult.allValid) {
         const errors = Object.entries(validationResult.checks)
-          .filter(([_, check]: [string, any]) => !check.valid)
-          .map(([key, check]: [string, any]) => `${key}: ${check.error}`)
+          .filter(([, check]) => !check.valid)
+          .map(([key, check]) => `${key}: ${check.error}`)
           .join("\n");
 
         toast.error(`Validation Failed:\n${errors}`, {
