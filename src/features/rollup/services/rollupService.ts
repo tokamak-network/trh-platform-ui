@@ -26,6 +26,11 @@ export const deployRollup = async (request: RollupDeploymentRequest) => {
   return response;
 };
 
+export const validateDeployment = async (request: any) => {
+  const response = await apiPost<any>("stacks/thanos/validate-deployment", request);
+  return response.data;
+};
+
 export const mockRollups: Rollup[] = [
   {
     id: "1",
@@ -128,17 +133,15 @@ export const downloadThanosDeploymentLogs = async (
 ): Promise<void> => {
   try {
     const response = await fetch(
-      `${
-        env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
+      `${env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
       }/api/v1/stacks/thanos/${stackId}/deployments/${deploymentId}/logs/download`,
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${
-            typeof window !== "undefined"
+          Authorization: `Bearer ${typeof window !== "undefined"
               ? localStorage.getItem("accessToken")
               : ""
-          }`,
+            }`,
         },
       }
     );
@@ -201,17 +204,15 @@ export const downloadThanosRollupConfig = async (
 ): Promise<void> => {
   try {
     const response = await fetch(
-      `${
-        env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
+      `${env("NEXT_PUBLIC_API_BASE_URL") || "http://localhost:8000"
       }/api/v1/stacks/thanos/${stackId}/rollupconfig`,
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${
-            typeof window !== "undefined"
+          Authorization: `Bearer ${typeof window !== "undefined"
               ? localStorage.getItem("accessToken")
               : ""
-          }`,
+            }`,
         },
       }
     );

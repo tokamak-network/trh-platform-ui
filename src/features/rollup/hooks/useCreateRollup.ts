@@ -12,6 +12,7 @@ import {
   createRollupSchema,
 } from "../schemas/create-rollup";
 import { useRollupCreationContext, defaultFormData } from "../context/RollupCreationContext";
+import { toast } from "react-hot-toast";
 
 export const STEPS = [
   {
@@ -109,6 +110,73 @@ export function useCreateRollup() {
     }
 
     const formData = form.getValues();
+
+    // Pre-deployment Validation
+    try {
+      toast.loading("Validating deployment parameters...", { id: "validate-deployment" });
+
+      const validationPayload = {
+        network: formData.networkAndChain.network,
+        l1RpcUrl: formData.networkAndChain.l1RpcUrl,
+        l1BeaconUrl: formData.networkAndChain.l1BeaconUrl,
+        l2BlockTime: formData.networkAndChain.l2BlockTime
+          ? parseInt(formData.networkAndChain.l2BlockTime)
+          : 6,
+        batchSubmissionFrequency: formData.networkAndChain.batchSubmissionFreq
+          ? parseInt(formData.networkAndChain.batchSubmissionFreq)
+          : 1440,
+        outputRootFrequency: formData.networkAndChain.outputRootFreq
+          ? parseInt(formData.networkAndChain.outputRootFreq)
+          : 240,
+        challengePeriod: formData.networkAndChain.challengePeriod
+          ? parseInt(formData.networkAndChain.challengePeriod)
+          : 12,
+        // Use ADDRESSES (not private keys) for validation
+        adminAddress: formData.accountAndAws.adminAccount,
+        sequencerAddress: formData.accountAndAws.sequencerAccount,
+        batcherAddress: formData.accountAndAws.batchAccount,
+        proposerAddress: formData.accountAndAws.proposerAccount,
+        awsAccessKey: formData.accountAndAws.awsAccessKey,
+        awsSecretAccessKey: formData.accountAndAws.awsSecretKey,
+        awsRegion: formData.accountAndAws.awsRegion,
+        chainName: formData.networkAndChain.chainName,
+        mainnetConfirmation:
+          formData.networkAndChain.network === "mainnet" &&
+            formData.confirmation?.agreedToMainnetRisks
+            ? {
+              acknowledgedIrreversibility: true,
+              acknowledgedCosts: true,
+              acknowledgedRisks: true,
+              confirmationTimestamp: new Date().toISOString(),
+            }
+            : undefined,
+      };
+
+      const { validateDeployment } = await import("../services/rollupService");
+      const validationResult = await validateDeployment(validationPayload);
+
+      if (!validationResult.allValid) {
+        const errors = Object.entries(validationResult.checks)
+          .filter(([_, check]: [string, any]) => !check.valid)
+          .map(([key, check]: [string, any]) => `${key}: ${check.error}`)
+          .join("\n");
+
+        toast.error(`Validation Failed:\n${errors}`, {
+          id: "validate-deployment",
+          duration: 5000,
+        });
+        return;
+      }
+
+      toast.success("Validation passed!", { id: "validate-deployment" });
+    } catch (error) {
+      console.error("Validation error:", error);
+      toast.error("Validation service unavailable. Proceeding with caution...", {
+        id: "validate-deployment",
+      });
+      // Optionally return here to enforce validation success
+    }
+
     const request = convertFormToDeploymentRequest(formData);
 
     form.setError("root", { message: "" });
