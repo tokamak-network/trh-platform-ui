@@ -348,8 +348,7 @@ export function NetworkAndChainStep() {
                     Reuse Existing Deployment
                   </Label>
                   <p className="text-xs text-slate-500">
-                    Check this if you want to connect to an existing contract
-                    deployment instead of deploying new ones.
+                    Uses existing implementation contracts. Uncheck to deploy both implementation and proxy contracts from scratch.
                   </p>
                 </div>
               </div>
