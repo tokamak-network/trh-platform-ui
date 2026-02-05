@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CHAIN_NETWORK } from "../const";
 
 // Network & Chain Schema
 export const networkAndChainSchema = z
@@ -25,7 +26,8 @@ export const networkAndChainSchema = z
     batchSubmissionFreq: z.string().optional(),
     outputRootFreq: z.string().optional(),
     challengePeriod: z.string().optional(),
-    reuseDeployment: z.boolean().optional(),
+reuseDeployment: z.boolean().optional(),
+    enableBackup: z.boolean(),
   })
   .refine(
     (data) => {
@@ -193,6 +195,13 @@ export const createRollupSchema = z.object({
 
 export type CreateRollupFormData = z.infer<typeof createRollupSchema>;
 
+// Backup configuration schema
+export const backupConfigSchema = z.object({
+  enabled: z.boolean(),
+});
+
+export type BackupConfig = z.infer<typeof backupConfigSchema>;
+
 // Backend request schema
 export const rollupDeploymentSchema = z.object({
   network: z.string(),
@@ -218,7 +227,7 @@ export const rollupDeploymentSchema = z.object({
       nameInfo: z.string().optional(),
     })
     .optional(),
-  reuseDeployment: z.boolean(),
+reuseDeployment: z.boolean(),
   mainnetConfirmation: z
     .object({
       acknowledgedIrreversibility: z.boolean(),
@@ -227,6 +236,7 @@ export const rollupDeploymentSchema = z.object({
       confirmationTimestamp: z.string(),
     })
     .optional(),
+  backupConfig: backupConfigSchema.optional(),
 });
 
 export type RollupDeploymentRequest = z.infer<typeof rollupDeploymentSchema>;
@@ -238,6 +248,12 @@ export const convertFormToDeploymentRequest = (
   formData: CreateRollupFormData
 ): RollupDeploymentRequest => {
   const { networkAndChain, accountAndAws, daoCandidate, confirmation } = formData;
+
+  // For mainnet, backup is always enabled. For testnet, use the form value (defaults to false)
+  const backupEnabled =
+    networkAndChain.network === CHAIN_NETWORK.MAINNET
+      ? true
+      : networkAndChain.enableBackup ?? false;
 
   const request: RollupDeploymentRequest = {
     network: networkAndChain.network,
@@ -273,7 +289,7 @@ export const convertFormToDeploymentRequest = (
         nameInfo: daoCandidate.nameInfo,
       }
       : undefined,
-    reuseDeployment: networkAndChain.reuseDeployment || false,
+reuseDeployment: networkAndChain.reuseDeployment || false,
     mainnetConfirmation:
       networkAndChain.network === "mainnet" && confirmation?.agreedToMainnetRisks
         ? {
@@ -283,6 +299,9 @@ export const convertFormToDeploymentRequest = (
           confirmationTimestamp: new Date().toISOString(),
         }
         : undefined,
+    backupConfig: {
+      enabled: backupEnabled,
+    },
   };
 
   return request;

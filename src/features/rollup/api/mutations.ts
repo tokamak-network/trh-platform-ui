@@ -9,8 +9,18 @@ import {
   updateChainConfiguration,
   ChainConfigurationUpdateRequest,
   createRegisterMetadataDAO,
+  createBackupSnapshot,
+  restoreFromBackup,
+  configureBackup,
+  attachBackupStorage,
+  cleanupBackup,
 } from "../services/rollupService";
 import { CreateRegisterMetadataDAORequest } from "../schemas/register-metadata-dao";
+import {
+  BackupConfigureRequest,
+  BackupAttachRequest,
+  BackupRestoreRequest,
+} from "../schemas/backup";
 import { invalidateThanosStacks } from "../hooks/useThanosStack";
 import { queryClient } from "@/providers/query-provider";
 import { rollupKeys } from "./queries";
@@ -217,6 +227,185 @@ export const useCreateRegisterMetadataDAOMutation = (options?: {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to register metadata", {
         id: "register-metadata-dao",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useCreateSnapshotMutation = (options?: {
+  onSuccess?: (data: { task_id: string }) => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => createBackupSnapshot(id),
+    onMutate: () => {
+      toast.loading("Creating backup snapshot...", {
+        id: "create-snapshot",
+      });
+    },
+    onSuccess: (data, { id }) => {
+      toast.success("Backup snapshot creation initiated successfully!", {
+        id: "create-snapshot",
+      });
+      if (id) {
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupStatus(id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupCheckpoints(id),
+        });
+      }
+      options?.onSuccess?.(data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create backup snapshot", {
+        id: "create-snapshot",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useRestoreBackupMutation = (options?: {
+  onSuccess?: (data: { task_id: string }) => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      request,
+    }: {
+      id: string;
+      request: BackupRestoreRequest;
+    }) => restoreFromBackup(id, request),
+    onMutate: () => {
+      toast.loading("Restoring from backup...", {
+        id: "restore-backup",
+      });
+    },
+    onSuccess: (data, { id }) => {
+      toast.success("Backup restore initiated successfully!", {
+        id: "restore-backup",
+      });
+      if (id) {
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupStatus(id),
+        });
+      }
+      options?.onSuccess?.(data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to restore from backup", {
+        id: "restore-backup",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useConfigureBackupMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      request,
+    }: {
+      id: string;
+      request: BackupConfigureRequest;
+    }) => configureBackup(id, request),
+    onMutate: () => {
+      toast.loading("Configuring backup...", {
+        id: "configure-backup",
+      });
+    },
+    onSuccess: (_data, { id }) => {
+      toast.success("Backup configuration updated successfully!", {
+        id: "configure-backup",
+      });
+      if (id) {
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupStatus(id),
+        });
+      }
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to configure backup", {
+        id: "configure-backup",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useAttachStorageMutation = (options?: {
+  onSuccess?: (data: { task_id: string }) => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      request,
+    }: {
+      id: string;
+      request: BackupAttachRequest;
+    }) => attachBackupStorage(id, request),
+    onMutate: () => {
+      toast.loading("Attaching storage...", {
+        id: "attach-storage",
+      });
+    },
+    onSuccess: (data, { id }) => {
+      toast.success("Storage attached successfully!", {
+        id: "attach-storage",
+      });
+      if (id) {
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupStatus(id),
+        });
+      }
+      options?.onSuccess?.(data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to attach storage", {
+        id: "attach-storage",
+      });
+      options?.onError?.(error);
+    },
+  });
+};
+
+export const useCleanupBackupMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}) => {
+  return useMutation({
+    mutationFn: (id: string) => cleanupBackup(id),
+    onMutate: () => {
+      toast.loading("Cleaning up backup resources...", {
+        id: "cleanup-backup",
+      });
+    },
+    onSuccess: (_data, id) => {
+      toast.success("Backup cleanup completed successfully!", {
+        id: "cleanup-backup",
+      });
+      if (id) {
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupStatus(id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: rollupKeys.backupCheckpoints(id),
+        });
+      }
+      options?.onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to cleanup backup resources", {
+        id: "cleanup-backup",
       });
       options?.onError?.(error);
     },

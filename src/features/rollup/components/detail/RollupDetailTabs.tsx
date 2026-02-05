@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ThanosStack } from "../../schemas/thanos";
+import { ThanosStack, ThanosStackStatus } from "../../schemas/thanos";
 import { RollupDetailTab } from "../../schemas/detail-tabs";
 import {
   OverviewTab,
@@ -12,6 +12,7 @@ import {
   LogsTab,
   DeploymentsTab,
   MetadataTab,
+  BackupTab,
 } from "./tabs";
 import { ComponentsTab } from "@/features/integrations";
 
@@ -27,6 +28,10 @@ export function RollupDetailTabs({
   const router = useRouter();
 
   const handleTabChange = (value: string) => {
+    if (value === "backup" && stack?.status !== ThanosStackStatus.DEPLOYED) {
+      return;
+    }
+
     // Get the current pathname and search params
     const pathname = window.location.pathname;
     const searchParams = new URLSearchParams(window.location.search);
@@ -44,7 +49,7 @@ export function RollupDetailTabs({
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-5 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+      <TabsList className="grid w-full grid-cols-6 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
         <TabsTrigger
           value="overview"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -62,6 +67,13 @@ export function RollupDetailTabs({
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
         >
           Integrations
+        </TabsTrigger>
+        <TabsTrigger
+          value="backup"
+          disabled={stack?.status !== ThanosStackStatus.DEPLOYED}
+          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Backup
         </TabsTrigger>
         {/* <TabsTrigger
           value="monitoring"
@@ -97,6 +109,11 @@ export function RollupDetailTabs({
       {/* Components Tab */}
       <TabsContent value="components" className="space-y-6">
         <ComponentsTab stack={stack} />
+      </TabsContent>
+
+      {/* Backup Tab */}
+      <TabsContent value="backup" className="space-y-6">
+        <BackupTab stack={stack} />
       </TabsContent>
 
       {/* Monitoring Tab */}

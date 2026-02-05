@@ -22,6 +22,7 @@ import { useFormContext } from "react-hook-form";
 import { RPCSelector } from "@/components/molecules";
 import { useRpcUrls } from "@/features/configuration/rpc-management/hooks/useRpcUrls";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
+import { CHAIN_NETWORK } from "../../const";
 
 export function NetworkAndChainStep() {
   const {
@@ -40,7 +41,7 @@ export function NetworkAndChainStep() {
   const { rpcUrls, addRpcUrl } = useRpcUrls();
 
   // Filter RPC URLs based on selected network
-  const networkFilter = selectedNetwork === "mainnet" ? "Mainnet" : "Testnet";
+  const networkFilter = selectedNetwork === CHAIN_NETWORK.MAINNET ? "Mainnet" : "Testnet";
   const executionLayerRpcs = rpcUrls.filter(
     (rpc) => rpc.network === networkFilter && rpc.type === "ExecutionLayer"
   );
@@ -220,7 +221,7 @@ export function NetworkAndChainStep() {
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="testnet">
+                        <SelectItem value={CHAIN_NETWORK.TESTNET}>
                           <div className="flex flex-col">
                             <span className="font-medium">Testnet</span>
                             <span className="text-xs text-slate-500">
@@ -228,7 +229,7 @@ export function NetworkAndChainStep() {
                             </span>
                           </div>
                         </SelectItem>
-                        <SelectItem value="mainnet">
+                        <SelectItem value={CHAIN_NETWORK.MAINNET}>
                           <div className="flex flex-col">
                             <span className="font-medium">Mainnet</span>
                             <span className="text-xs text-slate-500">

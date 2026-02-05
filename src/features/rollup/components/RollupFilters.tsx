@@ -10,6 +10,7 @@ import {
 import { Search } from "lucide-react";
 import { ThanosStackStatus } from "../schemas/thanos";
 import { RollupType } from "../schemas/rollup";
+import { CHAIN_NETWORK } from "../const";
 
 interface RollupFiltersProps {
   searchTerm: string;
@@ -97,8 +98,8 @@ export function RollupFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Networks</SelectItem>
-              <SelectItem value="testnet">Testnet</SelectItem>
-              <SelectItem value="mainnet">Mainnet</SelectItem>
+              <SelectItem value={CHAIN_NETWORK.TESTNET}>Testnet</SelectItem>
+              <SelectItem value={CHAIN_NETWORK.MAINNET}>Mainnet</SelectItem>
             </SelectContent>
           </Select>
         </div>

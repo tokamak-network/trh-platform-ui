@@ -11,15 +11,14 @@ import { env } from "next-runtime-env";
 // This solves CORS issues by proxying requests through the Next.js server
 const API_BASE_URL = "/api/proxy/";
 
-console.log("Using API Proxy URL:", API_BASE_URL);
-
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
+// Bypass ngrok browser warning page
+    "ngrok-skip-browser-warning": "69420",
   },
 });
 

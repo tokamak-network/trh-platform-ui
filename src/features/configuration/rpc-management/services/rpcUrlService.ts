@@ -6,6 +6,7 @@ import {
   rpcUrlsListResponseSchema,
   rpcUrlResponseSchema,
 } from "../../schemas";
+import { CHAIN_NETWORK } from "@/features/rollup/const";
 
 class RPCUrlService {
   async getAllRpcUrls(): Promise<RPCUrl[]> {
@@ -133,9 +134,9 @@ class RPCUrlService {
   // Helper to get network badge color
   getNetworkBadgeColor(network: string): string {
     switch (network.toLowerCase()) {
-      case "mainnet":
+      case CHAIN_NETWORK.MAINNET:
         return "bg-green-100 text-green-800";
-      case "testnet":
+      case CHAIN_NETWORK.TESTNET:
         return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
