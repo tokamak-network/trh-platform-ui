@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CHAIN_NETWORK } from "../const";
 
 // Network & Chain Schema
 export const networkAndChainSchema = z
@@ -25,6 +26,7 @@ export const networkAndChainSchema = z
     batchSubmissionFreq: z.string().optional(),
     outputRootFreq: z.string().optional(),
     challengePeriod: z.string().optional(),
+    enableBackup: z.boolean(),
   })
   .refine(
     (data) => {
@@ -155,6 +157,13 @@ export const createRollupSchema = z.object({
 
 export type CreateRollupFormData = z.infer<typeof createRollupSchema>;
 
+// Backup configuration schema
+export const backupConfigSchema = z.object({
+  enabled: z.boolean(),
+});
+
+export type BackupConfig = z.infer<typeof backupConfigSchema>;
+
 // Backend request schema
 export const rollupDeploymentSchema = z.object({
   network: z.string(),
@@ -180,6 +189,7 @@ export const rollupDeploymentSchema = z.object({
       nameInfo: z.string().optional(),
     })
     .optional(),
+  backupConfig: backupConfigSchema.optional(),
 });
 
 export type RollupDeploymentRequest = z.infer<typeof rollupDeploymentSchema>;
@@ -191,6 +201,12 @@ export const convertFormToDeploymentRequest = (
   formData: CreateRollupFormData
 ): RollupDeploymentRequest => {
   const { networkAndChain, accountAndAws, daoCandidate } = formData;
+
+  // For mainnet, backup is always enabled. For testnet, use the form value (defaults to false)
+  const backupEnabled =
+    networkAndChain.network === CHAIN_NETWORK.MAINNET
+      ? true
+      : networkAndChain.enableBackup ?? false;
 
   const request: RollupDeploymentRequest = {
     network: networkAndChain.network,
@@ -226,6 +242,9 @@ export const convertFormToDeploymentRequest = (
           nameInfo: daoCandidate.nameInfo,
         }
       : undefined,
+    backupConfig: {
+      enabled: backupEnabled,
+    },
   };
 
   return request;

@@ -8,10 +8,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, AlertCircle, Rocket, Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { CheckCircle, AlertCircle, Rocket, Eye, EyeOff, Database } from "lucide-react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
+import { CHAIN_NETWORK } from "../../const";
 
 interface DataItem {
   label: string;
@@ -25,10 +28,11 @@ interface Section {
 }
 
 export function ReviewAndDeployStep() {
-  const { watch } = useFormContext<CreateRollupFormData>();
+  const { watch, setValue } = useFormContext<CreateRollupFormData>();
   const formData = watch();
   const [showSecretKey, setShowSecretKey] = useState(false);
-
+  
+  const isTestnet = formData.networkAndChain.network === CHAIN_NETWORK.TESTNET;  
   const sections: (Section | false)[] = [
     {
       title: "Network & Chain",
@@ -134,6 +138,45 @@ export function ReviewAndDeployStep() {
           })}
         </CardContent>
       </Card>
+
+      {isTestnet && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-purple-600" />
+              Backup Configuration
+            </CardTitle>
+            <CardDescription>
+              Configure automatic backup for your chain data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="enableBackup"
+                checked={formData.networkAndChain.enableBackup ?? false}
+                onCheckedChange={(checked) =>
+                  setValue("networkAndChain.enableBackup", checked === true)
+                }
+                className="mt-1 border-2 border-gray-500"
+              />
+              <div className="space-y-1">
+                <Label
+                  htmlFor="enableBackup"
+                  className="text-sm font-medium leading-none cursor-pointer"
+                >
+                  Enable automatic backup for this chain
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  When enabled, AWS Backup will be configured to automatically
+                  backup your chain data daily. This can be configured or enabled
+                  later from the Backup tab.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Deployment Actions */}
       <Card>
