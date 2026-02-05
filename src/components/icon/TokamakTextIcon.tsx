@@ -1,6 +1,8 @@
 import * as React from "react";
 
-export const TokamakTextIcon: React.FC<React.SVGProps<SVGSVGElement>> = () => (
+export const TokamakTextIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
+  props
+) => (
   <svg
     width="97"
     height="19"

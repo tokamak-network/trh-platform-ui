@@ -1,6 +1,8 @@
 import * as React from "react";
 
-export const RollupHubTextIcon: React.FC<React.SVGProps<SVGSVGElement>> = () => (
+export const RollupHubTextIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
+  props
+) => (
   <svg
     width="112"
     height="23"

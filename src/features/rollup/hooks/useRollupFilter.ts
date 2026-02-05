@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { ThanosStack } from "../schemas/thanos";
+import { RollupType } from "../schemas/rollup";
+import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 
 interface UseRollupFilterProps {
   rollups: ThanosStack[];

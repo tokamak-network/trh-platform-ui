@@ -24,8 +24,11 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
   // Memoize the account generation function
   const generateAccounts = useCallback(async () => {
     // Only proceed if we have all 12 words
-    const words = seedPhraseStr.split(" ");
-    if (!seedPhraseStr || words.length !== 12 || words.some((word) => !word)) {
+    if (
+      !seedPhraseStr ||
+      seedPhrase.some((word) => !word) ||
+      seedPhrase.length !== 12
+    ) {
       setAccounts([]);
       return;
     }
@@ -98,8 +101,7 @@ export function useEthereumAccounts(seedPhrase: string[], rpcUrl: string) {
   // Use effect with proper dependency array
   useEffect(() => {
     // Only generate accounts if we have all 12 words filled
-    const words = seedPhraseStr.split(" ");
-    if (words.length === 12 && !words.some((word) => !word)) {
+    if (seedPhrase.length === 12 && !seedPhrase.some((word) => !word)) {
       const timer = setTimeout(() => {
         generateAccounts();
       }, 500);

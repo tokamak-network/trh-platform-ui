@@ -82,7 +82,7 @@ const bottomNavItems: NavItem[] = [
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
-  const [isCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { user } = useAuthContext();
   const pathname = usePathname();
   const router = useRouter();

@@ -47,6 +47,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
     isLoading,
     isFetching,
     isError,
+    error,
     refetch,
   } = useIntegrationsQuery(stack?.id || "");
 

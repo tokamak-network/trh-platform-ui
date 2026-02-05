@@ -49,7 +49,7 @@ const getServiceTypeLabel = (type: string) => {
   return typeMap[type] || type;
 };
 
-const getServiceTypeColor = () => {
+const getServiceTypeColor = (type: string) => {
   // Use consistent orange styling like AWS credentials
   return "bg-orange-100 text-orange-600";
 };
@@ -87,7 +87,9 @@ export function APIKeyCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center ${getServiceTypeColor()}`}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center ${getServiceTypeColor(
+                apiKey.type
+              )}`}
             >
               <Key className="w-5 h-5" />
             </div>

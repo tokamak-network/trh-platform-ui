@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 
-export function LogsTab({}: RollupDetailTabProps) {
+export function LogsTab({ stack }: RollupDetailTabProps) {
   return (
     <div className="space-y-6">
       <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 to-cyan-100">

@@ -89,7 +89,7 @@ export function CreateRollupStepper({
           })}
         </div>
 
-        {steps.map((step) => {
+        {steps.map((step, index) => {
           const Icon = step.icon;
           const isCompleted = step.id < currentStep;
           const isCurrent = step.id === currentStep;

@@ -3,6 +3,8 @@ import {
   AWSCredential,
   CreateAWSCredentialRequest,
   UpdateAWSCredentialRequest,
+  AWSCredentialsListResponse,
+  AWSCredentialResponse,
   awsCredentialsListResponseSchema,
   awsCredentialResponseSchema,
   awsRegionsResponseSchema,
@@ -184,7 +186,7 @@ export class AwsCredentialsService {
   async copyToClipboard(text: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
-    } catch {
+    } catch (error) {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = text;

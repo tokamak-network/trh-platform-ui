@@ -11,7 +11,7 @@ import { calculateRollupStats } from "../services/rollupService";
 
 export function RollupManagement() {
   const router = useRouter();
-  const { stacks } = useThanosStack();
+  const { stacks, isLoading } = useThanosStack();
   const stats = calculateRollupStats(stacks);
 
   const {
@@ -39,6 +39,8 @@ export function RollupManagement() {
       <RollupStats
         totalRollups={stats.totalRollups}
         activeRollups={stats.activeRollups}
+        totalUsers={stats.totalUsers}
+        totalTVL={stats.totalTVL}
       />
 
       {/* Filters */}

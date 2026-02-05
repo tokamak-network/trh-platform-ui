@@ -2,7 +2,7 @@ import * as React from "react";
 
 export const RollupItemIcon: React.FC<
   { isSelected?: boolean } & React.SVGProps<SVGSVGElement>
-> = ({ isSelected }) => {
+> = ({ isSelected, ...props }) => {
   if (isSelected) {
     return (
       <svg
