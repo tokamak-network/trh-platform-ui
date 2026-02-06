@@ -28,6 +28,7 @@ const defaultFormData: CreateRollupFormData = {
     batchSubmissionFreq: "1440",
     outputRootFreq: "240",
     challengePeriod: "12",
+reuseDeployment: true,
     enableBackup: false,
   },
   accountAndAws: {
@@ -47,6 +48,9 @@ const defaultFormData: CreateRollupFormData = {
     awsRegion: "",
   },
   daoCandidate: undefined,
+  confirmation: {
+    agreedToMainnetRisks: false,
+  },
 };
 
 const initialState: RollupCreationState = {

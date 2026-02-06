@@ -28,7 +28,7 @@ interface AwsConfigProps {
   onBack: () => void;
 }
 
-export function AwsConfig({ onNext, onBack }: AwsConfigProps) {
+export function AwsConfig({ onNext }: AwsConfigProps) {
   const {
     setValue,
     watch,
@@ -104,18 +104,14 @@ export function AwsConfig({ onNext, onBack }: AwsConfigProps) {
     }
   }, [regions, currentRegion, isLoadingRegions, setValue]);
 
-  const handleNext = () => {
-    if (selectedCredentialId && watch("accountAndAws.awsRegion")) {
+  const awsRegion = watch("accountAndAws.awsRegion");
+
+  // Call onNext when both fields are filled
+  React.useEffect(() => {
+    if (selectedCredentialId && awsRegion) {
       onNext();
     }
-  };
-
-  // Call handleNext when both fields are filled
-  React.useEffect(() => {
-    if (selectedCredentialId && watch("accountAndAws.awsRegion")) {
-      handleNext();
-    }
-  }, [selectedCredentialId, watch("accountAndAws.awsRegion")]);
+  }, [selectedCredentialId, awsRegion, onNext]);
 
   return (
     <div className="space-y-6">

@@ -21,6 +21,17 @@ const publicRoutes = ["/auth", "/design-system"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Add ngrok header for proxy API requests
+  if (pathname.startsWith("/api/proxy")) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("ngrok-skip-browser-warning", "true");
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
   // Check if the current path is a protected route
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
@@ -31,9 +42,9 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  // Check if the path is for static assets or API routes
+  // Check if the path is for static assets or API routes (excluding proxy)
   const isStaticOrApiRoute =
-    pathname.startsWith("/api") ||
+    (pathname.startsWith("/api") && !pathname.startsWith("/api/proxy")) ||
     pathname.startsWith("/_next") ||
     pathname.includes("favicon.ico");
 
@@ -81,12 +92,12 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except for:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * NOTE: We removed 'api' from exclusion to handle /api/proxy in middleware
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

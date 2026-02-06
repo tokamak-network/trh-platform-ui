@@ -26,6 +26,7 @@ export const networkAndChainSchema = z
     batchSubmissionFreq: z.string().optional(),
     outputRootFreq: z.string().optional(),
     challengePeriod: z.string().optional(),
+reuseDeployment: z.boolean().optional(),
     enableBackup: z.boolean(),
   })
   .refine(
@@ -111,6 +112,20 @@ export const networkAndChainSchema = z
       message: "Challenge Period must be a positive integer",
       path: ["challengePeriod"],
     }
+  )
+  .refine(
+    (data) => {
+      // Mainnet requires fixed challenge period of 604800 seconds (7 days)
+      if (data.network === "mainnet" && data.challengePeriod) {
+        const num = Number(data.challengePeriod);
+        return num === 604800;
+      }
+      return true;
+    },
+    {
+      message: "Mainnet requires Challenge Period to be exactly 604800 seconds (7 days)",
+      path: ["challengePeriod"],
+    }
   );
 
 // Account & AWS Setup Schema
@@ -131,7 +146,24 @@ export const accountAndAwsSchema = z.object({
   awsAccessKey: z.string(),
   awsSecretKey: z.string(),
   awsRegion: z.string().min(1, "AWS region is required"),
-});
+}).refine(
+  (data) => {
+    const accounts = [
+      data.adminAccount,
+      data.proposerAccount,
+      data.batchAccount,
+      data.sequencerAccount,
+    ];
+    // Filter out empty strings to avoid validation errors on empty fields
+    const filledAccounts = accounts.filter((acc) => acc.length > 0);
+    const uniqueAccounts = new Set(filledAccounts);
+    return uniqueAccounts.size === filledAccounts.length;
+  },
+  {
+    message: "Each role must have a unique account address",
+    path: ["adminAccount"], // Display error on admin account field
+  }
+);
 
 // DAO Candidate Schema
 export const daoCandidateSchema = z
@@ -148,11 +180,17 @@ export const daoCandidateSchema = z
   })
   .optional();
 
+// Confirmation Schema
+export const confirmationSchema = z.object({
+  agreedToMainnetRisks: z.boolean().optional(),
+});
+
 // Combined schema for the entire form
 export const createRollupSchema = z.object({
   networkAndChain: networkAndChainSchema,
   accountAndAws: accountAndAwsSchema,
   daoCandidate: daoCandidateSchema,
+  confirmation: confirmationSchema,
 });
 
 export type CreateRollupFormData = z.infer<typeof createRollupSchema>;
@@ -189,6 +227,15 @@ export const rollupDeploymentSchema = z.object({
       nameInfo: z.string().optional(),
     })
     .optional(),
+reuseDeployment: z.boolean(),
+  mainnetConfirmation: z
+    .object({
+      acknowledgedIrreversibility: z.boolean(),
+      acknowledgedCosts: z.boolean(),
+      acknowledgedRisks: z.boolean(),
+      confirmationTimestamp: z.string(),
+    })
+    .optional(),
   backupConfig: backupConfigSchema.optional(),
 });
 
@@ -200,7 +247,7 @@ export type RollupDeploymentRequest = z.infer<typeof rollupDeploymentSchema>;
 export const convertFormToDeploymentRequest = (
   formData: CreateRollupFormData
 ): RollupDeploymentRequest => {
-  const { networkAndChain, accountAndAws, daoCandidate } = formData;
+  const { networkAndChain, accountAndAws, daoCandidate, confirmation } = formData;
 
   // For mainnet, backup is always enabled. For testnet, use the form value (defaults to false)
   const backupEnabled =
@@ -237,11 +284,21 @@ export const convertFormToDeploymentRequest = (
     registerCandidate: !!daoCandidate,
     registerCandidateParams: daoCandidate
       ? {
-          amount: parseFloat(daoCandidate.amount),
-          memo: daoCandidate.memo,
-          nameInfo: daoCandidate.nameInfo,
-        }
+        amount: parseFloat(daoCandidate.amount),
+        memo: daoCandidate.memo,
+        nameInfo: daoCandidate.nameInfo,
+      }
       : undefined,
+reuseDeployment: networkAndChain.reuseDeployment || false,
+    mainnetConfirmation:
+      networkAndChain.network === "mainnet" && confirmation?.agreedToMainnetRisks
+        ? {
+          acknowledgedIrreversibility: true,
+          acknowledgedCosts: true,
+          acknowledgedRisks: true,
+          confirmationTimestamp: new Date().toISOString(),
+        }
+        : undefined,
     backupConfig: {
       enabled: backupEnabled,
     },

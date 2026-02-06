@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Network, Database, Settings, Info } from "lucide-react";
+import { Network, Database, Settings, Info, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -36,6 +35,7 @@ export function NetworkAndChainStep() {
   const formData = watch();
   const advancedConfig = watch("networkAndChain.advancedConfig");
   const selectedNetwork = watch("networkAndChain.network");
+  const reuseDeployment = watch("networkAndChain.reuseDeployment");
 
   // Get RPC URLs from configuration
   const { rpcUrls, addRpcUrl } = useRpcUrls();
@@ -49,14 +49,22 @@ export function NetworkAndChainStep() {
     (rpc) => rpc.network === networkFilter && rpc.type === "BeaconChain"
   );
 
+  // Mainnet fixed parameters
+  const MAINNET_CHALLENGE_PERIOD = "604800"; // 7 days in seconds
+  const TESTNET_CHALLENGE_PERIOD = "12"; // 12 seconds for testnet
+
   const handleAdvancedConfigChange = (checked: boolean) => {
     setValue("networkAndChain.advancedConfig", checked);
     if (checked) {
       // Set default values for advanced fields when they become visible
+      // Use mainnet fixed value if mainnet is selected
+      const challengePeriod = selectedNetwork === "mainnet"
+        ? MAINNET_CHALLENGE_PERIOD
+        : TESTNET_CHALLENGE_PERIOD;
       setValue("networkAndChain.l2BlockTime", "2");
       setValue("networkAndChain.batchSubmissionFreq", "1440");
       setValue("networkAndChain.outputRootFreq", "240");
-      setValue("networkAndChain.challengePeriod", "12");
+      setValue("networkAndChain.challengePeriod", challengePeriod);
       // Trigger validation for advanced fields
       trigger([
         "networkAndChain.l2BlockTime",
@@ -75,7 +83,21 @@ export function NetworkAndChainStep() {
 
   const handleNetworkChange = async (value: string) => {
     setValue("networkAndChain.network", value);
+    // Update challenge period based on network if advanced config is enabled
+    if (advancedConfig) {
+      const challengePeriod = value === "mainnet"
+        ? MAINNET_CHALLENGE_PERIOD
+        : TESTNET_CHALLENGE_PERIOD;
+      setValue("networkAndChain.challengePeriod", challengePeriod);
+    }
     await trigger("networkAndChain.network" as const);
+    if (advancedConfig) {
+      await trigger("networkAndChain.challengePeriod" as const);
+    }
+  };
+
+  const handleReuseDeploymentChange = (checked: boolean) => {
+    setValue("networkAndChain.reuseDeployment", checked);
   };
 
   const handleChainNameChange = async (
@@ -152,6 +174,21 @@ export function NetworkAndChainStep() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
+            {selectedNetwork === "mainnet" && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-red-900">
+                    Mainnet Production Environment
+                  </h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    You are deploying to the mainnet production environment.
+                    This operation will consume real assets and cannot be
+                    undone. Please double-check all configurations.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Network Selection */}
               <Card className="bg-slate-50 border-slate-200 shadow-sm">
@@ -176,11 +213,10 @@ export function NetworkAndChainStep() {
                       onValueChange={handleNetworkChange}
                     >
                       <SelectTrigger
-                        className={`mt-1 ${
-                          errors.networkAndChain?.network
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.network
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       >
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
@@ -235,11 +271,10 @@ export function NetworkAndChainStep() {
                       placeholder="e.g. my-l2-chain"
                       value={formData.networkAndChain?.chainName}
                       onChange={handleChainNameChange}
-                      className={`mt-1 ${
-                        errors.networkAndChain?.chainName
-                          ? "border-red-500"
-                          : ""
-                      }`}
+                      className={`mt-1 ${errors.networkAndChain?.chainName
+                        ? "border-red-500"
+                        : ""
+                        }`}
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       A unique name for your L2 chain. Must start with a letter
@@ -299,6 +334,27 @@ export function NetworkAndChainStep() {
               />
             </div>
 
+            {selectedNetwork === "mainnet" && (
+              <div className="flex items-center space-x-2 p-4 bg-slate-50 rounded-lg border border-slate-200 mb-4">
+                <Checkbox
+                  id="reuse-deployment"
+                  checked={reuseDeployment}
+                  onCheckedChange={handleReuseDeploymentChange}
+                />
+                <div className="flex flex-col">
+                  <Label
+                    htmlFor="reuse-deployment"
+                    className="text-sm font-medium text-slate-900"
+                  >
+                    Reuse Existing Deployment
+                  </Label>
+                  <p className="text-xs text-slate-500">
+                    Uses existing implementation contracts. Uncheck to deploy both implementation and proxy contracts from scratch.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Advanced Configuration Toggle */}
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -354,11 +410,10 @@ export function NetworkAndChainStep() {
                         placeholder="2"
                         value={formData.networkAndChain?.l2BlockTime}
                         onChange={handleL2BlockTimeChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.l2BlockTime
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.l2BlockTime
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.l2BlockTime && (
                         <p className="text-xs text-red-500 mt-1">
@@ -399,11 +454,10 @@ export function NetworkAndChainStep() {
                         placeholder="1440"
                         value={formData.networkAndChain?.batchSubmissionFreq}
                         onChange={handleBatchSubmissionFreqChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.batchSubmissionFreq
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.batchSubmissionFreq
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.batchSubmissionFreq && (
                         <p className="text-xs text-red-500 mt-1">
@@ -445,11 +499,10 @@ export function NetworkAndChainStep() {
                         placeholder="240"
                         value={formData.networkAndChain?.outputRootFreq}
                         onChange={handleOutputRootFreqChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.outputRootFreq
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        className={`mt-1 ${errors.networkAndChain?.outputRootFreq
+                          ? "border-red-500"
+                          : ""
+                          }`}
                       />
                       {errors.networkAndChain?.outputRootFreq && (
                         <p className="text-xs text-red-500 mt-1">
@@ -474,7 +527,10 @@ export function NetworkAndChainStep() {
                             <TooltipContent>
                               <p>
                                 The period during which outputs can be
-                                challenged (in seconds). Default is 12 seconds.
+                                challenged (in seconds).
+                                {selectedNetwork === "mainnet"
+                                  ? " Fixed to 604800 seconds (7 days) for mainnet."
+                                  : " Default is 12 seconds for testnet."}
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -486,15 +542,20 @@ export function NetworkAndChainStep() {
                         type="number"
                         min="1"
                         step="1"
-                        placeholder="12"
+                        placeholder={selectedNetwork === "mainnet" ? "604800" : "12"}
                         value={formData.networkAndChain?.challengePeriod}
                         onChange={handleChallengePeriodChange}
-                        className={`mt-1 ${
-                          errors.networkAndChain?.challengePeriod
-                            ? "border-red-500"
-                            : ""
-                        }`}
+                        disabled={selectedNetwork === "mainnet"}
+                        className={`mt-1 ${errors.networkAndChain?.challengePeriod
+                          ? "border-red-500"
+                          : ""
+                          } ${selectedNetwork === "mainnet" ? "bg-slate-100 cursor-not-allowed" : ""}`}
                       />
+                      {selectedNetwork === "mainnet" && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Fixed to 7 days (604800 seconds) for mainnet security.
+                        </p>
+                      )}
                       {errors.networkAndChain?.challengePeriod && (
                         <p className="text-xs text-red-500 mt-1">
                           {errors.networkAndChain.challengePeriod.message}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,8 @@ import {
   createRollupSchema,
 } from "../schemas/create-rollup";
 import { useRollupCreationContext, defaultFormData } from "../context/RollupCreationContext";
+import { toast } from "react-hot-toast";
+import { ethers } from "ethers";
 
 export const STEPS = [
   {
@@ -48,6 +50,8 @@ export function useCreateRollup() {
     resolver: zodResolver(createRollupSchema),
     defaultValues: state.formData || defaultFormData,
   });
+
+  const [showChecklist, setShowChecklist] = useState(false);
 
   // Load saved data when component mounts
   useEffect(() => {
@@ -99,28 +103,119 @@ export function useCreateRollup() {
     },
   });
 
-  const handleDeployRollup = async () => {
+  // Validation types from rollupService
+  const [estimatedCost, setEstimatedCost] = useState<{
+    deploymentGasEth: string;
+  } | undefined>(undefined);
+
+  const validateAndEstimateDeployment = useCallback(async () => {
     // Validate all form fields before deployment
     const isValid = await form.trigger();
     if (!isValid) {
-      return;
+      return false;
     }
+
+    const formData = form.getValues();
+
+    try {
+      toast.loading("Validating deployment parameters...");
+
+      const validationPayload = {
+        network: formData.networkAndChain.network,
+        l1RpcUrl: formData.networkAndChain.l1RpcUrl,
+        l1BeaconUrl: formData.networkAndChain.l1BeaconUrl,
+        l2BlockTime: formData.networkAndChain.l2BlockTime
+          ? parseInt(formData.networkAndChain.l2BlockTime)
+          : 6,
+        batchSubmissionFrequency: formData.networkAndChain.batchSubmissionFreq
+          ? parseInt(formData.networkAndChain.batchSubmissionFreq)
+          : 1440,
+        outputRootFrequency: formData.networkAndChain.outputRootFreq
+          ? parseInt(formData.networkAndChain.outputRootFreq)
+          : 240,
+        challengePeriod: formData.networkAndChain.challengePeriod
+          ? parseInt(formData.networkAndChain.challengePeriod)
+          : 12,
+        // Use ADDRESSES (not private keys) for validation
+        adminAddress: formData.accountAndAws.adminAccount,
+        sequencerAddress: formData.accountAndAws.sequencerAccount,
+        batcherAddress: formData.accountAndAws.batchAccount,
+        proposerAddress: formData.accountAndAws.proposerAccount,
+        awsAccessKey: formData.accountAndAws.awsAccessKey,
+        awsSecretAccessKey: formData.accountAndAws.awsSecretKey,
+        awsRegion: formData.accountAndAws.awsRegion,
+        chainName: formData.networkAndChain.chainName,
+        mainnetConfirmation:
+          formData.networkAndChain.network === "mainnet" &&
+            formData.confirmation?.agreedToMainnetRisks
+            ? {
+              acknowledgedIrreversibility: true,
+              acknowledgedCosts: true,
+              acknowledgedRisks: true,
+              confirmationTimestamp: new Date().toISOString(),
+            }
+            : undefined,
+      };
+
+      const { validateDeployment } = await import("../services/rollupService");
+      const validationResult = await validateDeployment(validationPayload);
+
+      if (!validationResult.allValid) {
+        toast.dismiss();
+        const errors = Object.entries(validationResult.checks)
+          .filter(([, check]) => !check.valid)
+          .map(([key, check]) => `${key}: ${check.error}`)
+          .join("\n");
+
+        toast.error(`Validation Failed:\n${errors}`, {
+          duration: 5000,
+        });
+        return false;
+      }
+
+      // Update estimated cost if valid
+      if (validationResult.estimatedCost) {
+        setEstimatedCost(validationResult.estimatedCost);
+      }
+
+      toast.dismiss();
+      toast.success("Validation passed!");
+      return true;
+    } catch (error) {
+      toast.dismiss();
+      console.error("Validation error:", error);
+      toast.error("Validation service unavailable. Proceeding with caution...");
+      // Optionally return true to allow deployment if validation service fails
+      return true;
+    }
+  }, [form, setEstimatedCost]);
+
+  const handleDeployRollup = async () => {
+    const isValid = await validateAndEstimateDeployment();
+    if (!isValid) return;
 
     const formData = form.getValues();
     const request = convertFormToDeploymentRequest(formData);
 
     form.setError("root", { message: "" });
-
-    // Use the mutation directly - the isSubmitting state will be handled by the button's disabled state
-    // which checks for deployMutation.isPending
     await deployMutation.mutateAsync(request);
   };
 
   const goToNextStep = async () => {
     if (state.currentStep === STEPS.length) {
+      const formData = form.getValues();
+      if (formData.networkAndChain.network === "mainnet") {
+        const isValid = await form.trigger();
+        if (isValid) {
+          setShowChecklist(true);
+        }
+        return;
+      }
+
       await handleDeployRollup();
       return;
     }
+
 
     // Validate current step fields
     let isValid = false;
@@ -147,6 +242,57 @@ export function useCreateRollup() {
             ? advancedFields
             : []),
         ]);
+
+        if (isValid) {
+          const formData = form.getValues();
+          const rpcUrl = formData.networkAndChain.l1RpcUrl;
+
+          try {
+            toast.loading("Verifying RPC connection...", { id: "check-rpc" });
+            // Create a provider and fetch network to check ChainID
+            // Use static provider to avoid potential network detection delays
+            const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { staticNetwork: null });
+
+            // Set a timeout for the request to avoid hanging
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("RPC Connection Timed out")), 5000)
+            );
+
+            const networkPromise = provider.getNetwork();
+            const network = await Promise.race([networkPromise, timeoutPromise]) as ethers.Network;
+
+            const chainId = Number(network.chainId);
+            const isMainnet = chainId === 1;
+            const isSepolia = chainId === 11155111;
+
+            if (formData.networkAndChain.network === "mainnet") {
+              if (!isMainnet) {
+                throw new Error(`Chain ID mismatch: Got ${chainId}, expected 1 (Mainnet)`);
+              }
+            } else if (formData.networkAndChain.network === "testnet") {
+              if (!isSepolia) {
+                // For testnet, strictly enforce Sepolia as SDK targets it by default
+                throw new Error(`Chain ID mismatch: Got ${chainId}, expected 11155111 (Sepolia)`);
+              }
+            }
+
+            toast.success("RPC Connection Verified", { id: "check-rpc" });
+          } catch (error) {
+            console.error("RPC Check Error:", error);
+            // Allow bypassing strict RPC check if it's a CORS issue or other network error, 
+            // but for Mainnet we should be strict. 
+            // Here we prioritize safety: Block on error.
+            let msg = "Unknown RPC validation error";
+            if (error instanceof Error) {
+              msg = error.message;
+              if ("code" in error && (error as { code: unknown }).code === "NETWORK_ERROR") {
+                msg = "Network Error (CORS or Invalid URL)";
+              }
+            }
+            toast.error(`RPC Validation Failed:\n${msg}`, { id: "check-rpc" });
+            return; // Block going to next step
+          }
+        }
         break;
       case 2: // Account & AWS step
         isValid = await form.trigger([
@@ -178,6 +324,7 @@ export function useCreateRollup() {
           // If daoCandidate is undefined (skipped), validation passes
           isValid = true;
         }
+
         break;
       default:
         isValid = true;
@@ -207,5 +354,10 @@ export function useCreateRollup() {
     goToPreviousStep,
     onBack,
     isDeploying: deployMutation.isPending,
+    showChecklist,
+    setShowChecklist,
+    handleDeployRollup,
+    estimatedCost,
+    validateAndEstimateDeployment,
   };
 }

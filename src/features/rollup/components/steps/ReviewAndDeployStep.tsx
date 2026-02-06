@@ -27,12 +27,20 @@ interface Section {
   data: DataItem[];
 }
 
-export function ReviewAndDeployStep() {
+interface CostEstimation {
+  deploymentGasEth: string;
+}
+
+interface ReviewAndDeployStepProps {
+  estimatedCost?: CostEstimation;
+}
+
+export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps) {
   const { watch, setValue } = useFormContext<CreateRollupFormData>();
   const formData = watch();
   const [showSecretKey, setShowSecretKey] = useState(false);
-  
-  const isTestnet = formData.networkAndChain.network === CHAIN_NETWORK.TESTNET;  
+
+  const isTestnet = formData.networkAndChain.network === CHAIN_NETWORK.TESTNET;
   const sections: (Section | false)[] = [
     {
       title: "Network & Chain",
@@ -139,6 +147,31 @@ export function ReviewAndDeployStep() {
         </CardContent>
       </Card>
 
+{/* Estimated Cost */}
+      {estimatedCost && (
+        <Card className="border-blue-200 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl text-blue-900">
+              <span className="text-2xl">💰</span>
+              Estimated Deployment Cost
+            </CardTitle>
+            <CardDescription className="text-blue-700">
+              Estimated gas cost for the deployment
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-500">Deployment Gas</p>
+                <p className="text-2xl font-bold text-slate-900">{estimatedCost.deploymentGasEth} ETH</p>
+                <p className="text-xs text-slate-400">One-time cost</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Backup Configuration - Testnet only */}
       {isTestnet && (
         <Card>
           <CardHeader>
@@ -190,19 +223,57 @@ export function ReviewAndDeployStep() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <AlertCircle className="h-5 w-5 text-blue-600" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-900">
-                Deployment Notice
-              </p>
-              <p className="text-sm text-blue-700">
-                This process will create AWS infrastructure and deploy your
-                rollup. Please ensure all information is correct as this action
-                cannot be undone.
-              </p>
+          {formData.networkAndChain.network === "mainnet" ? (
+            <div className="flex flex-col gap-4 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-red-900">
+                    Mainnet Deployment WARNING
+                  </p>
+                  <p className="text-sm text-red-700 mt-1">
+                    You are about to deploy to MAINNET. This involves real assets
+                    and costs. This action is IRREVERSIBLE.
+                  </p>
+                </div>
+              </div>
+              <div className="ml-8 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="mainnet-agreement"
+                    onCheckedChange={(checked) =>
+                      setValue(
+                        "confirmation.agreedToMainnetRisks",
+                        checked as boolean,
+                        { shouldValidate: true }
+                      )
+                    }
+                  />
+                  <Label
+                    htmlFor="mainnet-agreement"
+                    className="text-sm font-medium text-red-900 cursor-pointer"
+                  >
+                    I acknowledge the risks and agree to proceed with this
+                    Mainnet deployment.
+                  </Label>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900">
+                  Deployment Notice
+                </p>
+                <p className="text-sm text-blue-700">
+                  This process will create AWS infrastructure and deploy your
+                  rollup. Please ensure all information is correct as this action
+                  cannot be undone.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

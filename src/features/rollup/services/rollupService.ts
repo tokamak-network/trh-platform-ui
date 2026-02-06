@@ -33,6 +33,52 @@ export const deployRollup = async (request: RollupDeploymentRequest) => {
   return response;
 };
 
+// Validation types
+export interface ValidationCheckResult {
+  valid: boolean;
+  error?: string;
+  message?: string;
+  details?: Record<string, unknown>;
+}
+
+export interface ValidateDeploymentResponse {
+  allValid: boolean;
+  checks: Record<string, ValidationCheckResult>;
+  estimatedCost?: {
+    deploymentGasEth: string;
+  };
+}
+
+// Request type (subset of what backend expects, enough for type safety)
+export interface ValidateDeploymentRequest {
+  network: string;
+  l1RpcUrl: string;
+  l1BeaconUrl: string;
+  l2BlockTime: number;
+  batchSubmissionFrequency: number;
+  outputRootFrequency: number;
+  challengePeriod: number;
+  adminAddress: string;
+  sequencerAddress: string;
+  batcherAddress: string;
+  proposerAddress: string;
+  awsAccessKey: string;
+  awsSecretAccessKey: string;
+  awsRegion: string;
+  chainName: string;
+  mainnetConfirmation?: {
+    acknowledgedIrreversibility: boolean;
+    acknowledgedCosts: boolean;
+    acknowledgedRisks: boolean;
+    confirmationTimestamp: string;
+  };
+}
+
+export const validateDeployment = async (request: ValidateDeploymentRequest): Promise<ValidateDeploymentResponse> => {
+  const response = await apiPost<ValidateDeploymentResponse>("stacks/thanos/validate-deployment", request);
+  return response.data;
+};
+
 export const mockRollups: Rollup[] = [
   {
     id: "1",
