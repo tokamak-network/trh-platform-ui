@@ -2,11 +2,12 @@
  * Chat service for communicating with the Tokamak Architect Bot API
  */
 
+import { env } from "next-runtime-env";
 import { ChatRequest, ChatResponse } from "../schemas/chat";
 
-// Chatbot API base URL - can be configured via environment variable
+// Chatbot API base URL - resolved at runtime via next-runtime-env
 const CHATBOT_API_URL =
-  process.env.NEXT_PUBLIC_CHATBOT_URL || "http://localhost:8001";
+  env("NEXT_PUBLIC_CHATBOT_URL") || "http://localhost:8001";
 
 /**
  * Send a chat message to the Tokamak Architect Bot
