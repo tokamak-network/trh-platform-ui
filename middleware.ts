@@ -21,14 +21,29 @@ const publicRoutes = ["/auth", "/design-system"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Add ngrok header for proxy API requests
+  // Proxy API requests to backend at runtime
+  // API_SERVER_URL: server-only, set in Dockerfile for Docker (http://backend:8000)
+  // NEXT_PUBLIC_API_BASE_URL: fallback for local dev (http://localhost:8000)
   if (pathname.startsWith("/api/proxy")) {
+    let apiBaseUrl =
+      process.env.API_SERVER_URL ||
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      "http://localhost:8000";
+    apiBaseUrl = apiBaseUrl.replace(/\/+$/, "");
+    if (!apiBaseUrl.startsWith("http://") && !apiBaseUrl.startsWith("https://"))
+      apiBaseUrl = `https://${apiBaseUrl}`;
+
+    const proxyPath = pathname.replace("/api/proxy", "/api/v1");
+    const destination = new URL(
+      `${proxyPath}${request.nextUrl.search}`,
+      apiBaseUrl
+    );
+
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("ngrok-skip-browser-warning", "true");
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
+
+    return NextResponse.rewrite(destination, {
+      request: { headers: requestHeaders },
     });
   }
 

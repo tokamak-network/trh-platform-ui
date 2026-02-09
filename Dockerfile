@@ -18,6 +18,8 @@ WORKDIR /app
 
 COPY --from=builder /app/ ./
 
+ENV API_SERVER_URL=http://backend:8000
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start"]
