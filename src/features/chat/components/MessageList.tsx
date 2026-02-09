@@ -7,14 +7,15 @@
 import { useRef, useEffect } from "react";
 import { Message } from "../schemas/chat";
 import { ChatBubble } from "./ChatBubble";
-import { Loader2, Bot } from "lucide-react";
+import { Bot } from "lucide-react";
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
+  onSendSuggestion?: (suggestion: string) => void;
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, onSendSuggestion }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +32,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
       {/* Welcome message if no messages */}
       {messages.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center h-full text-center px-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-primary-500 flex items-center justify-center mb-4">
             <Bot className="w-8 h-8 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -49,8 +50,10 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
             ].map((suggestion) => (
               <button
                 key={suggestion}
-                className="text-xs px-3 py-1.5 rounded-full bg-white border border-gray-200
-                           text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                onClick={() => onSendSuggestion?.(suggestion)}
+                className="text-xs px-3 py-1.5 rounded-full bg-white border border-primary-200
+                           text-primary-600 hover:bg-primary-50 hover:border-primary-300 transition-colors
+                           cursor-pointer active:scale-95"
               >
                 {suggestion}
               </button>
@@ -67,13 +70,14 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
       {/* Loading indicator */}
       {isLoading && (
         <div className="flex gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
             <Bot className="w-4 h-4 text-white" />
           </div>
           <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Thinking...</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         </div>

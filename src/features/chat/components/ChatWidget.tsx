@@ -72,11 +72,11 @@ export function ChatWidget({
         onClick={handleToggle}
         className={cn(
           "relative flex items-center justify-center w-14 h-14 rounded-full",
-          "bg-gradient-to-r from-purple-600 to-blue-600",
+          "bg-primary-500 hover:bg-primary-600",
           "text-white shadow-lg hover:shadow-xl",
           "transform transition-all duration-200",
           "hover:scale-105 active:scale-95",
-          "focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          "focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2"
         )}
         aria-label={isOpen ? "Close chat" : "Open chat"}
       >

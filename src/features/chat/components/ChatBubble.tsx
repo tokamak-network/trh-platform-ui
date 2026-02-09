@@ -27,8 +27,8 @@ export function ChatBubble({ message }: ChatBubbleProps) {
         className={cn(
           "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
           isUser
-            ? "bg-blue-600 text-white"
-            : "bg-gradient-to-br from-purple-500 to-blue-500 text-white"
+            ? "bg-primary-600 text-white"
+            : "bg-primary-500 text-white"
         )}
       >
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -45,7 +45,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
           className={cn(
             "px-4 py-2 rounded-2xl text-sm",
             isUser
-              ? "bg-blue-600 text-white rounded-tr-sm"
+              ? "bg-primary-500 text-white rounded-tr-sm"
               : "bg-gray-100 text-gray-900 rounded-tl-sm"
           )}
         >

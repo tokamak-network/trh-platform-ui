@@ -62,7 +62,7 @@ export function MessageInput({
         disabled={disabled || isLoading}
         rows={1}
         className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                   focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent
                    disabled:bg-gray-50 disabled:text-gray-500
                    placeholder:text-gray-400"
         style={{ minHeight: "40px", maxHeight: "120px" }}
@@ -71,7 +71,7 @@ export function MessageInput({
         onClick={handleSend}
         disabled={!message.trim() || isLoading || disabled}
         size="icon"
-        className="h-10 w-10 rounded-xl bg-blue-600 hover:bg-blue-700
+        className="h-10 w-10 rounded-xl bg-primary-500 hover:bg-primary-600
                    disabled:bg-gray-200 disabled:text-gray-400"
       >
         {isLoading ? (

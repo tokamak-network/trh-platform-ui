@@ -19,12 +19,12 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
   const { messages, isLoading, error, sendMessage, clearChat } = useChat();
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+    <div className="flex flex-col h-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+      <div className="flex items-center justify-between px-4 py-3 bg-primary-500 text-white">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-            <span className="text-lg">T</span>
+          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center">
+            <span className="text-lg font-bold text-primary-500">T</span>
           </div>
           <div>
             <h2 className="font-semibold text-sm">Tokamak Architect</h2>
@@ -77,7 +77,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
       )}
 
       {/* Messages */}
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={messages} isLoading={isLoading} onSendSuggestion={sendMessage} />
 
       {/* Input */}
       <MessageInput onSend={sendMessage} isLoading={isLoading} />
@@ -90,7 +90,7 @@ export function ChatWindow({ onClose, onMinimize }: ChatWindowProps) {
             href="https://docs.tokamak.network"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
+            className="text-primary-500 hover:underline"
           >
             docs
           </a>
