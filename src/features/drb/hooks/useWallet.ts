@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 import { THANOS_SEPOLIA_CHAIN } from "../contracts/abis";
+import {
+  getWalletProvider,
+  disconnectWalletConnect,
+  hasInjectedWallet,
+  isElectron,
+  type EIP1193Provider,
+} from "@/lib/wallet/provider";
 
 interface WalletState {
   isConnected: boolean;
@@ -20,38 +27,42 @@ interface UseWalletReturn extends WalletState {
   switchToThanosNetwork: () => Promise<void>;
   isConnecting: boolean;
   error: string | null;
+  /** "injected" (MetaMask), "walletconnect", or null if not connected */
+  walletType: "injected" | "walletconnect" | null;
 }
 
+const initialState: WalletState = {
+  isConnected: false,
+  address: null,
+  balance: null,
+  chainId: null,
+  isCorrectChain: false,
+  signer: null,
+  provider: null,
+};
+
 export function useWallet(): UseWalletReturn {
-  const [state, setState] = useState<WalletState>({
-    isConnected: false,
-    address: null,
-    balance: null,
-    chainId: null,
-    isCorrectChain: false,
-    signer: null,
-    provider: null,
-  });
+  const [state, setState] = useState<WalletState>(initialState);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletType, setWalletType] = useState<"injected" | "walletconnect" | null>(null);
+  const eipProviderRef = useRef<EIP1193Provider | null>(null);
 
-  const updateBalance = useCallback(async (provider: ethers.BrowserProvider, address: string) => {
-    try {
-      const balance = await provider.getBalance(address);
-      setState((prev) => ({
-        ...prev,
-        balance: ethers.formatEther(balance),
-      }));
-    } catch {
-      // Ignore balance errors
-    }
-  }, []);
+  const updateBalance = useCallback(
+    async (provider: ethers.BrowserProvider, address: string) => {
+      try {
+        const balance = await provider.getBalance(address);
+        setState((prev) => ({ ...prev, balance: ethers.formatEther(balance) }));
+      } catch {
+        // Ignore balance errors
+      }
+    },
+    []
+  );
 
-  const checkConnection = useCallback(async () => {
-    if (typeof window === "undefined" || !window.ethereum) return;
-
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+  const setupConnection = useCallback(
+    async (eipProvider: EIP1193Provider, type: "injected" | "walletconnect") => {
+      const provider = new ethers.BrowserProvider(eipProvider as ethers.Eip1193Provider);
       const accounts = await provider.listAccounts();
 
       if (accounts.length > 0) {
@@ -59,9 +70,11 @@ export function useWallet(): UseWalletReturn {
         const address = await signer.getAddress();
         const network = await provider.getNetwork();
         const chainId = Number(network.chainId);
-        // Compare using BigInt to handle large chain IDs correctly
-        const isCorrectChain = network.chainId === BigInt(THANOS_SEPOLIA_CHAIN.chainId);
+        const isCorrectChain =
+          network.chainId === BigInt(THANOS_SEPOLIA_CHAIN.chainId);
 
+        eipProviderRef.current = eipProvider;
+        setWalletType(type);
         setState({
           isConnected: true,
           address,
@@ -73,113 +86,120 @@ export function useWallet(): UseWalletReturn {
         });
 
         await updateBalance(provider, address);
+        return true;
       }
-    } catch {
-      // Not connected
-    }
-  }, [updateBalance]);
+      return false;
+    },
+    [updateBalance]
+  );
 
+  // Check for existing injected wallet connection on mount
   useEffect(() => {
-    checkConnection();
+    if (typeof window === "undefined" || !window.ethereum) return;
 
-    if (typeof window !== "undefined" && window.ethereum) {
-      const handleAccountsChanged = (...args: unknown[]) => {
-        const accounts = args[0] as string[];
-        if (!accounts || accounts.length === 0) {
-          setState({
-            isConnected: false,
-            address: null,
-            balance: null,
-            chainId: null,
-            isCorrectChain: false,
-            signer: null,
-            provider: null,
-          });
-        } else {
-          checkConnection();
-        }
-      };
+    const check = async () => {
+      try {
+        await setupConnection(window.ethereum!, "injected");
+      } catch {
+        // Not connected
+      }
+    };
+    check();
+  }, [setupConnection]);
 
-      const handleChainChanged = () => {
-        checkConnection();
-      };
+  // Listen for account/chain changes
+  useEffect(() => {
+    const eipProvider = eipProviderRef.current;
+    if (!eipProvider) return;
 
-      window.ethereum.on("accountsChanged", handleAccountsChanged);
-      window.ethereum.on("chainChanged", handleChainChanged);
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accounts = args[0] as string[];
+      if (!accounts || accounts.length === 0) {
+        setState(initialState);
+        setWalletType(null);
+        eipProviderRef.current = null;
+      } else {
+        setupConnection(eipProvider, walletType || "injected");
+      }
+    };
 
-      return () => {
-        window.ethereum?.removeListener("accountsChanged", handleAccountsChanged);
-        window.ethereum?.removeListener("chainChanged", handleChainChanged);
-      };
-    }
-  }, [checkConnection]);
+    const handleChainChanged = () => {
+      setupConnection(eipProvider, walletType || "injected");
+    };
+
+    const handleDisconnect = () => {
+      setState(initialState);
+      setWalletType(null);
+      eipProviderRef.current = null;
+    };
+
+    eipProvider.on("accountsChanged", handleAccountsChanged);
+    eipProvider.on("chainChanged", handleChainChanged);
+    eipProvider.on("disconnect", handleDisconnect);
+
+    return () => {
+      eipProvider.removeListener("accountsChanged", handleAccountsChanged);
+      eipProvider.removeListener("chainChanged", handleChainChanged);
+      eipProvider.removeListener("disconnect", handleDisconnect);
+    };
+  }, [walletType, setupConnection]);
 
   const connect = useCallback(async () => {
-    if (typeof window === "undefined" || !window.ethereum) {
-      setError("MetaMask not installed. Please install MetaMask to continue.");
-      return;
-    }
-
     setIsConnecting(true);
     setError(null);
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
+      const { provider: eipProvider, type } = await getWalletProvider();
 
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      const network = await provider.getNetwork();
-      const chainId = Number(network.chainId);
-      // Compare using BigInt to handle large chain IDs correctly
-      const isCorrectChain = network.chainId === BigInt(THANOS_SEPOLIA_CHAIN.chainId);
+      // For WalletConnect, .enable() opens the QR modal
+      if (type === "walletconnect") {
+        await (eipProvider as { enable?: () => Promise<string[]> }).enable?.();
+      } else {
+        // MetaMask: request accounts
+        await eipProvider.request({ method: "eth_requestAccounts", params: [] });
+      }
 
-      setState({
-        isConnected: true,
-        address,
-        balance: null,
-        chainId,
-        isCorrectChain,
-        signer,
-        provider,
-      });
-
-      await updateBalance(provider, address);
+      const connected = await setupConnection(eipProvider, type);
+      if (!connected) {
+        setError("No accounts found. Please try again.");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to connect wallet");
+      if (err instanceof Error && err.message.includes("User rejected")) {
+        setError("Connection rejected by user");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Failed to connect wallet"
+        );
+      }
     } finally {
       setIsConnecting(false);
     }
-  }, [updateBalance]);
+  }, [setupConnection]);
 
-  const disconnect = useCallback(() => {
-    setState({
-      isConnected: false,
-      address: null,
-      balance: null,
-      chainId: null,
-      isCorrectChain: false,
-      signer: null,
-      provider: null,
-    });
-  }, []);
+  const disconnect = useCallback(async () => {
+    if (walletType === "walletconnect") {
+      await disconnectWalletConnect();
+    }
+    setState(initialState);
+    setWalletType(null);
+    eipProviderRef.current = null;
+  }, [walletType]);
 
   const switchToThanosNetwork = useCallback(async () => {
-    if (!window.ethereum) return;
+    const eipProvider = eipProviderRef.current;
+    if (!eipProvider) return;
 
     try {
-      await window.ethereum.request({
+      await eipProvider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: THANOS_SEPOLIA_CHAIN.chainIdHex }],
       });
-      // Re-check connection after switch
-      await checkConnection();
+      await setupConnection(eipProvider, walletType || "injected");
     } catch (switchError: unknown) {
       const errorCode = (switchError as { code?: number })?.code;
-      // Chain not added (4902) or unrecognized chain
       if (errorCode === 4902 || errorCode === -32603) {
         try {
-          await window.ethereum.request({
+          await eipProvider.request({
             method: "wallet_addEthereumChain",
             params: [
               {
@@ -191,8 +211,7 @@ export function useWallet(): UseWalletReturn {
               },
             ],
           });
-          // Re-check connection after adding
-          await checkConnection();
+          await setupConnection(eipProvider, walletType || "injected");
         } catch (addError) {
           console.error("Failed to add network:", addError);
           setError("Failed to add Thanos Sepolia network");
@@ -202,7 +221,7 @@ export function useWallet(): UseWalletReturn {
         setError("Failed to switch network");
       }
     }
-  }, [checkConnection]);
+  }, [walletType, setupConnection]);
 
   return {
     ...state,
@@ -211,16 +230,13 @@ export function useWallet(): UseWalletReturn {
     switchToThanosNetwork,
     isConnecting,
     error,
+    walletType,
   };
 }
 
 // Type declaration for window.ethereum
 declare global {
   interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on: (event: string, callback: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
-    };
+    ethereum?: EIP1193Provider;
   }
 }

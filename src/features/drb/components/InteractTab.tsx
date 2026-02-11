@@ -18,6 +18,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { ethers } from "ethers";
 import { useWallet } from "../hooks/useWallet";
 import { useDRBContract, RequestInfo } from "../hooks/useDRBContract";
+import { hasInjectedWallet } from "@/lib/wallet/provider";
 import { THANOS_SEPOLIA_CHAIN } from "../contracts/abis";
 import toast from "react-hot-toast";
 
@@ -126,7 +127,7 @@ export function InteractTab({
                   ) : (
                     <>
                       <Wallet className="h-4 w-4 mr-2" />
-                      Connect MetaMask
+                      {hasInjectedWallet() ? "Connect MetaMask" : "Connect Wallet"}
                     </>
                   )}
                 </Button>
@@ -139,7 +140,9 @@ export function InteractTab({
                 <div className="flex items-center justify-between p-3 rounded-lg bg-white/60">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-slate-700">Connected</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {wallet.walletType === "walletconnect" ? "WalletConnect" : "Connected"}
+                    </span>
                   </div>
                   <Badge variant="outline" className="font-mono text-xs">
                     {formatAddress(wallet.address!)}
