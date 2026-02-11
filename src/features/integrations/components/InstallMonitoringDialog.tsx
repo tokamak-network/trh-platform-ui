@@ -43,7 +43,6 @@ const monitoringSchema = z.object({
     }),
     email: z.object({
       enabled: z.boolean(),
-      smtpSmarthost: z.string().optional(),
       smtpFrom: z.string().optional(),
       smtpAuthPassword: z.string().optional(),
       alertReceivers: z.array(z.string().email({ message: "Invalid email address" })).optional()
@@ -72,17 +71,6 @@ const monitoringSchema = z.object({
 }, {
   message: "Chat ID is required when Telegram alerts are enabled",
   path: ["alertManager", "telegram", "criticalReceiver", "chatId"]
-}).refine((data) => {
-  // If email is enabled, validate SMTP server
-  if (data.alertManager.email.enabled) {
-    if (!data.alertManager.email.smtpSmarthost || data.alertManager.email.smtpSmarthost.trim() === "") {
-      return false;
-    }
-  }
-  return true;
-}, {
-  message: "SMTP server is required when Email alerts are enabled",
-  path: ["alertManager", "email", "smtpSmarthost"]
 }).refine((data) => {
   // If email is enabled, validate from email
   if (data.alertManager.email.enabled) {
@@ -123,7 +111,6 @@ export type MonitoringFormData = Omit<InternalMonitoringFormData, 'alertManager'
     };
     email: {
       enabled: boolean;
-      smtpSmarthost?: string;
       smtpFrom?: string;
       smtpAuthPassword?: string;
       alertReceivers?: string[];
@@ -157,7 +144,6 @@ export default function InstallMonitoringDialog({
         },
         email: {
           enabled: false,
-          smtpSmarthost: "smtp.gmail.com:587",
           smtpFrom: "",
           smtpAuthPassword: "",
           alertReceivers: []
@@ -368,47 +354,28 @@ export default function InstallMonitoringDialog({
                 
                 {form.watch("alertManager.email.enabled") && (
                   <div className="space-y-3 ml-6">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="smtpServer">SMTP Server</Label>
-                        <Input
-                          id="smtpServer"
-                          placeholder="smtp.gmail.com:587"
-                          disabled={isPending}
-                          {...form.register("alertManager.email.smtpSmarthost")}
-                          className={
-                            form.formState.errors.alertManager?.email?.smtpSmarthost
-                              ? "border-destructive"
-                              : ""
-                          }
-                        />
-                        {form.formState.errors.alertManager?.email?.smtpSmarthost && (
-                          <p className="text-sm text-destructive">
-                            {form.formState.errors.alertManager.email.smtpSmarthost.message}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="smtpFrom">From Email</Label>
-                        <Input
-                          id="smtpFrom"
-                          type="email"
-                          placeholder="alerts@company.com"
-                          disabled={isPending}
-                          {...form.register("alertManager.email.smtpFrom")}
-                          className={
-                            form.formState.errors.alertManager?.email?.smtpFrom
-                              ? "border-destructive"
-                              : ""
-                          }
-                        />
-                        {form.formState.errors.alertManager?.email?.smtpFrom && (
-                          <p className="text-sm text-destructive">
-                            {form.formState.errors.alertManager.email.smtpFrom.message}
-                          </p>
-                        )}
-                      </div>
+                    <p className="text-sm text-muted-foreground">
+                      SMTP Server: <span className="font-mono">smtp.gmail.com:587</span> (Only Gmail SMTP is supported)
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="smtpFrom">From Email</Label>
+                      <Input
+                        id="smtpFrom"
+                        type="email"
+                        placeholder="alerts@company.com"
+                        disabled={isPending}
+                        {...form.register("alertManager.email.smtpFrom")}
+                        className={
+                          form.formState.errors.alertManager?.email?.smtpFrom
+                            ? "border-destructive"
+                            : ""
+                        }
+                      />
+                      {form.formState.errors.alertManager?.email?.smtpFrom && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.alertManager.email.smtpFrom.message}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
