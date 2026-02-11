@@ -101,7 +101,7 @@ export const disableTelegramAlert = async (stackId: string): Promise<void> => {
 
 export interface ConfigureTelegramAlertRequestBody {
   apiToken: string;
-  criticalReceivers: Array<{ ChatId: string }>;
+  criticalReceivers: Array<{ chatId: string }>;
 }
 
 export const configureTelegramAlert = async (
