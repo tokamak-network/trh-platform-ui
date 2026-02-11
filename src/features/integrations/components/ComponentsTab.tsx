@@ -441,7 +441,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
               },
               email: {
                 enabled: data.alertManager.email.enabled,
-                smtpSmarthost: data.alertManager.email.smtpSmarthost || "",
+                smtpSmarthost: "smtp.gmail.com:587",
                 smtpFrom: data.alertManager.email.smtpFrom || "",
                 smtpAuthPassword: data.alertManager.email.smtpAuthPassword || "",
                 alertReceivers: data.alertManager.email.alertReceivers || []

@@ -262,7 +262,7 @@ export const useDisableTelegramAlertMutation = createMutationHook<
 export interface ConfigureTelegramAlertVariables {
   stackId: string;
   apiToken: string;
-  criticalReceivers: Array<{ ChatId: string }>;
+  criticalReceivers: Array<{ chatId: string }>;
 }
 
 export const useConfigureTelegramAlertMutation = createMutationHook<
