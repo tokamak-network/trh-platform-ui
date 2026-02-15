@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -250,8 +251,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {Object.entries(INTEGRATION_TYPES).map(([type, config]) => (
-                    <Badge key={type} variant="outline" className="text-sm">
-                      {config.icon} {config.label}
+                    <Badge key={type} variant="outline" className="text-sm flex items-center gap-1.5 py-1">
+                      <Image src={config.logo} alt={config.label} width={20} height={20} className="object-contain" />
+                      {config.label}
                     </Badge>
                   ))}
                 </div>
@@ -280,95 +282,53 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
             <CardTitle className="text-lg">Available Component Types</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(INTEGRATION_TYPES).map(([type, config]) => (
-                <div
-                  key={type}
-                  className="p-4 bg-white/50 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div
-                      className={`w-8 h-8 bg-gradient-to-r ${config.color} rounded-lg flex items-center justify-center text-white text-sm`}
-                    >
-                      {config.icon}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch">
+              {Object.entries(INTEGRATION_TYPES).map(([type, config]) => {
+                const isInstalled = integrations.some(
+                  (i) => i.type === type && i.status === "Completed"
+                );
+                return (
+                  <div
+                    key={type}
+                    className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow flex flex-col"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <Image src={config.logo} alt={config.label} width={40} height={40} className="shrink-0" />
+                      <h4 className="font-semibold text-slate-800 leading-tight">{config.label}</h4>
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800">
-                        {config.label}
-                      </h4>
-                      <p className="text-xs text-slate-600">
-                        {config.description}
-                      </p>
+                    <p className="text-xs text-gray-500 mb-3">{config.description}</p>
+                    <div className="flex items-center justify-between mt-auto">
+                      {isInstalled ? (
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Integrated
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-slate-600">
+                          <Plus className="w-3 h-3 mr-1" />
+                          Available
+                        </Badge>
+                      )}
+                      {isInstalled ? (
+                        <div className="w-9 h-9" />
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              disabled={!isStackDeployed || isAnyInstallPending}
+                              onClick={() => setInstallType(type as Integration["type"])}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Install</TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
-                  {(() => {
-                    const isInstalled = integrations.some(
-                      (i) => i.type === type && i.status === "Completed"
-                    );
-                    return (
-                      <div className="flex items-center justify-between gap-2">
-                        {isInstalled ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Integrated
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-slate-600">
-                            <Plus className="w-3 h-3 mr-1" />
-                            Available
-                          </Badge>
-                        )}
-                        {!isInstalled && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <Button
-                                  aria-label="Install"
-                                  size="icon"
-                                  disabled={
-                                    !isStackDeployed || isAnyInstallPending
-                                  }
-                                  onClick={() => {
-                                    if (type === "bridge") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "system-pulse") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "block-explorer") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "monitoring") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "register-candidate") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else {
-                                      console.log(
-                                        "Install integration (coming soon)",
-                                        { type, stackId: stack?.id }
-                                      );
-                                    }
-                                  }}
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>Install</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

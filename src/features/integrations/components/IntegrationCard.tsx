@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Integration, INTEGRATION_TYPES } from "../schemas";
 import {
   Eye,
-  Trash2,
   X,
   RotateCw,
 } from "lucide-react";
@@ -32,6 +37,8 @@ import { INTEGRATION_TYPES as INTEGRATION_TYPES_CONST } from "../schemas";
 
 // Import plugin-specific components
 import { BridgeCard, BridgeCompactInfo } from "./BridgeCard";
+import { BinButton } from "./BinButton";
+import { StatusIndicator } from "./StatusIndicator";
 import { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
@@ -195,100 +202,74 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
     }
   };
 
+  const canCancel = integration.status === "InProgress" || integration.status === "Pending";
+  const canRetry = integration.status === "Cancelled";
+  const canRemove = integration.status === "Completed" || integration.status === "Failed" || integration.status === "Cancelled";
+
   return (
     <>
-      <Card className="relative border-0 shadow-xl bg-white/60 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 overflow-visible">
+      <Card className="relative border border-gray-200 rounded-xl shadow-sm bg-white hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div
-                className={`w-10 h-10 shrink-0 bg-gradient-to-r ${integrationType.color} rounded-lg flex items-center justify-center text-white text-lg`}
-              >
-                {integrationType.icon}
-              </div>
-              <div className="min-w-0 flex-1">
-                <CardTitle className="text-base font-semibold">
-                  {integrationType.label}
-                </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">
-                  {integrationType.description}
-                </p>
-              </div>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Image src={integrationType.logo} alt={integrationType.label} width={44} height={44} className="shrink-0" />
+              <CardTitle className="text-base font-semibold leading-tight">{integrationType.label}</CardTitle>
             </div>
-            <div className="flex flex-col items-end gap-1.5 shrink-0">
-              <div className="flex items-center gap-1.5">
-                <Badge className={`${getStatusColor()} flex items-center gap-1 text-xs px-2.5 py-1`}>
-                  <span className="scale-90">{getStatusIcon()}</span>
-                  <span className="font-medium">{StatusText()}</span>
-                </Badge>
-                {/* Removed register candidate exclusion now cancel should work for all integration types */}
-                {/* {integration.type !== "register-candidate" && ( */}
-                <>
-                {(integration.status === "InProgress" || integration.status === "Pending") && (
+            <div className="flex items-center gap-2 shrink-0">
+              <StatusIndicator status={integration.status} label={StatusText()} />
+              {canCancel && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
-                      aria-label="Cancel"
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 group relative"
+                      className="h-8 w-8"
                       disabled={cancelMutation.isPending}
                       onClick={() => setShowCancelConfirm(true)}
                     >
                       <X className="w-4 h-4" />
-                      <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                        Cancel
-                      </span>
                     </Button>
-                  )}
-                  {/* {(integration.status === "Failed" || integration.status === "Cancelled") && ( */}
-                  {integration.status === "Cancelled" && (
+                  </TooltipTrigger>
+                  <TooltipContent>Cancel</TooltipContent>
+                </Tooltip>
+              )}
+              {canRetry && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
-                      aria-label="Retry"
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 group relative"
+                      className="h-8 w-8"
                       disabled={retryMutation.isPending}
                       onClick={() => setShowRetryConfirm(true)}
                     >
                       <RotateCw className="w-4 h-4" />
-                      <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                        Retry
-                      </span>
                     </Button>
-                  )}
-                  {(integration.status === "Completed" || integration.status === "Failed" || integration.status === "Cancelled") && (
-                    <Button
-                      aria-label="Remove"
-                      variant="destructive"
-                      size="icon"
-                      className="h-8 w-8 group relative"
-                      disabled={uninstallMutation.isPending}
-                      onClick={() => setShowUninstallConfirm(true)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="absolute -bottom-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                        Remove
-                      </span>
-                    </Button>
-                  )}
-                </>
-              </div>
-              {integration.status === "Cancelling" && integration.reason && (
-                <p className="text-xs text-orange-700 text-right max-w-md mt-0.5">
-                  {integration.reason}
-                </p>
+                  </TooltipTrigger>
+                  <TooltipContent>Retry</TooltipContent>
+                </Tooltip>
+              )}
+              {canRemove && (
+                <BinButton
+                  onClick={() => setShowUninstallConfirm(true)}
+                  disabled={uninstallMutation.isPending}
+                />
               )}
             </div>
           </div>
+          <p className="text-sm text-gray-500 mt-2">{integrationType.description}</p>
+          {integration.status === "Cancelling" && integration.reason && (
+            <p className="text-xs text-orange-600 mt-2 bg-orange-50 px-2 py-1 rounded">{integration.reason}</p>
+          )}
         </CardHeader>
-        <CardContent className="pb-10">{renderCompactInfo()}</CardContent>
+        <CardContent className="pt-0 pb-12">{renderCompactInfo()}</CardContent>
         <Button
-          variant="link"
+          variant="ghost"
           size="sm"
+          className="absolute bottom-3 right-3 text-xs text-blue-500 hover:text-blue-700"
           onClick={() => setShowModal(true)}
-          className="absolute bottom-3 right-3 h-auto p-0 text-xs hover:underline underline-offset-2"
-          aria-label="View details"
         >
-          <Eye className="w-3 h-3 mr-1" />
+          <Eye className="w-3.5 h-3.5 mr-1" />
           View details
         </Button>
       </Card>
@@ -335,17 +316,19 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Installation</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                {`Are you sure you want to cancel the installation of ${
-                  INTEGRATION_TYPES_CONST[
-                    integration.type as keyof typeof INTEGRATION_TYPES_CONST
-                  ].label
-                }?`}
-              </p>
-              <p className="text-sm text-orange-600 font-medium">
-                This will stop the installation and clean up any AWS resources that were created. This may take several minutes to complete safely.
-              </p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  {`Are you sure you want to cancel the installation of ${
+                    INTEGRATION_TYPES_CONST[
+                      integration.type as keyof typeof INTEGRATION_TYPES_CONST
+                    ].label
+                  }?`}
+                </p>
+                <p className="text-sm text-orange-600 font-medium">
+                  This will stop the installation and clean up any AWS resources that were created. This may take several minutes to complete safely.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -407,22 +390,21 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         <DialogContent className="w-auto min-w-[600px] max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 bg-gradient-to-r ${integrationType.color} rounded-lg flex items-center justify-center text-white text-lg`}
-              >
-                {integrationType.icon}
-              </div>
+              <Image
+                src={integrationType.logo}
+                alt={integrationType.label}
+                width={48}
+                height={48}
+              />
               <div>
                 <div className="text-xl font-semibold">
                   {integrationType.label}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge
-                    className={`${getStatusColor()} flex items-center gap-1`}
-                  >
-                    {getStatusIcon()}
-                    {integration.status}
-                  </Badge>
+                  <StatusIndicator
+                    status={integration.status}
+                    label={integration.status}
+                  />
                 </div>
               </div>
             </DialogTitle>
