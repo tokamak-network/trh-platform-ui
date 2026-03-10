@@ -5,6 +5,8 @@ import { AuthenticatedLayout } from "@/components/layout";
 import { CreateRollupStepper } from "@/features/rollup/components/CreateRollupStepper";
 import { PreDeploymentChecklistDialog } from "@/features/rollup/components/PreDeploymentChecklistDialog";
 import { useCreateRollup } from "@/features/rollup/hooks/useCreateRollup";
+import { usePresetWizard } from "@/features/rollup/hooks/usePresetWizard";
+import { useRollupCreationContext } from "@/features/rollup/context/RollupCreationContext";
 
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Rocket } from "lucide-react";
@@ -14,9 +16,133 @@ import {
   DaoCandidateStep,
   ReviewAndDeployStep,
 } from "@/features/rollup/components/steps";
+import {
+  PresetSelectionStep,
+  BasicInfoStep,
+  ConfigReview,
+  FundingStatus,
+} from "@/features/rollup/components/preset";
 import { FormProvider } from "react-hook-form";
 
-function CreateRollupContent() {
+// --- Preset Mode Wizard ---
+function PresetWizardContent() {
+  const {
+    form,
+    currentStep,
+    progress,
+    steps,
+    onBack,
+    goToNextStep,
+    goToPreviousStep,
+    selectedPresetId,
+    presetDetail,
+    setOverrides,
+    handleSelectPreset,
+    network,
+    pendingDeploymentId,
+  } = usePresetWizard();
+
+  const isFirstStep = currentStep === 1;
+  const isLastStep = currentStep === steps.length;
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <PresetSelectionStep
+            selectedPresetId={selectedPresetId}
+            onSelect={handleSelectPreset}
+          />
+        );
+      case 2:
+        return (
+          <FormProvider {...form}>
+            <BasicInfoStep />
+          </FormProvider>
+        );
+      case 3:
+        return (
+          <div className="space-y-6">
+            {presetDetail && (
+              <ConfigReview
+                preset={presetDetail}
+                network={network}
+                onOverridesChange={setOverrides}
+              />
+            )}
+            <FundingStatus
+              deploymentId={pendingDeploymentId ?? undefined}
+              network={network}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <AuthenticatedLayout>
+      <div className="min-h-screen bg-gray-100">
+        <div className="p-6 pb-24">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">Deploy New Stack</h1>
+              </div>
+              <p className="text-gray-500">
+                Choose a preset and deploy your custom rollup in minutes
+              </p>
+            </div>
+
+            <CreateRollupStepper
+              steps={steps}
+              currentStep={currentStep}
+              progress={progress}
+              onBack={onBack}
+            />
+
+            {renderStepContent()}
+          </div>
+        </div>
+
+        {/* Fixed footer */}
+        <div className="fixed bottom-0 right-0 left-[250px] bg-white">
+          <footer className="border-t py-4 shadow-md">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="flex justify-between items-center">
+                <Button
+                  variant="outline"
+                  onClick={goToPreviousStep}
+                  disabled={isFirstStep}
+                  className="flex items-center gap-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  onClick={goToNextStep}
+                  disabled={currentStep === 1 && !selectedPresetId}
+                  className="flex items-center gap-2"
+                >
+                  {isLastStep ? "Deploy Rollup" : "Next"}
+                  {isLastStep ? (
+                    <Rocket className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </AuthenticatedLayout>
+  );
+}
+
+// --- Classic Mode Wizard (unchanged) ---
+function ClassicWizardContent() {
   const {
     form,
     currentStep,
@@ -33,7 +159,6 @@ function CreateRollupContent() {
     validateAndEstimateDeployment,
   } = useCreateRollup();
 
-  // Validate and estimate cost when entering Step 4
   useEffect(() => {
     if (currentStep === 4) {
       validateAndEstimateDeployment();
@@ -66,7 +191,6 @@ function CreateRollupContent() {
   return (
     <AuthenticatedLayout>
       <div className="min-h-screen bg-gray-100">
-        {/* Main content with bottom padding to prevent overlap with fixed footer */}
         <div className="p-6 pb-24">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="space-y-2">
@@ -87,7 +211,6 @@ function CreateRollupContent() {
 
             <FormProvider {...form}>{renderStepContent()}</FormProvider>
           </div>
-          {/* Pre-Deployment Checklist Dialog */}
           <PreDeploymentChecklistDialog
             open={showChecklist}
             onOpenChange={setShowChecklist}
@@ -97,8 +220,6 @@ function CreateRollupContent() {
           />
         </div>
 
-
-        {/* Fixed footer */}
         <div className="fixed bottom-0 right-0 left-[250px] bg-white">
           <footer className="border-t py-4 shadow-md">
             <div className="max-w-7xl mx-auto px-6">
@@ -145,6 +266,18 @@ function CreateRollupContent() {
       </div>
     </AuthenticatedLayout>
   );
+}
+
+// --- Mode Selector ---
+function CreateRollupContent() {
+  const { state } = useRollupCreationContext();
+  const { wizardMode } = state;
+
+  if (wizardMode === "preset") {
+    return <PresetWizardContent />;
+  }
+
+  return <ClassicWizardContent />;
 }
 
 export default function CreateRollupPage() {

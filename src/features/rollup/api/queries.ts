@@ -10,7 +10,7 @@ import {
   getBackupStatus,
   getBackupCheckpoints,
 } from "../services/rollupService";
-import { getIntegrations } from "@/features/integrations/services/integrationService";
+import { getPresets, getPresetDetail, getFundingStatus } from "../services/presetService";
 
 export const rollupKeys = {
   all: ["rollups"] as const,
@@ -30,6 +30,9 @@ export const rollupKeys = {
   list: (filters: string) => [...rollupKeys.lists(), { filters }] as const,
   details: () => [...rollupKeys.all, "detail"] as const,
   detail: (id: string) => [...rollupKeys.details(), id] as const,
+  presets: ["presets"] as const,
+  presetDetail: (id: string) => [...rollupKeys.presets, id] as const,
+  fundingStatus: (deploymentId: string) => ["fundingStatus", deploymentId] as const,
 } as const;
 
 export const useRollups = () => {
@@ -140,3 +143,32 @@ export const useBackupCheckpointsQuery = (id?: string, limit?: string) => {
     staleTime: 60000,
   });
 };
+
+export const usePresetsQuery = () => {
+  return useQuery({
+    queryKey: rollupKeys.presets,
+    queryFn: getPresets,
+    staleTime: 300000, // 5 minutes - presets rarely change
+  });
+};
+
+export const usePresetDetailQuery = (id?: string) => {
+  return useQuery({
+    queryKey: id ? rollupKeys.presetDetail(id) : (["presets", "disabled"] as const),
+    queryFn: () => getPresetDetail(id as string),
+    enabled: Boolean(id),
+    staleTime: 300000,
+  });
+};
+
+export const useFundingStatusQuery = (deploymentId?: string) => {
+  return useQuery({
+    queryKey: deploymentId
+      ? rollupKeys.fundingStatus(deploymentId)
+      : (["fundingStatus", "disabled"] as const),
+    queryFn: () => getFundingStatus(deploymentId as string),
+    enabled: Boolean(deploymentId),
+    refetchInterval: 10000, // 10-second polling
+  });
+};
+

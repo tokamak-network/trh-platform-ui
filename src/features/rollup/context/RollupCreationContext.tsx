@@ -2,11 +2,17 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import type { CreateRollupFormData } from "../schemas/create-rollup";
+import type { PresetDetail } from "../schemas/preset";
+
+export type WizardMode = "classic" | "preset";
 
 interface RollupCreationState {
   formData: CreateRollupFormData | null;
   currentStep: number;
   hasUnsavedChanges: boolean;
+  wizardMode: WizardMode;
+  selectedPreset: PresetDetail | null;
+  pendingDeploymentId: string | null;
 }
 
 interface RollupCreationContextType {
@@ -15,6 +21,9 @@ interface RollupCreationContextType {
   updateCurrentStep: (step: number) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
   resetState: () => void;
+  setWizardMode: (mode: WizardMode) => void;
+  setSelectedPreset: (preset: PresetDetail | null) => void;
+  setPendingDeploymentId: (id: string | null) => void;
 }
 
 const defaultFormData: CreateRollupFormData = {
@@ -57,6 +66,9 @@ const initialState: RollupCreationState = {
   formData: null,
   currentStep: 1,
   hasUnsavedChanges: false,
+  wizardMode: "preset",
+  selectedPreset: null,
+  pendingDeploymentId: null,
 };
 
 const RollupCreationContext = createContext<RollupCreationContextType | undefined>(undefined);
@@ -90,6 +102,18 @@ export function RollupCreationProvider({ children }: { children: ReactNode }) {
     setState(initialState);
   };
 
+  const setWizardMode = (mode: WizardMode) => {
+    setState(prev => ({ ...prev, wizardMode: mode, currentStep: 1 }));
+  };
+
+  const setSelectedPreset = (preset: PresetDetail | null) => {
+    setState(prev => ({ ...prev, selectedPreset: preset }));
+  };
+
+  const setPendingDeploymentId = (id: string | null) => {
+    setState(prev => ({ ...prev, pendingDeploymentId: id }));
+  };
+
   return (
     <RollupCreationContext.Provider
       value={{
@@ -98,6 +122,9 @@ export function RollupCreationProvider({ children }: { children: ReactNode }) {
         updateCurrentStep,
         setHasUnsavedChanges,
         resetState,
+        setWizardMode,
+        setSelectedPreset,
+        setPendingDeploymentId,
       }}
     >
       {children}
