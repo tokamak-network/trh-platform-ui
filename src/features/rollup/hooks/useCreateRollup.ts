@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Network, Database, Tag, CheckCircle } from "lucide-react";
 import { useDeployRollupMutation } from "../api";
+import { CHAIN_NETWORK } from "../const";
 import type { CreateRollupFormData } from "../schemas/create-rollup";
 import {
   convertFormToDeploymentRequest,
@@ -41,6 +42,9 @@ export const STEPS = [
     icon: CheckCircle,
   },
 ];
+
+const isLocalNetwork = (network: string | undefined) =>
+  network === CHAIN_NETWORK.LOCAL_TESTNET;
 
 export function useCreateRollup() {
   const router = useRouter();
@@ -108,57 +112,53 @@ export function useCreateRollup() {
     deploymentGasEth: string;
   } | undefined>(undefined);
 
+  const buildValidationPayload = useCallback((formData: CreateRollupFormData) => ({
+    network: formData.networkAndChain.network,
+    l1RpcUrl: formData.networkAndChain.l1RpcUrl,
+    l1BeaconUrl: formData.networkAndChain.l1BeaconUrl,
+    l2BlockTime: formData.networkAndChain.l2BlockTime
+      ? parseInt(formData.networkAndChain.l2BlockTime)
+      : 6,
+    batchSubmissionFrequency: formData.networkAndChain.batchSubmissionFreq
+      ? parseInt(formData.networkAndChain.batchSubmissionFreq)
+      : 1440,
+    outputRootFrequency: formData.networkAndChain.outputRootFreq
+      ? parseInt(formData.networkAndChain.outputRootFreq)
+      : 240,
+    challengePeriod: formData.networkAndChain.challengePeriod
+      ? parseInt(formData.networkAndChain.challengePeriod)
+      : 12,
+    adminAddress: formData.accountAndAws.adminAccount,
+    sequencerAddress: formData.accountAndAws.sequencerAccount,
+    batcherAddress: formData.accountAndAws.batchAccount,
+    proposerAddress: formData.accountAndAws.proposerAccount,
+    awsAccessKey: formData.accountAndAws.awsAccessKey,
+    awsSecretAccessKey: formData.accountAndAws.awsSecretKey,
+    awsRegion: formData.accountAndAws.awsRegion,
+    chainName: formData.networkAndChain.chainName,
+    mainnetConfirmation:
+      formData.networkAndChain.network === "mainnet" &&
+        formData.confirmation?.agreedToMainnetRisks
+        ? {
+          acknowledgedIrreversibility: true,
+          acknowledgedCosts: true,
+          acknowledgedRisks: true,
+          confirmationTimestamp: new Date().toISOString(),
+        }
+        : undefined,
+  }), []);
+
   const validateAndEstimateDeployment = useCallback(async () => {
-    // Validate all form fields before deployment
     const isValid = await form.trigger();
-    if (!isValid) {
-      return false;
-    }
+    if (!isValid) return false;
 
     const formData = form.getValues();
 
     try {
       toast.loading("Validating deployment parameters...");
 
-      const validationPayload = {
-        network: formData.networkAndChain.network,
-        l1RpcUrl: formData.networkAndChain.l1RpcUrl,
-        l1BeaconUrl: formData.networkAndChain.l1BeaconUrl,
-        l2BlockTime: formData.networkAndChain.l2BlockTime
-          ? parseInt(formData.networkAndChain.l2BlockTime)
-          : 6,
-        batchSubmissionFrequency: formData.networkAndChain.batchSubmissionFreq
-          ? parseInt(formData.networkAndChain.batchSubmissionFreq)
-          : 1440,
-        outputRootFrequency: formData.networkAndChain.outputRootFreq
-          ? parseInt(formData.networkAndChain.outputRootFreq)
-          : 240,
-        challengePeriod: formData.networkAndChain.challengePeriod
-          ? parseInt(formData.networkAndChain.challengePeriod)
-          : 12,
-        // Use ADDRESSES (not private keys) for validation
-        adminAddress: formData.accountAndAws.adminAccount,
-        sequencerAddress: formData.accountAndAws.sequencerAccount,
-        batcherAddress: formData.accountAndAws.batchAccount,
-        proposerAddress: formData.accountAndAws.proposerAccount,
-        awsAccessKey: formData.accountAndAws.awsAccessKey,
-        awsSecretAccessKey: formData.accountAndAws.awsSecretKey,
-        awsRegion: formData.accountAndAws.awsRegion,
-        chainName: formData.networkAndChain.chainName,
-        mainnetConfirmation:
-          formData.networkAndChain.network === "mainnet" &&
-            formData.confirmation?.agreedToMainnetRisks
-            ? {
-              acknowledgedIrreversibility: true,
-              acknowledgedCosts: true,
-              acknowledgedRisks: true,
-              confirmationTimestamp: new Date().toISOString(),
-            }
-            : undefined,
-      };
-
       const { validateDeployment } = await import("../services/rollupService");
-      const validationResult = await validateDeployment(validationPayload);
+      const validationResult = await validateDeployment(buildValidationPayload(formData));
 
       if (!validationResult.allValid) {
         toast.dismiss();
@@ -167,13 +167,10 @@ export function useCreateRollup() {
           .map(([key, check]) => `${key}: ${check.error}`)
           .join("\n");
 
-        toast.error(`Validation Failed:\n${errors}`, {
-          duration: 5000,
-        });
+        toast.error(`Validation Failed:\n${errors}`, { duration: 5000 });
         return false;
       }
 
-      // Update estimated cost if valid
       if (validationResult.estimatedCost) {
         setEstimatedCost(validationResult.estimatedCost);
       }
@@ -181,24 +178,134 @@ export function useCreateRollup() {
       toast.dismiss();
       toast.success("Validation passed!");
       return true;
-    } catch (error) {
+    } catch {
       toast.dismiss();
-      console.error("Validation error:", error);
-      toast.error("Validation service unavailable. Proceeding with caution...");
-      // Optionally return true to allow deployment if validation service fails
-      return true;
+      toast.error("Validation service unavailable. Please try again later.");
+      return false;
     }
-  }, [form, setEstimatedCost]);
+  }, [form, setEstimatedCost, buildValidationPayload]);
 
   const handleDeployRollup = async () => {
-    const isValid = await validateAndEstimateDeployment();
-    if (!isValid) return;
-
     const formData = form.getValues();
-    const request = convertFormToDeploymentRequest(formData);
 
+    if (!isLocalNetwork(formData.networkAndChain.network)) {
+      const isValid = await validateAndEstimateDeployment();
+      if (!isValid) return;
+    }
+
+    const request = convertFormToDeploymentRequest(formData);
     form.setError("root", { message: "" });
     await deployMutation.mutateAsync(request);
+  };
+
+  const validateStep1 = async (isLocal: boolean): Promise<boolean | "blocked"> => {
+    const baseFields = [
+      "networkAndChain.network",
+      "networkAndChain.chainName",
+      ...(isLocal
+        ? (["networkAndChain.kubeconfigPath"] as const)
+        : (["networkAndChain.l1RpcUrl", "networkAndChain.l1BeaconUrl"] as const)),
+    ] as const;
+
+    const advancedFields = [
+      "networkAndChain.l2BlockTime",
+      "networkAndChain.batchSubmissionFreq",
+      "networkAndChain.outputRootFreq",
+      "networkAndChain.challengePeriod",
+    ] as const;
+
+    const isValid = await form.trigger([
+      ...baseFields,
+      ...(!isLocal && form.getValues("networkAndChain.advancedConfig")
+        ? advancedFields
+        : []),
+    ]);
+
+    if (!isValid) return false;
+    if (isLocal) return true;
+
+    return verifyRpcConnection();
+  };
+
+  const verifyRpcConnection = async (): Promise<boolean | "blocked"> => {
+    const formData = form.getValues();
+    const rpcUrl = formData.networkAndChain.l1RpcUrl;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      toast.loading("Verifying RPC connection...", { id: "check-rpc" });
+      const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { staticNetwork: null });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("RPC Connection Timed out")), 5000);
+      });
+
+      const network = await Promise.race([provider.getNetwork(), timeoutPromise]);
+      clearTimeout(timer);
+
+      const chainId = Number(network.chainId);
+
+      if (formData.networkAndChain.network === "mainnet" && chainId !== 1) {
+        throw new Error(`Chain ID mismatch: Got ${chainId}, expected 1 (Mainnet)`);
+      } else if (formData.networkAndChain.network === "testnet" && chainId !== 11155111) {
+        throw new Error(`Chain ID mismatch: Got ${chainId}, expected 11155111 (Sepolia)`);
+      }
+
+      toast.success("RPC Connection Verified", { id: "check-rpc" });
+      return true;
+    } catch (error) {
+      clearTimeout(timer);
+      let msg = "Unknown RPC validation error";
+      if (error instanceof Error) {
+        msg = error.message;
+        if ("code" in error && (error as { code: unknown }).code === "NETWORK_ERROR") {
+          msg = "Network Error (CORS or Invalid URL)";
+        }
+      }
+      toast.error(`RPC Validation Failed:\n${msg}`, { id: "check-rpc" });
+      return "blocked";
+    }
+  };
+
+  const validateStep2 = async (isLocal: boolean): Promise<boolean> => {
+    const accountFields = [
+      "accountAndAws.seedPhrase",
+      "accountAndAws.adminAccount",
+      "accountAndAws.adminPrivateKey",
+      "accountAndAws.proposerAccount",
+      "accountAndAws.proposerPrivateKey",
+      "accountAndAws.batchAccount",
+      "accountAndAws.batchPrivateKey",
+      "accountAndAws.sequencerAccount",
+      "accountAndAws.sequencerPrivateKey",
+    ] as const;
+    const awsFields = [
+      "accountAndAws.accountName",
+      "accountAndAws.credentialId",
+      "accountAndAws.awsAccessKey",
+      "accountAndAws.awsSecretKey",
+      "accountAndAws.awsRegion",
+    ] as const;
+    return form.trigger([
+      ...accountFields,
+      ...(isLocal ? [] : awsFields),
+    ]);
+  };
+
+  const validateStep3 = async (isLocal: boolean): Promise<boolean | "skipped"> => {
+    if (isLocal) {
+      form.setValue("daoCandidate", undefined);
+      updateCurrentStep(state.currentStep + 1);
+      return "skipped";
+    }
+    if (form.getValues("daoCandidate")) {
+      return form.trigger([
+        "daoCandidate.amount",
+        "daoCandidate.memo",
+        "daoCandidate.nameInfo",
+      ] as const);
+    }
+    return true;
   };
 
   const goToNextStep = async () => {
@@ -216,121 +323,26 @@ export function useCreateRollup() {
       return;
     }
 
-
-    // Validate current step fields
-    let isValid = false;
+    const isLocal = isLocalNetwork(form.getValues("networkAndChain.network"));
+    let result: boolean | "blocked" | "skipped" = false;
 
     switch (state.currentStep) {
-      case 1: // Network & Chain step
-        const baseFields = [
-          "networkAndChain.network",
-          "networkAndChain.chainName",
-          "networkAndChain.l1RpcUrl",
-          "networkAndChain.l1BeaconUrl",
-        ] as const;
-
-        const advancedFields = [
-          "networkAndChain.l2BlockTime",
-          "networkAndChain.batchSubmissionFreq",
-          "networkAndChain.outputRootFreq",
-          "networkAndChain.challengePeriod",
-        ] as const;
-
-        isValid = await form.trigger([
-          ...baseFields,
-          ...(form.getValues("networkAndChain.advancedConfig")
-            ? advancedFields
-            : []),
-        ]);
-
-        if (isValid) {
-          const formData = form.getValues();
-          const rpcUrl = formData.networkAndChain.l1RpcUrl;
-
-          try {
-            toast.loading("Verifying RPC connection...", { id: "check-rpc" });
-            // Create a provider and fetch network to check ChainID
-            // Use static provider to avoid potential network detection delays
-            const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, { staticNetwork: null });
-
-            // Set a timeout for the request to avoid hanging
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("RPC Connection Timed out")), 5000)
-            );
-
-            const networkPromise = provider.getNetwork();
-            const network = await Promise.race([networkPromise, timeoutPromise]) as ethers.Network;
-
-            const chainId = Number(network.chainId);
-            const isMainnet = chainId === 1;
-            const isSepolia = chainId === 11155111;
-
-            if (formData.networkAndChain.network === "mainnet") {
-              if (!isMainnet) {
-                throw new Error(`Chain ID mismatch: Got ${chainId}, expected 1 (Mainnet)`);
-              }
-            } else if (formData.networkAndChain.network === "testnet") {
-              if (!isSepolia) {
-                // For testnet, strictly enforce Sepolia as SDK targets it by default
-                throw new Error(`Chain ID mismatch: Got ${chainId}, expected 11155111 (Sepolia)`);
-              }
-            }
-
-            toast.success("RPC Connection Verified", { id: "check-rpc" });
-          } catch (error) {
-            console.error("RPC Check Error:", error);
-            // Allow bypassing strict RPC check if it's a CORS issue or other network error, 
-            // but for Mainnet we should be strict. 
-            // Here we prioritize safety: Block on error.
-            let msg = "Unknown RPC validation error";
-            if (error instanceof Error) {
-              msg = error.message;
-              if ("code" in error && (error as { code: unknown }).code === "NETWORK_ERROR") {
-                msg = "Network Error (CORS or Invalid URL)";
-              }
-            }
-            toast.error(`RPC Validation Failed:\n${msg}`, { id: "check-rpc" });
-            return; // Block going to next step
-          }
-        }
+      case 1:
+        result = await validateStep1(isLocal);
         break;
-      case 2: // Account & AWS step
-        isValid = await form.trigger([
-          "accountAndAws.seedPhrase",
-          "accountAndAws.adminAccount",
-          "accountAndAws.adminPrivateKey",
-          "accountAndAws.proposerAccount",
-          "accountAndAws.proposerPrivateKey",
-          "accountAndAws.batchAccount",
-          "accountAndAws.batchPrivateKey",
-          "accountAndAws.sequencerAccount",
-          "accountAndAws.sequencerPrivateKey",
-          "accountAndAws.accountName",
-          "accountAndAws.credentialId",
-          "accountAndAws.awsAccessKey",
-          "accountAndAws.awsSecretKey",
-          "accountAndAws.awsRegion",
-        ] as const);
+      case 2:
+        result = await validateStep2(isLocal);
         break;
-      case 3: // DAO Candidate step
-        // If daoCandidate exists, validate its fields
-        if (form.getValues("daoCandidate")) {
-          isValid = await form.trigger([
-            "daoCandidate.amount",
-            "daoCandidate.memo",
-            "daoCandidate.nameInfo",
-          ] as const);
-        } else {
-          // If daoCandidate is undefined (skipped), validation passes
-          isValid = true;
-        }
-
+      case 3:
+        result = await validateStep3(isLocal);
         break;
       default:
-        isValid = true;
+        result = true;
     }
 
-    if (isValid) {
+    if (result === "blocked" || result === "skipped") return;
+
+    if (result) {
       updateCurrentStep(state.currentStep + 1);
     }
   };

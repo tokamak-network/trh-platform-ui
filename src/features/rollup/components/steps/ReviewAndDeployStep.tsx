@@ -14,7 +14,7 @@ import { CheckCircle, AlertCircle, Rocket, Eye, EyeOff, Database } from "lucide-
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
-import { CHAIN_NETWORK } from "../../const";
+import { CHAIN_NETWORK, DEFAULT_KUBECONFIG_PATH } from "../../const";
 
 interface DataItem {
   label: string;
@@ -41,13 +41,16 @@ export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps)
   const [showSecretKey, setShowSecretKey] = useState(false);
 
   const isTestnet = formData.networkAndChain.network === CHAIN_NETWORK.TESTNET;
+  const isLocal = formData.networkAndChain.network === CHAIN_NETWORK.LOCAL_TESTNET;
   const sections: (Section | false)[] = [
     {
       title: "Network & Chain",
       data: [
         { label: "Network", value: formData.networkAndChain.network },
         { label: "Chain Name", value: formData.networkAndChain.chainName },
-        { label: "L1 RPC URL", value: formData.networkAndChain.l1RpcUrl },
+        ...(!isLocal
+          ? [{ label: "L1 RPC URL", value: formData.networkAndChain.l1RpcUrl }]
+          : []),
       ],
     },
     {
@@ -65,7 +68,7 @@ export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps)
         },
       ],
     },
-    {
+    !isLocal && {
       title: "AWS Configuration",
       data: [
         { label: "Account Name", value: formData.accountAndAws.accountName },
@@ -93,6 +96,12 @@ export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps)
         { label: "AWS Region", value: formData.accountAndAws.awsRegion },
       ],
     },
+    isLocal && {
+      title: "Local Deployment",
+      data: [
+        { label: "Kubeconfig Path", value: formData.networkAndChain.kubeconfigPath || DEFAULT_KUBECONFIG_PATH },
+      ],
+    },
     formData.daoCandidate ? {
       title: "DAO Candidate",
       data: [
@@ -116,9 +125,9 @@ export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {sections.filter(Boolean).map((section, index) => {
-            if (!section) return null;
-            return (
+          {(() => {
+            const validSections = sections.filter(Boolean) as Section[];
+            return validSections.map((section, index) => (
               <div key={section.title}>
                 <div className="space-y-3">
                   <h3 className="font-semibold text-lg">{section.title}</h3>
@@ -138,12 +147,12 @@ export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps)
                     ))}
                   </div>
                 </div>
-                {index < sections.filter(Boolean).length - 1 && (
+                {index < validSections.length - 1 && (
                   <Separator className="my-6" />
                 )}
               </div>
-            );
-          })}
+            ));
+          })()}
         </CardContent>
       </Card>
 
@@ -223,7 +232,19 @@ export function ReviewAndDeployStep({ estimatedCost }: ReviewAndDeployStepProps)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {formData.networkAndChain.network === "mainnet" ? (
+          {isLocal ? (
+            <div className="flex items-center gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+              <AlertCircle className="h-5 w-5 text-green-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-900">
+                  Local Deployment
+                </p>
+                <p className="text-sm text-green-700">
+                  This will deploy the L2 stack on your local Kubernetes cluster using kind. No real assets will be used.
+                </p>
+              </div>
+            </div>
+          ) : formData.networkAndChain.network === "mainnet" ? (
             <div className="flex flex-col gap-4 p-4 bg-red-50 rounded-lg border border-red-200">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />

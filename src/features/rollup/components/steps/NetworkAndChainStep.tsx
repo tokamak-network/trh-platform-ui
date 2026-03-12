@@ -22,7 +22,7 @@ import { useFormContext } from "react-hook-form";
 import { RPCSelector } from "@/components/molecules";
 import { useRpcUrls } from "@/features/configuration/rpc-management/hooks/useRpcUrls";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
-import { CHAIN_NETWORK } from "../../const";
+import { CHAIN_NETWORK, DEFAULT_KUBECONFIG_PATH } from "../../const";
 
 export function NetworkAndChainStep() {
   const {
@@ -83,6 +83,10 @@ export function NetworkAndChainStep() {
 
   const handleNetworkChange = async (value: string) => {
     setValue("networkAndChain.network", value);
+    // Clear kubeconfigPath when switching away from LOCAL_TESTNET
+    if (value !== CHAIN_NETWORK.LOCAL_TESTNET) {
+      setValue("networkAndChain.kubeconfigPath", undefined);
+    }
     // Update challenge period based on network if advanced config is enabled
     if (advancedConfig) {
       const challengePeriod = value === "mainnet"
@@ -174,6 +178,19 @@ export function NetworkAndChainStep() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
+            {selectedNetwork === CHAIN_NETWORK.LOCAL_TESTNET && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+                <Info className="w-5 h-5 text-green-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-green-900">
+                    Local Testnet Deployment
+                  </h4>
+                  <p className="text-sm text-green-700 mt-1">
+                    Deploys the L2 stack on your local Kubernetes cluster (kind). No AWS credentials or external RPC endpoints required.
+                  </p>
+                </div>
+              </div>
+            )}
             {selectedNetwork === "mainnet" && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
@@ -221,11 +238,19 @@ export function NetworkAndChainStep() {
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value={CHAIN_NETWORK.LOCAL_TESTNET}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">Local Testnet</span>
+                            <span className="text-xs text-slate-500">
+                              Deploy on local Kubernetes (no AWS)
+                            </span>
+                          </div>
+                        </SelectItem>
                         <SelectItem value={CHAIN_NETWORK.TESTNET}>
                           <div className="flex flex-col">
                             <span className="font-medium">Testnet</span>
                             <span className="text-xs text-slate-500">
-                              For development and testing
+                              For development and testing (AWS)
                             </span>
                           </div>
                         </SelectItem>
@@ -233,7 +258,7 @@ export function NetworkAndChainStep() {
                           <div className="flex flex-col">
                             <span className="font-medium">Mainnet</span>
                             <span className="text-xs text-slate-500">
-                              Production environment
+                              Production environment (AWS)
                             </span>
                           </div>
                         </SelectItem>
@@ -300,39 +325,66 @@ export function NetworkAndChainStep() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RPCSelector
-                id="l1RpcUrl"
-                label="L1 RPC URL"
-                placeholder="https://eth-sepolia.g.alchemy.com/v2/gLQMMAYYch413sW"
-                value={formData.networkAndChain?.l1RpcUrl || ""}
-                onChange={handleL1RpcUrlChange}
-                rpcUrls={executionLayerRpcs}
-                error={errors.networkAndChain?.l1RpcUrl?.message}
-                required
-                tooltip="The RPC endpoint for the L1 network execution layer"
-                rpcType="ExecutionLayer"
-                network={networkFilter as "Mainnet" | "Testnet"}
-                onSaveUrl={addRpcUrl}
-                allowSave={true}
-              />
+            {selectedNetwork !== CHAIN_NETWORK.LOCAL_TESTNET && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <RPCSelector
+                  id="l1RpcUrl"
+                  label="L1 RPC URL"
+                  placeholder="https://eth-sepolia.g.alchemy.com/v2/gLQMMAYYch413sW"
+                  value={formData.networkAndChain?.l1RpcUrl || ""}
+                  onChange={handleL1RpcUrlChange}
+                  rpcUrls={executionLayerRpcs}
+                  error={errors.networkAndChain?.l1RpcUrl?.message}
+                  required
+                  tooltip="The RPC endpoint for the L1 network execution layer"
+                  rpcType="ExecutionLayer"
+                  network={networkFilter as "Mainnet" | "Testnet"}
+                  onSaveUrl={addRpcUrl}
+                  allowSave={true}
+                />
 
-              <RPCSelector
-                id="l1BeaconUrl"
-                label="L1 Beacon URL"
-                placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/4ed7d53b815c434c082db3eb2f49612c914afe48/"
-                value={formData.networkAndChain?.l1BeaconUrl || ""}
-                onChange={handleL1BeaconUrlChange}
-                rpcUrls={beaconChainRpcs}
-                error={errors.networkAndChain?.l1BeaconUrl?.message}
-                required
-                tooltip="The beacon chain endpoint for the L1 network"
-                rpcType="BeaconChain"
-                network={networkFilter as "Mainnet" | "Testnet"}
-                onSaveUrl={addRpcUrl}
-                allowSave={true}
-              />
-            </div>
+                <RPCSelector
+                  id="l1BeaconUrl"
+                  label="L1 Beacon URL"
+                  placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/4ed7d53b815c434c082db3eb2f49612c914afe48/"
+                  value={formData.networkAndChain?.l1BeaconUrl || ""}
+                  onChange={handleL1BeaconUrlChange}
+                  rpcUrls={beaconChainRpcs}
+                  error={errors.networkAndChain?.l1BeaconUrl?.message}
+                  required
+                  tooltip="The beacon chain endpoint for the L1 network"
+                  rpcType="BeaconChain"
+                  network={networkFilter as "Mainnet" | "Testnet"}
+                  onSaveUrl={addRpcUrl}
+                  allowSave={true}
+                />
+              </div>
+            )}
+
+            {selectedNetwork === CHAIN_NETWORK.LOCAL_TESTNET && (
+              <div>
+                <Label htmlFor="kubeconfigPath" className="text-sm font-medium text-slate-700">
+                  Kubeconfig Path <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="kubeconfigPath"
+                  placeholder="~/.kube/config"
+                  value={formData.networkAndChain?.kubeconfigPath || ""}
+                  onChange={(e) => {
+                    setValue("networkAndChain.kubeconfigPath", e.target.value);
+                  }}
+                  className={`mt-1 ${errors.networkAndChain?.kubeconfigPath ? "border-red-500" : ""}`}
+                />
+                {errors.networkAndChain?.kubeconfigPath && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.networkAndChain.kubeconfigPath.message}
+                  </p>
+                )}
+                <p className="text-xs text-slate-500 mt-1">
+                  Path to your kubeconfig file for the local kind cluster.
+                </p>
+              </div>
+            )}
 
             {selectedNetwork === "mainnet" && (
               <div className="flex items-center space-x-2 p-4 bg-slate-50 rounded-lg border border-slate-200 mb-4">
@@ -593,22 +645,34 @@ export function NetworkAndChainStep() {
                   {formData.networkAndChain?.chainName || "Not set"}
                 </span>
               </div>
-              <div>
-                <span className="font-medium text-slate-700">L1 RPC URL:</span>
-                <span className="ml-2 text-slate-900">
-                  {formData.networkAndChain?.l1RpcUrl ? "••••••••" : "Not set"}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-slate-700">
-                  L1 Beacon URL:
-                </span>
-                <span className="ml-2 text-slate-900">
-                  {formData.networkAndChain?.l1BeaconUrl
-                    ? "••••••••"
-                    : "Not set"}
-                </span>
-              </div>
+              {selectedNetwork !== CHAIN_NETWORK.LOCAL_TESTNET && (
+                <>
+                  <div>
+                    <span className="font-medium text-slate-700">L1 RPC URL:</span>
+                    <span className="ml-2 text-slate-900">
+                      {formData.networkAndChain?.l1RpcUrl ? "••••••••" : "Not set"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-slate-700">
+                      L1 Beacon URL:
+                    </span>
+                    <span className="ml-2 text-slate-900">
+                      {formData.networkAndChain?.l1BeaconUrl
+                        ? "••••••••"
+                        : "Not set"}
+                    </span>
+                  </div>
+                </>
+              )}
+              {selectedNetwork === CHAIN_NETWORK.LOCAL_TESTNET && (
+                <div>
+                  <span className="font-medium text-slate-700">Kubeconfig:</span>
+                  <span className="ml-2 text-slate-900">
+                    {formData.networkAndChain?.kubeconfigPath || DEFAULT_KUBECONFIG_PATH}
+                  </span>
+                </div>
+              )}
               {advancedConfig && (
                 <>
                   <div>

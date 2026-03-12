@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CHAIN_NETWORK } from "../const";
+import { CHAIN_NETWORK, DEFAULT_KUBECONFIG_PATH } from "../const";
 
 // Network & Chain Schema
 export const networkAndChainSchema = z
@@ -28,7 +28,20 @@ export const networkAndChainSchema = z
     challengePeriod: z.string().optional(),
 reuseDeployment: z.boolean().optional(),
     enableBackup: z.boolean(),
+    kubeconfigPath: z.string().optional(),
   })
+  .refine(
+    (data) => {
+      if (data.network === CHAIN_NETWORK.LOCAL_TESTNET) {
+        return !!data.kubeconfigPath && data.kubeconfigPath.length > 0;
+      }
+      return true;
+    },
+    {
+      message: "Kubeconfig path is required for local testnet",
+      path: ["kubeconfigPath"],
+    }
+  )
   .refine(
     (data) => {
       if (data.outputRootFreq && data.l2BlockTime) {
@@ -143,8 +156,8 @@ export const accountAndAwsSchema = z.object({
   sequencerPrivateKey: z.string().min(1, "Sequencer private key is required"),
   accountName: z.string().min(1, "Account name is required"),
   credentialId: z.string().min(1, "AWS credential is required"),
-  awsAccessKey: z.string(),
-  awsSecretKey: z.string(),
+  awsAccessKey: z.string().min(1, "AWS access key is required"),
+  awsSecretKey: z.string().min(1, "AWS secret key is required"),
   awsRegion: z.string().min(1, "AWS region is required"),
 }).refine(
   (data) => {
@@ -205,8 +218,8 @@ export type BackupConfig = z.infer<typeof backupConfigSchema>;
 // Backend request schema
 export const rollupDeploymentSchema = z.object({
   network: z.string(),
-  l1RpcUrl: z.string().url(),
-  l1BeaconUrl: z.string().url(),
+  l1RpcUrl: z.string().url().optional(),
+  l1BeaconUrl: z.string().url().optional(),
   l2BlockTime: z.number().int().positive(),
   batchSubmissionFrequency: z.number().int().positive(),
   outputRootFrequency: z.number().int().positive(),
@@ -215,9 +228,9 @@ export const rollupDeploymentSchema = z.object({
   sequencerAccount: z.string(),
   batcherAccount: z.string(),
   proposerAccount: z.string(),
-  awsAccessKey: z.string(),
-  awsSecretAccessKey: z.string(),
-  awsRegion: z.string(),
+  awsAccessKey: z.string().optional(),
+  awsSecretAccessKey: z.string().optional(),
+  awsRegion: z.string().optional(),
   chainName: z.string(),
   registerCandidate: z.boolean(),
   registerCandidateParams: z
@@ -228,6 +241,7 @@ export const rollupDeploymentSchema = z.object({
     })
     .optional(),
 reuseDeployment: z.boolean(),
+  kubeconfigPath: z.string().optional(),
   mainnetConfirmation: z
     .object({
       acknowledgedIrreversibility: z.boolean(),
@@ -248,6 +262,7 @@ export const convertFormToDeploymentRequest = (
   formData: CreateRollupFormData
 ): RollupDeploymentRequest => {
   const { networkAndChain, accountAndAws, daoCandidate, confirmation } = formData;
+  const isLocal = networkAndChain.network === CHAIN_NETWORK.LOCAL_TESTNET;
 
   // For mainnet, backup is always enabled. For testnet, use the form value (defaults to false)
   const backupEnabled =
@@ -257,8 +272,8 @@ export const convertFormToDeploymentRequest = (
 
   const request: RollupDeploymentRequest = {
     network: networkAndChain.network,
-    l1RpcUrl: networkAndChain.l1RpcUrl,
-    l1BeaconUrl: networkAndChain.l1BeaconUrl,
+    l1RpcUrl: isLocal ? undefined : networkAndChain.l1RpcUrl,
+    l1BeaconUrl: isLocal ? undefined : networkAndChain.l1BeaconUrl,
     l2BlockTime: networkAndChain.l2BlockTime
       ? parseInt(networkAndChain.l2BlockTime)
       : 6,
@@ -277,9 +292,9 @@ export const convertFormToDeploymentRequest = (
       .replace("0x", ""),
     batcherAccount: accountAndAws.batchPrivateKey.trim().replace("0x", ""),
     proposerAccount: accountAndAws.proposerPrivateKey.trim().replace("0x", ""),
-    awsAccessKey: accountAndAws.awsAccessKey,
-    awsSecretAccessKey: accountAndAws.awsSecretKey,
-    awsRegion: accountAndAws.awsRegion,
+    awsAccessKey: isLocal ? undefined : accountAndAws.awsAccessKey,
+    awsSecretAccessKey: isLocal ? undefined : accountAndAws.awsSecretKey,
+    awsRegion: isLocal ? undefined : accountAndAws.awsRegion,
     chainName: networkAndChain.chainName,
     registerCandidate: !!daoCandidate,
     registerCandidateParams: daoCandidate
@@ -289,7 +304,10 @@ export const convertFormToDeploymentRequest = (
         nameInfo: daoCandidate.nameInfo,
       }
       : undefined,
-reuseDeployment: networkAndChain.reuseDeployment || false,
+    reuseDeployment: networkAndChain.reuseDeployment || false,
+    kubeconfigPath: isLocal
+      ? (networkAndChain.kubeconfigPath || DEFAULT_KUBECONFIG_PATH)
+      : undefined,
     mainnetConfirmation:
       networkAndChain.network === "mainnet" && confirmation?.agreedToMainnetRisks
         ? {
