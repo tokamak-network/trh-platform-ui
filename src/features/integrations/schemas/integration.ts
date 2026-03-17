@@ -16,7 +16,7 @@ export interface IntegrationInfo {
       enabled: boolean;
       apiToken: string;
       criticalReceivers: {
-        ChatId: string;
+        chatId: string;
       }[];
     };
   };

@@ -36,7 +36,7 @@ const telegramAlertSchema = z.object({
 type TelegramAlertFormFields = z.infer<typeof telegramAlertSchema>;
 
 export type TelegramAlertFormData = TelegramAlertFormFields & {
-  criticalReceivers: Array<{ ChatId: string }>;
+  criticalReceivers: Array<{ chatId: string }>;
 };
 
 interface ConfigureTelegramAlertDialogProps {
@@ -46,7 +46,7 @@ interface ConfigureTelegramAlertDialogProps {
   isPending?: boolean;
   initialData?: {
     apiToken?: string;
-    criticalReceivers?: Array<{ ChatId: string }>;
+    criticalReceivers?: Array<{ chatId: string }>;
   };
 }
 
@@ -69,7 +69,7 @@ export default function ConfigureTelegramAlertDialog({
 
   const [chatId, setChatId] = useState<string>(
     initialData?.criticalReceivers?.length 
-      ? initialData.criticalReceivers[0].ChatId
+      ? initialData.criticalReceivers[0].chatId
       : ""
   );
 
@@ -82,7 +82,7 @@ export default function ConfigureTelegramAlertDialog({
 
     const formData: TelegramAlertFormData = {
       ...data,
-      criticalReceivers: [{ ChatId: chatId.trim() }],
+      criticalReceivers: [{ chatId: chatId.trim() }],
     };
     setPendingData(formData);
     setShowConfirmDialog(true);

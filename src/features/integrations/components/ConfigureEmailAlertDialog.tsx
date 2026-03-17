@@ -28,10 +28,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Eye, EyeOff } from "lucide-react";
 
 const emailAlertSchema = z.object({
-  smtpSmarthost: z
-    .string()
-    .min(1, { message: "SMTP server is required" })
-    .regex(/^[^:]+:\d+$/, { message: "SMTP server must be in format 'host:port'" }),
   smtpFrom: z
     .string()
     .min(1, { message: "From email is required" })
@@ -44,6 +40,7 @@ const emailAlertSchema = z.object({
 type EmailAlertFormFields = z.infer<typeof emailAlertSchema>;
 
 export type EmailAlertFormData = EmailAlertFormFields & {
+  smtpSmarthost: string;
   alertReceivers: string[];
 };
 
@@ -53,7 +50,6 @@ interface ConfigureEmailAlertDialogProps {
   onSubmit: (data: EmailAlertFormData) => void;
   isPending?: boolean;
   initialData?: {
-    smtpSmarthost?: string;
     smtpFrom?: string;
     smtpAuthPassword?: string;
     alertReceivers?: string[];
@@ -74,7 +70,6 @@ export default function ConfigureEmailAlertDialog({
   const form = useForm<EmailAlertFormFields>({
     resolver: zodResolver(emailAlertSchema),
     defaultValues: {
-      smtpSmarthost: initialData?.smtpSmarthost || "",
       smtpFrom: initialData?.smtpFrom || "",
       smtpAuthPassword: initialData?.smtpAuthPassword || "",
     },
@@ -95,6 +90,7 @@ export default function ConfigureEmailAlertDialog({
     // Filter out empty email addresses
     const filteredData: EmailAlertFormData = {
       ...data,
+      smtpSmarthost: "smtp.gmail.com:587",
       alertReceivers: validEmails,
     };
     setPendingData(filteredData);
@@ -146,26 +142,9 @@ export default function ConfigureEmailAlertDialog({
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="smtpSmarthost">SMTP Server</Label>
-              <Input
-                id="smtpSmarthost"
-                placeholder="smtp.gmail.com:587"
-                disabled={isPending}
-                {...form.register("smtpSmarthost")}
-                className={
-                  form.formState.errors.smtpSmarthost ? "border-destructive" : ""
-                }
-              />
-              {form.formState.errors.smtpSmarthost && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.smtpSmarthost.message}
-                </p>
-              )}
-              <p className="text-xs text-gray-500">
-                Format: hostname:port (e.g., smtp.gmail.com:587)
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              SMTP Server: <span className="font-mono">smtp.gmail.com:587</span> (Only Gmail SMTP is supported)
+            </p>
 
             <div className="space-y-2">
               <Label htmlFor="smtpFrom">From Email Address</Label>

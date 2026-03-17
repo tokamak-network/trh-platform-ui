@@ -40,7 +40,7 @@ interface MonitoringCardProps {
           enabled: boolean;
           apiToken: string;
           criticalReceivers: {
-            ChatId: string;
+            chatId: string;
           }[];
         };
       };
@@ -334,7 +334,7 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
                         integration.info?.alert_manager?.telegram
                           ?.criticalReceivers?.length > 0
                           ? integration.info?.alert_manager?.telegram?.criticalReceivers
-                              .map((receiver) => receiver.ChatId)
+                              .map((receiver) => receiver.chatId)
                               .join(", ")
                           : "None"}
                       </span>
@@ -437,7 +437,6 @@ export function MonitoringCard({ integration, stackId, copiedItem, copyToClipboa
         onSubmit={handleConfigureEmail}
         isPending={configureEmailMutation.isPending}
         initialData={{
-          smtpSmarthost: integration.info?.alert_manager?.email?.smtpSmarthost,
           smtpFrom: integration.info?.alert_manager?.email?.smtpFrom,
           smtpAuthPassword: integration.info?.alert_manager?.email?.smtpAuthPassword,
           alertReceivers: integration.info?.alert_manager?.email?.alertReceivers,
