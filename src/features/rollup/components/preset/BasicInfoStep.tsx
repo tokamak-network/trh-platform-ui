@@ -192,8 +192,8 @@ export function BasicInfoStep() {
         </CardContent>
       </Card>
 
-      {/* Account Setup (reuse existing component) */}
-      <AccountSetup />
+      {/* Account Setup — preset mode: seed phrase only, backend derives accounts */}
+      <AccountSetup mode="preset" />
 
       {/* AWS Configuration */}
       <Card>
