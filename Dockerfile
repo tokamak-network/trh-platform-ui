@@ -1,5 +1,6 @@
 
-FROM node:22-alpine AS builder
+# Build on the native host platform to avoid QEMU SIGILL with Node.js worker threads
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
