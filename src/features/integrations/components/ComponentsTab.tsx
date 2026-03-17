@@ -16,6 +16,7 @@ import {
   Plus,
   Package,
   CheckCircle,
+  Settings2,
 } from "lucide-react";
 import { RollupDetailTabProps } from "../../rollup/schemas/detail-tabs";
 import { ThanosStackStatus } from "../../rollup/schemas/thanos";
@@ -68,13 +69,14 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
 
   const getStatusCounts = () => {
     // Define which statuses are "active" should be counted
-    // this exclude: Cancelled, Cancelling, Terminated, Stopped, Unknown 
-    const activeStatuses = ["Completed", "InProgress", "Pending"];
+    // this exclude: Cancelled, Cancelling, Terminated, Stopped, Unknown
+    const activeStatuses = ["Completed", "InProgress", "Pending", "AwaitingConfig"];
 
     const counts = {
       completed: 0,
       inProgress: 0,
       failed: 0,
+      awaitingConfig: 0,
       total: 0,  //calculate from active statuses
     };
 
@@ -93,6 +95,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         case "InProgress":
         case "Pending":
           counts.inProgress++; // groups all "in progress" states
+          break;
+        case "AwaitingConfig":
+          counts.awaitingConfig++;
           break;
         case "Failed":
           counts.failed++;
@@ -204,7 +209,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center p-4 bg-white/50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">
                   {statusCounts.total}
@@ -224,6 +229,12 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                 <div className="text-sm text-slate-600">In Progress</div>
               </div>
               <div className="text-center p-4 bg-white/50 rounded-lg">
+                <div className="text-2xl font-bold text-amber-600">
+                  {statusCounts.awaitingConfig}
+                </div>
+                <div className="text-sm text-slate-600">Needs Config</div>
+              </div>
+              <div className="text-center p-4 bg-white/50 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">
                   {statusCounts.failed}
                 </div>
@@ -234,7 +245,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
         </Card>
 
         {integrations.filter((i) =>
-          i.status === "Completed" || i.status === "InProgress" || i.status === "Pending" || i.status === "Cancelling"
+          i.status === "Completed" || i.status === "InProgress" || i.status === "Pending" || i.status === "Cancelling" || i.status === "AwaitingConfig"
         ).length === 0 ? (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-gray-50 to-slate-100">
             <CardContent>
@@ -262,12 +273,13 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {integrations
               .filter((integration) =>
-                // Show active integrations: Completed, InProgress, Pending, Cancelling
-                // and hide: failed, Cancelled, terminated, Stopped 
+                // Show active integrations: Completed, InProgress, Pending, Cancelling, AwaitingConfig
+                // and hide: failed, Cancelled, terminated, Stopped
                 integration.status === "Completed" ||
                 integration.status === "InProgress" ||
                 integration.status === "Pending" ||
-                integration.status === "Cancelling"
+                integration.status === "Cancelling" ||
+                integration.status === "AwaitingConfig"
               )
               .map((integration) => (
                 <IntegrationCard key={integration.id} integration={integration} stackId={stack?.id || ""} />
@@ -305,12 +317,20 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                     const isInstalled = integrations.some(
                       (i) => i.type === type && i.status === "Completed"
                     );
+                    const isAwaitingConfig = integrations.some(
+                      (i) => i.type === type && i.status === "AwaitingConfig"
+                    );
                     return (
                       <div className="flex items-center justify-between gap-2">
                         {isInstalled ? (
                           <Badge className="bg-green-100 text-green-800 border-green-200">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Integrated
+                          </Badge>
+                        ) : isAwaitingConfig ? (
+                          <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                            <Settings2 className="w-3 h-3 mr-1" />
+                            Needs Config
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-slate-600">
@@ -323,8 +343,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                             <TooltipTrigger asChild>
                               <span className="inline-flex">
                                 <Button
-                                  aria-label="Install"
+                                  aria-label={isAwaitingConfig ? "Configure" : "Install"}
                                   size="icon"
+                                  variant={isAwaitingConfig ? "outline" : "default"}
                                   disabled={
                                     !isStackDeployed || isAnyInstallPending
                                   }
@@ -357,11 +378,17 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                                     }
                                   }}
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  {isAwaitingConfig ? (
+                                    <Settings2 className="w-4 h-4" />
+                                  ) : (
+                                    <Plus className="w-4 h-4" />
+                                  )}
                                 </Button>
                               </span>
                             </TooltipTrigger>
-                            <TooltipContent>Install</TooltipContent>
+                            <TooltipContent>
+                              {isAwaitingConfig ? "Configure" : "Install"}
+                            </TooltipContent>
                           </Tooltip>
                         )}
                       </div>

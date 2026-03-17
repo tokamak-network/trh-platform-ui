@@ -10,7 +10,7 @@ export const FEE_TOKEN_OPTIONS = [
   { value: "USDC" as const, name: "USD Coin", symbol: "USDC" },
 ] as const;
 
-export const presetKeySchema = z.enum(["standard", "defi", "gaming", "enterprise"]);
+export const presetKeySchema = z.enum(["general", "defi", "gaming", "full"]);
 export type PresetKey = z.infer<typeof presetKeySchema>;
 
 export const presetSummarySchema = z.object({
@@ -44,6 +44,7 @@ export const presetDetailSchema = z.object({
   recommendedFor: z.array(z.string()),
   defaults: presetDefaultsSchema,
   editableFields: z.array(z.string()),
+  modules: z.record(z.string(), z.boolean()).optional(),
 });
 export type PresetDetail = z.infer<typeof presetDetailSchema>;
 
@@ -107,117 +108,23 @@ export const deployWithPresetRequestSchema = z.object({
 });
 export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;
 
-// Mock preset data for development (before backend is ready)
-export const MOCK_PRESETS: PresetSummary[] = [
-  {
-    id: "preset-standard",
-    key: "standard",
-    name: "Standard",
-    description: "Balanced configuration for general-purpose rollups",
+// Frontend-only visual metadata for each preset (icon, use cases, etc.)
+// These fields are not returned by the backend and are maintained here for UI display.
+export const PRESET_UI_METADATA: Record<string, { icon: string; recommendedFor: string[] }> = {
+  general: {
     icon: "layers",
     recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
-    defaultFeeToken: "TON",
   },
-  {
-    id: "preset-defi",
-    key: "defi",
-    name: "DeFi",
-    description: "Optimized for decentralized finance applications with high throughput",
+  defi: {
     icon: "trending-up",
     recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
-    defaultFeeToken: "TON",
   },
-  {
-    id: "preset-gaming",
-    key: "gaming",
-    name: "Gaming",
-    description: "Low latency configuration for gaming and NFT applications",
+  gaming: {
     icon: "gamepad-2",
     recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
-    defaultFeeToken: "TON",
   },
-  {
-    id: "preset-enterprise",
-    key: "enterprise",
-    name: "Enterprise",
-    description: "High security and compliance-focused configuration for enterprise use",
+  full: {
     icon: "building-2",
     recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
-    defaultFeeToken: "TON",
-  },
-];
-
-export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = {
-  "preset-standard": {
-    id: "preset-standard",
-    key: "standard",
-    name: "Standard",
-    description: "Balanced configuration for general-purpose rollups",
-    icon: "layers",
-    recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
-    defaults: {
-      l2BlockTime: 2,
-      batchSubmissionFrequency: 1440,
-      outputRootFrequency: 240,
-      challengePeriod: 604800,
-      enableBackup: true,
-      registerCandidateDefault: false,
-      feeToken: "TON",
-    },
-    editableFields: ["l2BlockTime", "batchSubmissionFrequency", "outputRootFrequency", "feeToken"],
-  },
-  "preset-defi": {
-    id: "preset-defi",
-    key: "defi",
-    name: "DeFi",
-    description: "Optimized for decentralized finance applications with high throughput",
-    icon: "trending-up",
-    recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
-    defaults: {
-      l2BlockTime: 1,
-      batchSubmissionFrequency: 720,
-      outputRootFrequency: 120,
-      challengePeriod: 604800,
-      enableBackup: true,
-      registerCandidateDefault: false,
-      feeToken: "TON",
-    },
-    editableFields: ["batchSubmissionFrequency", "outputRootFrequency", "feeToken"],
-  },
-  "preset-gaming": {
-    id: "preset-gaming",
-    key: "gaming",
-    name: "Gaming",
-    description: "Low latency configuration for gaming and NFT applications",
-    icon: "gamepad-2",
-    recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
-    defaults: {
-      l2BlockTime: 1,
-      batchSubmissionFrequency: 360,
-      outputRootFrequency: 60,
-      challengePeriod: 604800,
-      enableBackup: false,
-      registerCandidateDefault: false,
-      feeToken: "TON",
-    },
-    editableFields: ["batchSubmissionFrequency", "feeToken"],
-  },
-  "preset-enterprise": {
-    id: "preset-enterprise",
-    key: "enterprise",
-    name: "Enterprise",
-    description: "High security and compliance-focused configuration for enterprise use",
-    icon: "building-2",
-    recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
-    defaults: {
-      l2BlockTime: 6,
-      batchSubmissionFrequency: 2880,
-      outputRootFrequency: 480,
-      challengePeriod: 604800,
-      enableBackup: true,
-      registerCandidateDefault: true,
-      feeToken: "TON",
-    },
-    editableFields: ["feeToken"],
   },
 };

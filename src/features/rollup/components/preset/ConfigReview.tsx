@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info } from "lucide-react";
+import { Settings2, Info, Package, Clock, Wrench } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
 import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
 
@@ -23,6 +23,18 @@ interface ConfigReviewProps {
   network: "testnet" | "mainnet";
   onOverridesChange: (overrides: PresetFieldOverride[]) => void;
 }
+
+// Modules that are auto-installed after deployment (no user config needed)
+const AUTO_INSTALL_MODULES = new Set(["bridge", "uptimeService", "crossTrade"]);
+
+// Human-readable labels for preset modules
+const MODULE_LABELS: Record<string, string> = {
+  bridge: "Bridge",
+  blockExplorer: "Block Explorer",
+  monitoring: "Monitoring",
+  crossTrade: "Cross-Chain Trade",
+  uptimeService: "Uptime Service",
+};
 
 const FIELD_LABELS: Record<string, { label: string; unit: string; description: string }> = {
   l2BlockTime: {
@@ -233,6 +245,57 @@ export function ConfigReview({
           )}
         </CardContent>
       </Card>
+
+      {/* Included Tools */}
+      {preset.modules && Object.values(preset.modules).some(Boolean) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-blue-500" />
+              Included Tools
+            </CardTitle>
+            <p className="text-sm text-gray-500">
+              Operational tools enabled by this preset
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Object.entries(preset.modules)
+                .filter(([, enabled]) => enabled)
+                .map(([module]) => {
+                  const isAuto = AUTO_INSTALL_MODULES.has(module);
+                  return (
+                    <div
+                      key={module}
+                      className="flex items-center justify-between rounded-lg border p-3 bg-white"
+                    >
+                      <div className="flex items-center gap-2">
+                        {isAuto ? (
+                          <Clock className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Wrench className="h-4 w-4 text-amber-500" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {MODULE_LABELS[module] ?? module}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={
+                          isAuto
+                            ? "text-green-600 border-green-300 text-xs"
+                            : "text-amber-600 border-amber-300 text-xs"
+                        }
+                      >
+                        {isAuto ? "Auto-deployed" : "Setup required after deploy"}
+                      </Badge>
+                    </div>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
