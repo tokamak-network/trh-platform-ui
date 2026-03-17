@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CHAIN_NETWORK } from "../const";
+import { presetFieldOverrideSchema, presetDefaultsSchema, feeTokenSchema } from "./preset";
 
 // Network & Chain Schema
 export const networkAndChainSchema = z
@@ -185,12 +186,38 @@ export const confirmationSchema = z.object({
   agreedToMainnetRisks: z.boolean().optional(),
 });
 
+// Preset-based wizard basic info schema (simplified inputs for preset flow)
+export const presetBasicInfoSchema = z.object({
+  chainName: z
+    .string()
+    .min(3, "Chain name must be at least 3 characters")
+    .max(32, "Chain name must be 32 characters or less")
+    .regex(
+      /^[a-z0-9-]{3,32}$/,
+      "Must be 3-32 lowercase alphanumeric characters or hyphens"
+    ),
+  network: z.enum(["testnet", "mainnet"]),
+  l1RpcUrl: z.string().min(1, "L1 RPC URL is required").url("Must be a valid URL"),
+  l1BeaconUrl: z.string().min(1, "L1 Beacon URL is required").url("Must be a valid URL"),
+  seedPhrase: z.array(z.string()).length(12, "Seed phrase must contain exactly 12 words"),
+  awsAccessKey: z.string().min(1, "AWS Access Key is required"),
+  awsSecretKey: z.string().min(1, "AWS Secret Key is required"),
+  awsRegion: z.string().min(1, "AWS region is required"),
+  feeToken: feeTokenSchema,
+});
+export type PresetBasicInfo = z.infer<typeof presetBasicInfoSchema>;
+
 // Combined schema for the entire form
 export const createRollupSchema = z.object({
   networkAndChain: networkAndChainSchema,
   accountAndAws: accountAndAwsSchema,
   daoCandidate: daoCandidateSchema,
   confirmation: confirmationSchema,
+  // Preset wizard fields
+  presetId: z.string().optional(),
+  presetDefaults: presetDefaultsSchema.optional(),
+  overrides: z.array(presetFieldOverrideSchema).optional(),
+  presetBasicInfo: presetBasicInfoSchema.optional(),
 });
 
 export type CreateRollupFormData = z.infer<typeof createRollupSchema>;

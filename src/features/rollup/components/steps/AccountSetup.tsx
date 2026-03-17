@@ -28,7 +28,14 @@ import * as bip39 from "bip39";
 import { THANOS_STACK_PREREQUISITE_GUIDE_URL } from "../../const";
 
 
-export function AccountSetup() {
+interface AccountSetupProps {
+  /** "preset" mode uses presetBasicInfo.* paths and hides account selection UI */
+  mode?: "classic" | "preset";
+}
+
+export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
+  const isPreset = mode === "preset";
+
   const {
     setValue,
     control,
@@ -39,13 +46,13 @@ export function AccountSetup() {
   const [seedPhraseConfirmed, setSeedPhraseConfirmed] = useState(false);
 
   const { field: seedPhraseField } = useController({
-    name: "accountAndAws.seedPhrase",
+    name: isPreset ? "presetBasicInfo.seedPhrase" : "accountAndAws.seedPhrase",
     control,
     defaultValue: Array(12).fill(""),
   });
 
   const { field: l1RpcUrlField } = useController({
-    name: "networkAndChain.l1RpcUrl",
+    name: isPreset ? "presetBasicInfo.l1RpcUrl" : "networkAndChain.l1RpcUrl",
     control,
     defaultValue: "https://rpc.sepolia.org",
   });
@@ -75,16 +82,18 @@ export function AccountSetup() {
   });
 
   const { field: networkField } = useController({
-    name: "networkAndChain.network",
+    name: isPreset ? "presetBasicInfo.network" : "networkAndChain.network",
     control,
     defaultValue: "",
   });
 
   const isMainnet = networkField.value === "mainnet";
 
+  const seedPhrase: string[] = seedPhraseField.value ?? Array(12).fill("");
+
   const { accounts, isLoading, error, refreshBalances } = useEthereumAccounts(
-    seedPhraseField.value,
-    l1RpcUrlField.value
+    seedPhrase,
+    l1RpcUrlField.value ?? ""
   );
 
   const generateRandomSeedPhrase = useCallback(() => {
@@ -93,11 +102,13 @@ export function AccountSetup() {
     const words = mnemonic.split(" ");
     seedPhraseField.onChange(words);
 
-    // Reset all account selections since the addresses will change
-    adminAccountField.onChange(undefined);
-    proposerAccountField.onChange(undefined);
-    batchAccountField.onChange(undefined);
-    sequencerAccountField.onChange(undefined);
+    // Reset all account selections since the addresses will change (classic mode only)
+    if (!isPreset) {
+      adminAccountField.onChange(undefined);
+      proposerAccountField.onChange(undefined);
+      batchAccountField.onChange(undefined);
+      sequencerAccountField.onChange(undefined);
+    }
   }, [
     seedPhraseField,
     adminAccountField,
@@ -113,7 +124,7 @@ export function AccountSetup() {
 
       if (words.length > 1) {
         // If we have multiple words, update all inputs
-        const newSeedPhrase = [...seedPhraseField.value];
+        const newSeedPhrase = [...seedPhrase];
         words.forEach((word, i) => {
           if (i < 12) {
             // Only accept valid BIP39 words for paste operations
@@ -124,26 +135,30 @@ export function AccountSetup() {
         });
         seedPhraseField.onChange(newSeedPhrase);
 
-        // Reset account selections when seed phrase changes
-        adminAccountField.onChange(undefined);
-        proposerAccountField.onChange(undefined);
-        batchAccountField.onChange(undefined);
-        sequencerAccountField.onChange(undefined);
+        // Reset account selections when seed phrase changes (classic mode only)
+        if (!isPreset) {
+          adminAccountField.onChange(undefined);
+          proposerAccountField.onChange(undefined);
+          batchAccountField.onChange(undefined);
+          sequencerAccountField.onChange(undefined);
+        }
       } else {
         // Single word update - allow partial words for manual typing
         const word = value.trim().toLowerCase();
 
         // Allow empty string (for deletion) or any input for manual typing
         // We'll validate complete words later when generating accounts
-        const newSeedPhrase = [...seedPhraseField.value];
+        const newSeedPhrase = [...seedPhrase];
         newSeedPhrase[index] = word;
         seedPhraseField.onChange(newSeedPhrase);
 
-        // Reset account selections when seed phrase changes
-        adminAccountField.onChange(undefined);
-        proposerAccountField.onChange(undefined);
-        batchAccountField.onChange(undefined);
-        sequencerAccountField.onChange(undefined);
+        // Reset account selections when seed phrase changes (classic mode only)
+        if (!isPreset) {
+          adminAccountField.onChange(undefined);
+          proposerAccountField.onChange(undefined);
+          batchAccountField.onChange(undefined);
+          sequencerAccountField.onChange(undefined);
+        }
       }
     },
     [
@@ -212,7 +227,7 @@ export function AccountSetup() {
               Words highlighted in yellow are not valid BIP39 words.
             </p>
             <div className="grid grid-cols-3 gap-3">
-              {seedPhraseField.value.map((word: string, index: number) => (
+              {seedPhrase.map((word: string, index: number) => (
                 <div key={index} className="flex items-center gap-2">
                   <span className="text-sm text-slate-500 w-6">{index + 1}</span>
                   <Input
@@ -275,10 +290,10 @@ export function AccountSetup() {
         </CardContent>
       </Card>
 
-      {/* Account Selection */}
+      {/* Account Selection (classic mode only — preset mode derives accounts from seed phrase on the backend) */}
       <div
         className={`space-y-4 transition-opacity duration-200 ${!seedPhraseConfirmed ? "opacity-50 pointer-events-none" : ""
-          }`}
+          } ${isPreset ? "hidden" : ""}`}
       >
         {isLoading && (
           <div className="flex items-center justify-center p-4">

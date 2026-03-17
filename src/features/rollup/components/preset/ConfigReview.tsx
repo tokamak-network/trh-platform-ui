@@ -1,0 +1,238 @@
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Settings2, Info } from "lucide-react";
+import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
+import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
+
+interface ConfigReviewProps {
+  preset: PresetDetail;
+  network: "testnet" | "mainnet";
+  onOverridesChange: (overrides: PresetFieldOverride[]) => void;
+}
+
+const FIELD_LABELS: Record<string, { label: string; unit: string; description: string }> = {
+  l2BlockTime: {
+    label: "L2 Block Time",
+    unit: "seconds",
+    description: "Time between L2 blocks",
+  },
+  batchSubmissionFrequency: {
+    label: "Batch Submission Frequency",
+    unit: "seconds",
+    description: "How often batches are submitted to L1",
+  },
+  outputRootFrequency: {
+    label: "Output Root Frequency",
+    unit: "seconds",
+    description: "How often output roots are proposed",
+  },
+  challengePeriod: {
+    label: "Challenge Period",
+    unit: "seconds",
+    description: "Time window for challenging invalid state (fixed for mainnet)",
+  },
+  enableBackup: {
+    label: "Enable Backup",
+    unit: "",
+    description: "Automatically backup rollup state",
+  },
+  feeToken: {
+    label: "Fee Token",
+    unit: "",
+    description: "Native gas token for the rollup",
+  },
+};
+
+export function ConfigReview({
+  preset,
+  network,
+  onOverridesChange,
+}: ConfigReviewProps) {
+  const [expertMode, setExpertMode] = useState(false);
+  const [overrideValues, setOverrideValues] = useState<Record<string, string | number | boolean>>({});
+
+  const handleFieldChange = (
+    field: string,
+    value: string | number | boolean
+  ) => {
+    const defaultValue = preset.defaults[field as keyof typeof preset.defaults];
+    const updatedOverrides = { ...overrideValues };
+
+    if (value === defaultValue || value === "") {
+      delete updatedOverrides[field];
+    } else {
+      updatedOverrides[field] = value;
+    }
+
+    setOverrideValues(updatedOverrides);
+
+    const overrideArray: PresetFieldOverride[] = Object.entries(updatedOverrides).map(
+      ([f, v]) => ({ field: f, value: v })
+    );
+    onOverridesChange(overrideArray);
+  };
+
+  const changedFields = Object.keys(overrideValues);
+  const isMainnet = network === "mainnet";
+
+  return (
+    <div className="space-y-4">
+      {/* Preset summary */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-blue-500" />
+              Preset Configuration Review
+            </CardTitle>
+            <Badge variant="outline" className="capitalize">
+              {preset.name} Preset
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-500">{preset.description}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Expert Mode Toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-3 bg-gray-50">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-gray-500" />
+              <div>
+                <p className="text-sm font-medium">Expert Mode</p>
+                <p className="text-xs text-gray-500">
+                  Customize editable parameters set by the preset
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={expertMode}
+              onCheckedChange={setExpertMode}
+            />
+          </div>
+
+          <Separator />
+
+          {/* Parameters */}
+          <div className="space-y-3">
+            {Object.entries(preset.defaults).map(([field, defaultValue]) => {
+              const meta = FIELD_LABELS[field];
+              const isEditable = preset.editableFields.includes(field);
+              const isLockedOnMainnet = field === "challengePeriod" && isMainnet;
+              const currentValue = overrideValues[field] ?? defaultValue;
+              const isChanged = field in overrideValues;
+
+              if (!meta) return null;
+
+              return (
+                <div
+                  key={field}
+                  className={`flex items-center justify-between rounded-lg border p-3 ${
+                    isChanged ? "border-blue-200 bg-blue-50" : "bg-white"
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">{meta.label}</p>
+                      {isChanged && (
+                        <Badge variant="outline" className="text-xs text-blue-600 border-blue-300">
+                          Modified
+                        </Badge>
+                      )}
+                      {isLockedOnMainnet && (
+                        <Badge variant="secondary" className="text-xs">
+                          Fixed (Mainnet)
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">{meta.description}</p>
+                  </div>
+
+                  <div className="ml-4 flex items-center gap-2">
+                    {expertMode && isEditable && !isLockedOnMainnet ? (
+                      field === "feeToken" ? (
+                        <Select
+                          value={String(currentValue)}
+                          onValueChange={(val) => handleFieldChange(field, val)}
+                        >
+                          <SelectTrigger className="h-7 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FEE_TOKEN_OPTIONS.map((token) => (
+                              <SelectItem key={token.value} value={token.value}>
+                                {token.symbol}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : typeof defaultValue === "boolean" ? (
+                        <Switch
+                          checked={Boolean(currentValue)}
+                          onCheckedChange={(v) => handleFieldChange(field, v)}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            className="w-24 h-8 text-sm text-right"
+                            value={String(currentValue)}
+                            onChange={(e) =>
+                              handleFieldChange(field, e.target.value)
+                            }
+                          />
+                          {meta.unit && (
+                            <span className="text-xs text-gray-400">{meta.unit}</span>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium tabular-nums">
+                          {typeof defaultValue === "boolean"
+                            ? defaultValue
+                              ? "Enabled"
+                              : "Disabled"
+                            : String(currentValue)}
+                        </span>
+                        {meta.unit && (
+                          <span className="text-xs text-gray-400">{meta.unit}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {changedFields.length > 0 && (
+            <Alert>
+              <Settings2 className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {changedFields.length} parameter{changedFields.length > 1 ? "s" : ""}{" "}
+                overridden from preset defaults:{" "}
+                <strong>
+                  {changedFields
+                    .map((f) => FIELD_LABELS[f]?.label ?? f)
+                    .join(", ")}
+                </strong>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
