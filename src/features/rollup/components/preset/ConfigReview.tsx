@@ -5,10 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Settings2, Info } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
+import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
@@ -41,6 +49,11 @@ const FIELD_LABELS: Record<string, { label: string; unit: string; description: s
     label: "Enable Backup",
     unit: "",
     description: "Automatically backup rollup state",
+  },
+  feeToken: {
+    label: "Fee Token",
+    unit: "",
+    description: "Native gas token for the rollup",
   },
 };
 
@@ -149,7 +162,23 @@ export function ConfigReview({
 
                   <div className="ml-4 flex items-center gap-2">
                     {expertMode && isEditable && !isLockedOnMainnet ? (
-                      typeof defaultValue === "boolean" ? (
+                      field === "feeToken" ? (
+                        <Select
+                          value={String(currentValue)}
+                          onValueChange={(val) => handleFieldChange(field, val)}
+                        >
+                          <SelectTrigger className="h-7 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FEE_TOKEN_OPTIONS.map((token) => (
+                              <SelectItem key={token.value} value={token.value}>
+                                {token.symbol}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : typeof defaultValue === "boolean" ? (
                         <Switch
                           checked={Boolean(currentValue)}
                           onCheckedChange={(v) => handleFieldChange(field, v)}

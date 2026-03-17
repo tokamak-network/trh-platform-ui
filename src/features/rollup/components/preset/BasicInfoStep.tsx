@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Info } from "lucide-react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
+import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
 import { AccountSetup } from "../steps/AccountSetup";
 
 const AWS_REGIONS = [
@@ -37,6 +38,7 @@ export function BasicInfoStep() {
   } = useFormContext<CreateRollupFormData>();
 
   const network = watch("presetBasicInfo.network");
+  const feeToken = watch("presetBasicInfo.feeToken");
   const presetId = watch("presetId");
 
   return (
@@ -97,6 +99,35 @@ export function BasicInfoStep() {
                   {errors.presetBasicInfo.network.message}
                 </p>
               )}
+            </div>
+
+            {/* Fee Token */}
+            <div className="space-y-2">
+              <Label htmlFor="feeToken">
+                Fee Token <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={feeToken ?? "TON"}
+                onValueChange={(val) =>
+                  setValue("presetBasicInfo.feeToken", val as "TON" | "ETH" | "USDT" | "USDC", {
+                    shouldValidate: true,
+                  })
+                }
+              >
+                <SelectTrigger id="feeToken">
+                  <SelectValue placeholder="Select fee token" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FEE_TOKEN_OPTIONS.map((token) => (
+                    <SelectItem key={token.value} value={token.value}>
+                      {token.symbol} - {token.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                Native gas token for the rollup
+              </p>
             </div>
           </div>
 

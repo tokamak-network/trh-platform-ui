@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CHAIN_NETWORK } from "../const";
-import { presetFieldOverrideSchema, presetDefaultsSchema } from "./preset";
+import { presetFieldOverrideSchema, presetDefaultsSchema, feeTokenSchema } from "./preset";
 
 // Network & Chain Schema
 export const networkAndChainSchema = z
@@ -203,6 +203,7 @@ export const presetBasicInfoSchema = z.object({
   awsAccessKey: z.string().min(1, "AWS Access Key is required"),
   awsSecretKey: z.string().min(1, "AWS Secret Key is required"),
   awsRegion: z.string().min(1, "AWS region is required"),
+  feeToken: feeTokenSchema,
 });
 export type PresetBasicInfo = z.infer<typeof presetBasicInfoSchema>;
 

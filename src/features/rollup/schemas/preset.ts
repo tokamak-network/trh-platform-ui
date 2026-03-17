@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const feeTokenSchema = z.enum(["TON", "ETH", "USDT", "USDC"]);
+export type FeeToken = z.infer<typeof feeTokenSchema>;
+
+export const FEE_TOKEN_OPTIONS = [
+  { value: "TON" as const, name: "Tokamak Network Token", symbol: "TON" },
+  { value: "ETH" as const, name: "Ether", symbol: "ETH" },
+  { value: "USDT" as const, name: "Tether USD", symbol: "USDT" },
+  { value: "USDC" as const, name: "USD Coin", symbol: "USDC" },
+] as const;
+
 export const presetKeySchema = z.enum(["standard", "defi", "gaming", "enterprise"]);
 export type PresetKey = z.infer<typeof presetKeySchema>;
 
@@ -10,6 +20,7 @@ export const presetSummarySchema = z.object({
   description: z.string(),
   icon: z.string(),
   recommendedFor: z.array(z.string()),
+  defaultFeeToken: feeTokenSchema.optional(),
 });
 export type PresetSummary = z.infer<typeof presetSummarySchema>;
 
@@ -20,6 +31,7 @@ export const presetDefaultsSchema = z.object({
   challengePeriod: z.number(),
   enableBackup: z.boolean(),
   registerCandidateDefault: z.boolean(),
+  feeToken: feeTokenSchema,
 });
 export type PresetDefaults = z.infer<typeof presetDefaultsSchema>;
 
@@ -90,6 +102,7 @@ export const deployWithPresetRequestSchema = z.object({
   awsRegion: z.string(),
   l1RpcUrl: z.string().url(),
   l1BeaconUrl: z.string().url(),
+  feeToken: feeTokenSchema,
   overrides: z.array(presetFieldOverrideSchema).optional(),
 });
 export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;
@@ -103,6 +116,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
     description: "Balanced configuration for general-purpose rollups",
     icon: "layers",
     recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
+    defaultFeeToken: "TON",
   },
   {
     id: "preset-defi",
@@ -111,6 +125,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
     description: "Optimized for decentralized finance applications with high throughput",
     icon: "trending-up",
     recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
+    defaultFeeToken: "TON",
   },
   {
     id: "preset-gaming",
@@ -119,6 +134,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
     description: "Low latency configuration for gaming and NFT applications",
     icon: "gamepad-2",
     recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
+    defaultFeeToken: "TON",
   },
   {
     id: "preset-enterprise",
@@ -127,6 +143,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
     description: "High security and compliance-focused configuration for enterprise use",
     icon: "building-2",
     recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
+    defaultFeeToken: "TON",
   },
 ];
 
@@ -145,8 +162,9 @@ export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = {
       challengePeriod: 604800,
       enableBackup: true,
       registerCandidateDefault: false,
+      feeToken: "TON",
     },
-    editableFields: ["l2BlockTime", "batchSubmissionFrequency", "outputRootFrequency"],
+    editableFields: ["l2BlockTime", "batchSubmissionFrequency", "outputRootFrequency", "feeToken"],
   },
   "preset-defi": {
     id: "preset-defi",
@@ -162,8 +180,9 @@ export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = {
       challengePeriod: 604800,
       enableBackup: true,
       registerCandidateDefault: false,
+      feeToken: "TON",
     },
-    editableFields: ["batchSubmissionFrequency", "outputRootFrequency"],
+    editableFields: ["batchSubmissionFrequency", "outputRootFrequency", "feeToken"],
   },
   "preset-gaming": {
     id: "preset-gaming",
@@ -179,8 +198,9 @@ export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = {
       challengePeriod: 604800,
       enableBackup: false,
       registerCandidateDefault: false,
+      feeToken: "TON",
     },
-    editableFields: ["batchSubmissionFrequency"],
+    editableFields: ["batchSubmissionFrequency", "feeToken"],
   },
   "preset-enterprise": {
     id: "preset-enterprise",
@@ -196,7 +216,8 @@ export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = {
       challengePeriod: 604800,
       enableBackup: true,
       registerCandidateDefault: true,
+      feeToken: "TON",
     },
-    editableFields: [],
+    editableFields: ["feeToken"],
   },
 };

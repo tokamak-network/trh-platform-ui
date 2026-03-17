@@ -58,6 +58,7 @@ export function usePresetWizard() {
         awsAccessKey: "",
         awsSecretKey: "",
         awsRegion: "",
+        feeToken: "TON" as const,
       },
     },
   });
@@ -69,8 +70,11 @@ export function usePresetWizard() {
   const handleSelectPreset = useCallback(
     (preset: PresetSummary) => {
       setSelectedPreset(preset as PresetDetail);
+      if (preset.defaultFeeToken) {
+        form.setValue("basicInfo.feeToken", preset.defaultFeeToken, { shouldValidate: true });
+      }
     },
-    [setSelectedPreset]
+    [setSelectedPreset, form]
   );
 
   const getProgress = (step: number) => {
@@ -90,6 +94,7 @@ export function usePresetWizard() {
         presetId: selectedPresetId!,
         chainName: basicInfo.chainName,
         network: basicInfo.network,
+        feeToken: basicInfo.feeToken,
         awsAccessKey: basicInfo.awsAccessKey,
         awsSecretKey: basicInfo.awsSecretKey,
         awsRegion: basicInfo.awsRegion,
