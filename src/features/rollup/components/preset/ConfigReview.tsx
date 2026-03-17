@@ -5,18 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Settings2, Info } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
-import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
@@ -65,11 +57,7 @@ export function ConfigReview({
   feeToken,
 }: ConfigReviewProps) {
   const [expertMode, setExpertMode] = useState(false);
-  const [overrideValues, setOverrideValues] = useState<Record<string, string | number | boolean>>(
-    feeToken && feeToken !== String(preset.defaults.feeToken ?? "")
-      ? { feeToken }
-      : {}
-  );
+  const [overrideValues, setOverrideValues] = useState<Record<string, string | number | boolean>>({});
 
   const handleFieldChange = (
     field: string,
@@ -137,8 +125,12 @@ export function ConfigReview({
               const meta = FIELD_LABELS[field];
               const isEditable = preset.editableFields.includes(field);
               const isLockedOnMainnet = field === "challengePeriod" && isMainnet;
-              const currentValue = overrideValues[field] ?? defaultValue;
-              const isChanged = field in overrideValues;
+              // feeToken is set in Basic Info step — always read-only here
+              const isFeeToken = field === "feeToken";
+              const currentValue = isFeeToken
+                ? (feeToken ?? defaultValue)
+                : (overrideValues[field] ?? defaultValue);
+              const isChanged = !isFeeToken && field in overrideValues;
 
               if (!meta) return null;
 
@@ -167,24 +159,8 @@ export function ConfigReview({
                   </div>
 
                   <div className="ml-4 flex items-center gap-2">
-                    {expertMode && isEditable && !isLockedOnMainnet ? (
-                      field === "feeToken" ? (
-                        <Select
-                          value={String(currentValue)}
-                          onValueChange={(val) => handleFieldChange(field, val)}
-                        >
-                          <SelectTrigger className="h-7 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FEE_TOKEN_OPTIONS.map((token) => (
-                              <SelectItem key={token.value} value={token.value}>
-                                {token.symbol}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : typeof defaultValue === "boolean" ? (
+                    {expertMode && isEditable && !isLockedOnMainnet && !isFeeToken ? (
+                      typeof defaultValue === "boolean" ? (
                         <Switch
                           checked={Boolean(currentValue)}
                           onCheckedChange={(v) => handleFieldChange(field, v)}
@@ -207,7 +183,7 @@ export function ConfigReview({
                       <div className="flex items-center gap-1">
                         <span className="text-sm font-medium tabular-nums">
                           {typeof defaultValue === "boolean"
-                            ? defaultValue
+                            ? Boolean(currentValue)
                               ? "Enabled"
                               : "Disabled"
                             : String(currentValue)}
