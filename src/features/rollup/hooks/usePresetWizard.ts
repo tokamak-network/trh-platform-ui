@@ -34,7 +34,7 @@ export const PRESET_STEPS = [
 ];
 
 const presetWizardSchema = z.object({
-  basicInfo: presetBasicInfoSchema,
+  presetBasicInfo: presetBasicInfoSchema,
 });
 
 type PresetWizardFormData = z.infer<typeof presetWizardSchema>;
@@ -49,7 +49,7 @@ export function usePresetWizard() {
   const form = useForm<PresetWizardFormData>({
     resolver: zodResolver(presetWizardSchema),
     defaultValues: {
-      basicInfo: {
+      presetBasicInfo: {
         chainName: "",
         network: "testnet",
         l1RpcUrl: "",
@@ -71,7 +71,7 @@ export function usePresetWizard() {
     (preset: PresetSummary) => {
       setSelectedPreset(preset as PresetDetail);
       if (preset.defaultFeeToken) {
-        form.setValue("basicInfo.feeToken", preset.defaultFeeToken, { shouldValidate: true });
+        form.setValue("presetBasicInfo.feeToken", preset.defaultFeeToken, { shouldValidate: true });
       }
     },
     [setSelectedPreset, form]
@@ -84,7 +84,7 @@ export function usePresetWizard() {
   const progress = getProgress(state.currentStep);
 
   const handleDeploy = useCallback(async () => {
-    const basicInfo = form.getValues("basicInfo");
+    const basicInfo = form.getValues("presetBasicInfo");
 
     try {
       toast.loading("Initiating deployment...", { id: "preset-deploy" });
@@ -125,7 +125,7 @@ export function usePresetWizard() {
     }
 
     if (state.currentStep === 2) {
-      const isValid = await form.trigger("basicInfo");
+      const isValid = await form.trigger("presetBasicInfo");
       if (!isValid) return;
       updateCurrentStep(3);
       return;
@@ -160,7 +160,7 @@ export function usePresetWizard() {
     goToNextStep,
     goToPreviousStep,
     onBack,
-    network: form.watch("basicInfo.network"),
+    network: form.watch("presetBasicInfo.network"),
     pendingDeploymentId: state.pendingDeploymentId,
   };
 }
