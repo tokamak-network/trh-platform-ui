@@ -22,6 +22,7 @@ interface ConfigReviewProps {
   preset: PresetDetail;
   network: "testnet" | "mainnet";
   onOverridesChange: (overrides: PresetFieldOverride[]) => void;
+  feeToken?: string;
 }
 
 const FIELD_LABELS: Record<string, { label: string; unit: string; description: string }> = {
@@ -61,9 +62,14 @@ export function ConfigReview({
   preset,
   network,
   onOverridesChange,
+  feeToken,
 }: ConfigReviewProps) {
   const [expertMode, setExpertMode] = useState(false);
-  const [overrideValues, setOverrideValues] = useState<Record<string, string | number | boolean>>({});
+  const [overrideValues, setOverrideValues] = useState<Record<string, string | number | boolean>>(
+    feeToken && feeToken !== String(preset.defaults.feeToken ?? "")
+      ? { feeToken }
+      : {}
+  );
 
   const handleFieldChange = (
     field: string,
