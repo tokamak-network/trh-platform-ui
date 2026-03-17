@@ -94,6 +94,7 @@ export function usePresetWizard() {
         presetId: selectedPresetId!,
         chainName: basicInfo.chainName,
         network: basicInfo.network,
+        seedPhrase: basicInfo.seedPhrase.join(" "),
         feeToken: basicInfo.feeToken,
         awsAccessKey: basicInfo.awsAccessKey,
         awsSecretKey: basicInfo.awsSecretKey,

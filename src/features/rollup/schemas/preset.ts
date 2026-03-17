@@ -96,7 +96,7 @@ export const deployWithPresetRequestSchema = z.object({
   presetId: z.string(),
   chainName: z.string().regex(/^[a-z0-9-]{3,32}$/, "Must be 3-32 lowercase alphanumeric characters or hyphens"),
   network: z.enum(["testnet", "mainnet"]),
-  seedPhrase: z.string().optional(),
+  seedPhrase: z.string().min(1),
   awsAccessKey: z.string(),
   awsSecretKey: z.string(),
   awsRegion: z.string(),
