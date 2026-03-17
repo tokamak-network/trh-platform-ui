@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,9 +59,11 @@ export function FundingStatus({
   };
 
   // Notify parent when all fulfilled
-  if (allFulfilled && onAllFulfilled) {
-    onAllFulfilled();
-  }
+  useEffect(() => {
+    if (allFulfilled && onAllFulfilled) {
+      onAllFulfilled();
+    }
+  }, [allFulfilled, onAllFulfilled]);
 
   if (!deploymentId) {
     return (

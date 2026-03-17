@@ -1,15 +1,12 @@
 "use client";
 
+import { formatEther } from "ethers";
 import { useFundingStatusQuery } from "../api/queries";
 import type { FundingAccount } from "../schemas/preset";
 
-const WEI_PER_ETH = BigInt("1000000000000000000");
-
 export function weiToEth(wei: string): string {
   try {
-    const weiBig = BigInt(wei);
-    const eth = Number(weiBig * BigInt(1000) / WEI_PER_ETH) / 1000;
-    return eth.toFixed(4);
+    return parseFloat(formatEther(wei)).toFixed(4);
   } catch {
     return "0.0000";
   }
