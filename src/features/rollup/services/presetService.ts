@@ -8,6 +8,8 @@ import type {
 import {
   MOCK_PRESETS,
   MOCK_PRESET_DETAILS,
+  presetListResponseSchema,
+  presetDefinitionSchema,
 } from "../schemas/preset";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -17,9 +19,12 @@ export const getPresets = async (): Promise<PresetSummary[]> => {
     return MOCK_PRESETS;
   }
   const response = await apiGet<PresetSummary[]>("stacks/thanos/presets");
-  // TODO: Validate response against presetListResponseSchema (z.array(presetDefinitionSchema))
-  // to catch backend schema drift at runtime. Currently relies on TypeScript generics only.
-  return response.data;
+  const result = presetListResponseSchema.safeParse(response.data);
+  if (!result.success) {
+    console.warn("[PresetService] getPresets schema validation failed:", result.error);
+    return response.data as PresetSummary[];
+  }
+  return result.data;
 };
 
 export const getPresetDetail = async (id: string): Promise<PresetDetail> => {
@@ -29,8 +34,12 @@ export const getPresetDetail = async (id: string): Promise<PresetDetail> => {
     return detail;
   }
   const response = await apiGet<PresetDetail>(`stacks/thanos/presets/${id}`);
-  // TODO: Validate response against presetDefinitionSchema to catch backend schema drift at runtime.
-  return response.data;
+  const result = presetDefinitionSchema.safeParse(response.data);
+  if (!result.success) {
+    console.warn("[PresetService] getPresetDetail schema validation failed:", result.error);
+    return response.data as PresetDetail;
+  }
+  return result.data;
 };
 
 export const startPresetDeployment = async (
