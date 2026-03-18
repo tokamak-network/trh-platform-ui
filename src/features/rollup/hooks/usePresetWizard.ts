@@ -70,6 +70,7 @@ export function usePresetWizard() {
 
   const handleSelectPreset = useCallback(
     (preset: PresetSummary) => {
+      // PresetSummary and PresetDetail are both aliases for PresetDefinition
       setSelectedPreset(preset as PresetDetail);
       const uiMeta = getPresetUIMetadata(preset.id);
       form.setValue("presetBasicInfo.feeToken", uiMeta.defaultFeeToken, { shouldValidate: true });
@@ -94,6 +95,9 @@ export function usePresetWizard() {
         presetId: selectedPresetId!,
         chainName: basicInfo.chainName,
         network: basicInfo.network,
+        // Form stores seedPhrase as string[] (12 words) for per-word input UX,
+        // but deployWithPresetRequestSchema and the backend PresetDeployRequest expect
+        // a single space-joined string (e.g., "word1 word2 ... word12").
         seedPhrase: basicInfo.seedPhrase.join(" "),
         feeToken: basicInfo.feeToken,
         awsAccessKey: basicInfo.awsAccessKey,

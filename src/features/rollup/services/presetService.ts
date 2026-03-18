@@ -17,6 +17,8 @@ export const getPresets = async (): Promise<PresetSummary[]> => {
     return MOCK_PRESETS;
   }
   const response = await apiGet<PresetSummary[]>("stacks/thanos/presets");
+  // TODO: Validate response against presetListResponseSchema (z.array(presetDefinitionSchema))
+  // to catch backend schema drift at runtime. Currently relies on TypeScript generics only.
   return response.data;
 };
 
@@ -27,6 +29,7 @@ export const getPresetDetail = async (id: string): Promise<PresetDetail> => {
     return detail;
   }
   const response = await apiGet<PresetDetail>(`stacks/thanos/presets/${id}`);
+  // TODO: Validate response against presetDefinitionSchema to catch backend schema drift at runtime.
   return response.data;
 };
 
