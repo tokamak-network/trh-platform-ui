@@ -96,6 +96,8 @@ function PresetWizardContent() {
               </p>
             </div>
 
+            <WizardModeTabs />
+
             <CreateRollupStepper
               steps={steps}
               currentStep={currentStep}
@@ -203,6 +205,8 @@ function ClassicWizardContent() {
               </p>
             </div>
 
+            <WizardModeTabs />
+
             <CreateRollupStepper
               steps={steps}
               currentStep={currentStep}
@@ -266,6 +270,39 @@ function ClassicWizardContent() {
         </div>
       </div>
     </AuthenticatedLayout>
+  );
+}
+
+// --- Mode Toggle Tabs ---
+function WizardModeTabs() {
+  const { state, setWizardMode } = useRollupCreationContext();
+  const { wizardMode } = state;
+
+  return (
+    <div className="flex gap-1 p-1 bg-gray-200 rounded-lg w-fit">
+      <button
+        type="button"
+        onClick={() => setWizardMode("preset")}
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          wizardMode === "preset"
+            ? "bg-white text-gray-900 shadow-sm"
+            : "text-gray-500 hover:text-gray-700"
+        }`}
+      >
+        Preset Mode
+      </button>
+      <button
+        type="button"
+        onClick={() => setWizardMode("classic")}
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          wizardMode === "classic"
+            ? "bg-white text-gray-900 shadow-sm"
+            : "text-gray-500 hover:text-gray-700"
+        }`}
+      >
+        Classic Mode
+      </button>
+    </div>
   );
 }
 
