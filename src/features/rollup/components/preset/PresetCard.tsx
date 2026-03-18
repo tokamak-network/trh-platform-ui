@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { PresetSummary } from "../../schemas/preset";
+import { getPresetUIMetadata } from "../../schemas/preset";
 
 const PRESET_ICONS: Record<string, React.ReactNode> = {
   layers: <Layers className="h-8 w-8" />,
@@ -20,17 +21,17 @@ const PRESET_ICONS: Record<string, React.ReactNode> = {
 };
 
 const PRESET_COLORS: Record<string, string> = {
-  standard: "text-blue-500 bg-blue-50 border-blue-200",
+  general: "text-blue-500 bg-blue-50 border-blue-200",
   defi: "text-green-500 bg-green-50 border-green-200",
   gaming: "text-purple-500 bg-purple-50 border-purple-200",
-  enterprise: "text-orange-500 bg-orange-50 border-orange-200",
+  full: "text-orange-500 bg-orange-50 border-orange-200",
 };
 
 const PRESET_SELECTED_COLORS: Record<string, string> = {
-  standard: "border-blue-500 ring-2 ring-blue-500 ring-offset-2",
+  general: "border-blue-500 ring-2 ring-blue-500 ring-offset-2",
   defi: "border-green-500 ring-2 ring-green-500 ring-offset-2",
   gaming: "border-purple-500 ring-2 ring-purple-500 ring-offset-2",
-  enterprise: "border-orange-500 ring-2 ring-orange-500 ring-offset-2",
+  full: "border-orange-500 ring-2 ring-orange-500 ring-offset-2",
 };
 
 interface PresetCardProps {
@@ -40,8 +41,10 @@ interface PresetCardProps {
 }
 
 export function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
-  const iconColors = PRESET_COLORS[preset.key] || "text-gray-500 bg-gray-50 border-gray-200";
-  const selectedRing = PRESET_SELECTED_COLORS[preset.key] || "border-gray-500 ring-2 ring-gray-500 ring-offset-2";
+  const uiMeta = getPresetUIMetadata(preset.id);
+  const iconColors = PRESET_COLORS[preset.id] ?? "text-gray-500 bg-gray-50 border-gray-200";
+  const selectedRing =
+    PRESET_SELECTED_COLORS[preset.id] ?? "border-gray-500 ring-2 ring-gray-500 ring-offset-2";
 
   return (
     <Card
@@ -65,7 +68,7 @@ export function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
               iconColors
             )}
           >
-            {PRESET_ICONS[preset.icon] || <Layers className="h-8 w-8" />}
+            {PRESET_ICONS[uiMeta.icon] ?? <Layers className="h-8 w-8" />}
           </div>
 
           {/* Name & Description */}
@@ -78,7 +81,7 @@ export function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
 
           {/* Recommended for */}
           <div className="flex flex-wrap gap-1.5">
-            {preset.recommendedFor.map((tag) => (
+            {uiMeta.recommendedFor.map((tag) => (
               <Badge
                 key={tag}
                 variant="secondary"

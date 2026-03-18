@@ -13,55 +13,110 @@ export const FEE_TOKEN_OPTIONS = [
 export const presetKeySchema = z.enum(["general", "defi", "gaming", "full"]);
 export type PresetKey = z.infer<typeof presetKeySchema>;
 
-export const presetSummarySchema = z.object({
+// ─── Backend Definition schema ──────────────────────────────────────────────
+// Mirrors pkg/services/thanos/presets/types.go Definition struct
+
+export const presetDefinitionSchema = z.object({
   id: z.string(),
-  key: presetKeySchema,
   name: z.string(),
   description: z.string(),
-  icon: z.string(),
-  recommendedFor: z.array(z.string()),
-  defaultFeeToken: feeTokenSchema.optional(),
+  modules: z.record(z.string(), z.boolean()),
+  genesisPredeploys: z.array(z.string()),
+  estimatedTime: z.record(z.string(), z.string()),
+  chainDefaults: z.record(z.string(), z.unknown()),
+  helmValues: z.record(z.string(), z.unknown()),
+  overridableFields: z.array(z.string()),
+  availableFeeTokens: z.array(z.string()),
 });
-export type PresetSummary = z.infer<typeof presetSummarySchema>;
+export type PresetDefinition = z.infer<typeof presetDefinitionSchema>;
 
-export const presetDefaultsSchema = z.object({
-  l2BlockTime: z.number(),
-  batchSubmissionFrequency: z.number(),
-  outputRootFrequency: z.number(),
-  challengePeriod: z.number(),
-  enableBackup: z.boolean(),
-  registerCandidateDefault: z.boolean(),
-  feeToken: feeTokenSchema,
-});
-export type PresetDefaults = z.infer<typeof presetDefaultsSchema>;
+// PresetSummary and PresetDetail are both the full Definition from the backend.
+// We alias them for clarity at call sites.
+export type PresetSummary = PresetDefinition;
+export type PresetDetail = PresetDefinition;
 
-export const presetDetailSchema = z.object({
-  id: z.string(),
-  key: presetKeySchema,
-  name: z.string(),
-  description: z.string(),
-  icon: z.string(),
-  recommendedFor: z.array(z.string()),
-  defaults: presetDefaultsSchema,
-  editableFields: z.array(z.string()),
-});
-export type PresetDetail = z.infer<typeof presetDetailSchema>;
-
-export const presetDetailResponseSchema = z.object({
-  preset: presetDetailSchema,
-});
-export type PresetDetailResponse = z.infer<typeof presetDetailResponseSchema>;
-
-export const presetListResponseSchema = z.object({
-  presets: z.array(presetSummarySchema),
-});
+export const presetListResponseSchema = z.array(presetDefinitionSchema);
 export type PresetListResponse = z.infer<typeof presetListResponseSchema>;
+
+export const presetDetailResponseSchema = presetDefinitionSchema;
+export type PresetDetailResponse = PresetDefinition;
+
+// ─── UI helpers ─────────────────────────────────────────────────────────────
+// Derive display metadata from preset ID since the backend does not carry
+// icon/recommendedFor/key/defaultFeeToken fields.
+
+export interface PresetUIMetadata {
+  key: PresetKey;
+  icon: string;
+  recommendedFor: string[];
+  defaultFeeToken: FeeToken;
+}
+
+const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
+  general: {
+    key: "general",
+    icon: "layers",
+    recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
+    defaultFeeToken: "TON",
+  },
+  defi: {
+    key: "defi",
+    icon: "trending-up",
+    recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
+    defaultFeeToken: "TON",
+  },
+  gaming: {
+    key: "gaming",
+    icon: "gamepad-2",
+    recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
+    defaultFeeToken: "TON",
+  },
+  full: {
+    key: "full",
+    icon: "building-2",
+    recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
+    defaultFeeToken: "TON",
+  },
+};
+
+const DEFAULT_UI_METADATA: PresetUIMetadata = {
+  key: "general",
+  icon: "layers",
+  recommendedFor: [],
+  defaultFeeToken: "TON",
+};
+
+export function getPresetUIMetadata(id: string): PresetUIMetadata {
+  return PRESET_UI_METADATA[id] ?? DEFAULT_UI_METADATA;
+}
+
+// ─── Field override ──────────────────────────────────────────────────────────
 
 export const presetFieldOverrideSchema = z.object({
   field: z.string(),
   value: z.union([z.string(), z.number(), z.boolean()]),
 });
 export type PresetFieldOverride = z.infer<typeof presetFieldOverrideSchema>;
+
+// ─── Deploy request ──────────────────────────────────────────────────────────
+// Mirrors pkg/api/dtos/thanos.go PresetDeployRequest struct
+
+export const deployWithPresetRequestSchema = z.object({
+  presetId: z.string(),
+  chainName: z.string().regex(/^[a-z0-9-]{3,32}$/, "Must be 3-32 lowercase alphanumeric characters or hyphens"),
+  network: z.enum(["Testnet", "Mainnet"]),
+  seedPhrase: z.string().min(1),
+  awsAccessKey: z.string(),
+  awsSecretKey: z.string(),
+  awsRegion: z.string(),
+  l1RpcUrl: z.string().url(),
+  l1BeaconUrl: z.string().url(),
+  feeToken: feeTokenSchema,
+  overrides: z.array(presetFieldOverrideSchema).optional(),
+});
+export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;
+
+// ─── Funding status ──────────────────────────────────────────────────────────
 
 export const fundingAccountSchema = z.object({
   role: z.enum(["deployer", "batcher", "proposer", "challenger"]),
@@ -92,132 +147,172 @@ export const fundingStatusResponseSchema = z.object({
 });
 export type FundingStatusResponse = z.infer<typeof fundingStatusResponseSchema>;
 
-export const deployWithPresetRequestSchema = z.object({
-  presetId: z.string(),
-  chainName: z.string().regex(/^[a-z0-9-]{3,32}$/, "Must be 3-32 lowercase alphanumeric characters or hyphens"),
-  network: z.enum(["Testnet", "Mainnet"]),
-  seedPhrase: z.string().min(1),
-  awsAccessKey: z.string(),
-  awsSecretKey: z.string(),
-  awsRegion: z.string(),
-  l1RpcUrl: z.string().url(),
-  l1BeaconUrl: z.string().url(),
-  feeToken: feeTokenSchema,
-  overrides: z.array(presetFieldOverrideSchema).optional(),
-});
-export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;
+// ─── Legacy mock data (kept for reference, not used when USE_MOCK = false) ──
 
-// Mock preset data for development (before backend is ready)
 export const MOCK_PRESETS: PresetSummary[] = [
   {
     id: "general",
-    key: "general",
     name: "General Purpose",
     description: "Baseline rollup preset for standard application workloads.",
-    icon: "layers",
-    recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
-    defaultFeeToken: "TON",
-  },
-  {
-    id: "defi",
-    key: "defi",
-    name: "DeFi",
-    description: "Preset for exchange, liquidity, and settlement-heavy workloads.",
-    icon: "trending-up",
-    recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
-    defaultFeeToken: "TON",
-  },
-  {
-    id: "gaming",
-    key: "gaming",
-    name: "Gaming",
-    description: "Preset optimized for higher throughput and player-facing observability.",
-    icon: "gamepad-2",
-    recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
-    defaultFeeToken: "TON",
-  },
-  {
-    id: "full",
-    key: "full",
-    name: "Full Suite",
-    description: "All recommended modules enabled for demos, staging, or high-touch managed environments.",
-    icon: "building-2",
-    recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
-    defaultFeeToken: "TON",
-  },
-];
-
-export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = {
-  "general": {
-    id: "general",
-    key: "general",
-    name: "General Purpose",
-    description: "Baseline rollup preset for standard application workloads.",
-    icon: "layers",
-    recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
-    defaults: {
+    modules: {
+      bridge: true,
+      blockExplorer: false,
+      monitoring: false,
+      crossTrade: false,
+      uptimeService: false,
+    },
+    genesisPredeploys: [
+      "L2StandardBridge",
+      "L2CrossDomainMessenger",
+      "OptimismMintableERC20Factory",
+    ],
+    estimatedTime: { deploy: "20-30m", fundingWait: "5-15m" },
+    chainDefaults: {
       l2BlockTime: 2,
       batchSubmissionFrequency: 1800,
       outputRootFrequency: 1800,
       challengePeriod: 86400,
-      enableBackup: false,
-      registerCandidateDefault: false,
-      feeToken: "TON",
+      registerCandidate: false,
+      backupEnabled: false,
     },
-    editableFields: ["l2BlockTime", "batchSubmissionFrequency", "outputRootFrequency", "challengePeriod", "feeToken"],
+    helmValues: {
+      "bridge.enabled": true,
+      "monitoring.enabled": false,
+      "blockscout.enabled": false,
+      "crossTrade.enabled": false,
+      "uptimeService.enabled": false,
+    },
+    overridableFields: [
+      "l2BlockTime",
+      "batchSubmissionFrequency",
+      "outputRootFrequency",
+      "challengePeriod",
+      "backupEnabled",
+    ],
+    availableFeeTokens: ["TON", "ETH", "USDT", "USDC"],
   },
-  "defi": {
+  {
     id: "defi",
-    key: "defi",
     name: "DeFi",
     description: "Preset for exchange, liquidity, and settlement-heavy workloads.",
-    icon: "trending-up",
-    recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
-    defaults: {
+    modules: {
+      bridge: true,
+      blockExplorer: true,
+      monitoring: true,
+      crossTrade: false,
+      uptimeService: true,
+    },
+    genesisPredeploys: [
+      "L2StandardBridge",
+      "L2CrossDomainMessenger",
+      "OptimismMintableERC20Factory",
+    ],
+    estimatedTime: { deploy: "30-40m", fundingWait: "5-15m" },
+    chainDefaults: {
       l2BlockTime: 2,
       batchSubmissionFrequency: 900,
       outputRootFrequency: 900,
       challengePeriod: 86400,
-      enableBackup: true,
-      registerCandidateDefault: false,
-      feeToken: "TON",
+      registerCandidate: false,
+      backupEnabled: true,
     },
-    editableFields: ["batchSubmissionFrequency", "outputRootFrequency", "challengePeriod", "feeToken"],
+    helmValues: {
+      "bridge.enabled": true,
+      "monitoring.enabled": true,
+      "blockscout.enabled": true,
+      "crossTrade.enabled": false,
+      "uptimeService.enabled": true,
+    },
+    overridableFields: [
+      "batchSubmissionFrequency",
+      "outputRootFrequency",
+      "challengePeriod",
+    ],
+    availableFeeTokens: ["TON", "ETH", "USDT", "USDC"],
   },
-  "gaming": {
+  {
     id: "gaming",
-    key: "gaming",
     name: "Gaming",
     description: "Preset optimized for higher throughput and player-facing observability.",
-    icon: "gamepad-2",
-    recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
-    defaults: {
+    modules: {
+      bridge: true,
+      blockExplorer: true,
+      monitoring: true,
+      crossTrade: true,
+      uptimeService: true,
+    },
+    genesisPredeploys: [
+      "L2StandardBridge",
+      "L2CrossDomainMessenger",
+      "OptimismMintableERC20Factory",
+    ],
+    estimatedTime: { deploy: "35-45m", fundingWait: "5-15m" },
+    chainDefaults: {
       l2BlockTime: 2,
       batchSubmissionFrequency: 300,
       outputRootFrequency: 600,
       challengePeriod: 86400,
-      enableBackup: true,
-      registerCandidateDefault: false,
-      feeToken: "TON",
+      registerCandidate: false,
+      backupEnabled: true,
     },
-    editableFields: ["l2BlockTime", "batchSubmissionFrequency", "outputRootFrequency", "feeToken"],
+    helmValues: {
+      "bridge.enabled": true,
+      "monitoring.enabled": true,
+      "blockscout.enabled": true,
+      "crossTrade.enabled": true,
+      "uptimeService.enabled": true,
+    },
+    overridableFields: [
+      "l2BlockTime",
+      "batchSubmissionFrequency",
+      "outputRootFrequency",
+    ],
+    availableFeeTokens: ["TON", "ETH", "USDT", "USDC"],
   },
-  "full": {
+  {
     id: "full",
-    key: "full",
     name: "Full Suite",
-    description: "All recommended modules enabled for demos, staging, or high-touch managed environments.",
-    icon: "building-2",
-    recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
-    defaults: {
+    description:
+      "All recommended modules enabled for demos, staging, or high-touch managed environments.",
+    modules: {
+      bridge: true,
+      blockExplorer: true,
+      monitoring: true,
+      crossTrade: true,
+      uptimeService: true,
+    },
+    genesisPredeploys: [
+      "L2StandardBridge",
+      "L2CrossDomainMessenger",
+      "OptimismMintableERC20Factory",
+    ],
+    estimatedTime: { deploy: "40-50m", fundingWait: "5-15m" },
+    chainDefaults: {
       l2BlockTime: 2,
       batchSubmissionFrequency: 600,
       outputRootFrequency: 600,
       challengePeriod: 86400,
-      enableBackup: true,
-      registerCandidateDefault: true,
-      feeToken: "TON",
+      registerCandidate: true,
+      backupEnabled: true,
     },
-    editableFields: ["l2BlockTime", "batchSubmissionFrequency", "outputRootFrequency", "challengePeriod", "feeToken"],
+    helmValues: {
+      "bridge.enabled": true,
+      "monitoring.enabled": true,
+      "blockscout.enabled": true,
+      "crossTrade.enabled": true,
+      "uptimeService.enabled": true,
+    },
+    overridableFields: [
+      "l2BlockTime",
+      "batchSubmissionFrequency",
+      "outputRootFrequency",
+      "challengePeriod",
+      "registerCandidate",
+    ],
+    availableFeeTokens: ["TON", "ETH", "USDT", "USDC"],
   },
-};
+];
+
+export const MOCK_PRESET_DETAILS: Record<string, PresetDetail> = Object.fromEntries(
+  MOCK_PRESETS.map((p) => [p.id, p])
+);

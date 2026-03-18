@@ -38,10 +38,15 @@ const FIELD_LABELS: Record<string, { label: string; unit: string; description: s
     unit: "seconds",
     description: "Time window for challenging invalid state (fixed for mainnet)",
   },
-  enableBackup: {
+  backupEnabled: {
     label: "Enable Backup",
     unit: "",
     description: "Automatically backup rollup state",
+  },
+  registerCandidate: {
+    label: "Register as DAO Candidate",
+    unit: "",
+    description: "Automatically register as a sequencer candidate in DAO",
   },
   feeToken: {
     label: "Fee Token",
@@ -63,7 +68,7 @@ export function ConfigReview({
     field: string,
     value: string | number | boolean
   ) => {
-    const defaultValue = preset.defaults[field as keyof typeof preset.defaults];
+    const defaultValue = preset.chainDefaults[field];
     const updatedOverrides = { ...overrideValues };
 
     if (value === defaultValue || value === "") {
@@ -121,9 +126,9 @@ export function ConfigReview({
 
           {/* Parameters */}
           <div className="space-y-3">
-            {Object.entries(preset.defaults).map(([field, defaultValue]) => {
+            {Object.entries(preset.chainDefaults).map(([field, defaultValue]) => {
               const meta = FIELD_LABELS[field];
-              const isEditable = preset.editableFields.includes(field);
+              const isEditable = preset.overridableFields.includes(field);
               const isLockedOnMainnet = field === "challengePeriod" && isMainnet;
               // feeToken is set in Basic Info step — always read-only here
               const isFeeToken = field === "feeToken";

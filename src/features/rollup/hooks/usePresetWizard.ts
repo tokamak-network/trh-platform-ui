@@ -10,6 +10,7 @@ import { useRollupCreationContext } from "../context/RollupCreationContext";
 import { usePresetDetailQuery } from "../api/queries";
 import { toast } from "react-hot-toast";
 import type { PresetSummary, PresetDetail, PresetFieldOverride } from "../schemas/preset";
+import { getPresetUIMetadata } from "../schemas/preset";
 import { presetBasicInfoSchema } from "../schemas/create-rollup";
 
 export const PRESET_STEPS = [
@@ -70,9 +71,8 @@ export function usePresetWizard() {
   const handleSelectPreset = useCallback(
     (preset: PresetSummary) => {
       setSelectedPreset(preset as PresetDetail);
-      if (preset.defaultFeeToken) {
-        form.setValue("presetBasicInfo.feeToken", preset.defaultFeeToken, { shouldValidate: true });
-      }
+      const uiMeta = getPresetUIMetadata(preset.id);
+      form.setValue("presetBasicInfo.feeToken", uiMeta.defaultFeeToken, { shouldValidate: true });
     },
     [setSelectedPreset, form]
   );

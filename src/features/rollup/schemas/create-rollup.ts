@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CHAIN_NETWORK } from "../const";
-import { presetFieldOverrideSchema, presetDefaultsSchema, feeTokenSchema } from "./preset";
+import { presetFieldOverrideSchema, feeTokenSchema } from "./preset";
 
 // Network & Chain Schema
 export const networkAndChainSchema = z
@@ -215,7 +215,6 @@ export const createRollupSchema = z.object({
   confirmation: confirmationSchema,
   // Preset wizard fields
   presetId: z.string().optional(),
-  presetDefaults: presetDefaultsSchema.optional(),
   overrides: z.array(presetFieldOverrideSchema).optional(),
   presetBasicInfo: presetBasicInfoSchema.optional(),
 });

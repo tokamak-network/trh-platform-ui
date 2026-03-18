@@ -10,14 +10,14 @@ import {
   MOCK_PRESET_DETAILS,
 } from "../schemas/preset";
 
-const USE_MOCK = true; // Toggle to false when backend is ready
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export const getPresets = async (): Promise<PresetSummary[]> => {
   if (USE_MOCK) {
     return MOCK_PRESETS;
   }
-  const response = await apiGet<{ presets: PresetSummary[] }>("stacks/thanos/presets");
-  return response.data.presets;
+  const response = await apiGet<PresetSummary[]>("stacks/thanos/presets");
+  return response.data;
 };
 
 export const getPresetDetail = async (id: string): Promise<PresetDetail> => {
@@ -26,8 +26,8 @@ export const getPresetDetail = async (id: string): Promise<PresetDetail> => {
     if (!detail) throw new Error(`Preset not found: ${id}`);
     return detail;
   }
-  const response = await apiGet<{ preset: PresetDetail }>(`stacks/thanos/presets/${id}`);
-  return response.data.preset;
+  const response = await apiGet<PresetDetail>(`stacks/thanos/presets/${id}`);
+  return response.data;
 };
 
 export const startPresetDeployment = async (
