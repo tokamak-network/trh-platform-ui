@@ -72,7 +72,7 @@ const bottomNavItems: NavItem[] = [
   {
     label: "Notifications",
     icon: NotificationItemIcon,
-    href: "/notifications",
+    href: "/notification",
   },
   {
     label: "Support",
