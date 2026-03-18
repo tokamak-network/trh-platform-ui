@@ -37,7 +37,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 interface FundingStatusProps {
   deploymentId?: string;
-  network: "testnet" | "mainnet";
+  network: "Testnet" | "Mainnet";
   onAllFulfilled?: () => void;
 }
 
@@ -160,7 +160,7 @@ export function FundingStatus({
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
-                {network === "mainnet" && (
+                {network === "Mainnet" && (
                   <Button
                     size="icon"
                     variant="ghost"
@@ -182,7 +182,7 @@ export function FundingStatus({
           </div>
         ))}
 
-        {network === "testnet" && !allFulfilled && accounts.length > 0 && (
+        {network === "Testnet" && !allFulfilled && accounts.length > 0 && (
           <Alert>
             <Clock className="h-4 w-4" />
             <AlertDescription className="text-sm">
@@ -209,7 +209,7 @@ export function FundingStatus({
               {txHash && (
                 <a
                   href={
-                    network === "mainnet"
+                    network === "Mainnet"
                       ? `https://etherscan.io/tx/${txHash}`
                       : `https://sepolia.etherscan.io/tx/${txHash}`
                   }

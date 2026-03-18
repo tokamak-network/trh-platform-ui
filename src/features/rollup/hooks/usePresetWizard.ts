@@ -51,7 +51,7 @@ export function usePresetWizard() {
     defaultValues: {
       presetBasicInfo: {
         chainName: "",
-        network: "testnet",
+        network: "Testnet",
         l1RpcUrl: "",
         l1BeaconUrl: "",
         seedPhrase: Array(12).fill(""),

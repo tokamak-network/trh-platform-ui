@@ -196,7 +196,7 @@ export const presetBasicInfoSchema = z.object({
       /^[a-z0-9-]{3,32}$/,
       "Must be 3-32 lowercase alphanumeric characters or hyphens"
     ),
-  network: z.enum(["testnet", "mainnet"]),
+  network: z.enum(["Testnet", "Mainnet"]),
   l1RpcUrl: z.string().min(1, "L1 RPC URL is required").url("Must be a valid URL"),
   l1BeaconUrl: z.string().min(1, "L1 Beacon URL is required").url("Must be a valid URL"),
   seedPhrase: z.array(z.string()).length(12, "Seed phrase must contain exactly 12 words"),

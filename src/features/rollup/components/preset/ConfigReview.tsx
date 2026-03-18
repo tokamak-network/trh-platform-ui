@@ -12,7 +12,7 @@ import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
-  network: "testnet" | "mainnet";
+  network: "Testnet" | "Mainnet";
   onOverridesChange: (overrides: PresetFieldOverride[]) => void;
   feeToken?: string;
 }
@@ -81,7 +81,7 @@ export function ConfigReview({
   };
 
   const changedFields = Object.keys(overrideValues);
-  const isMainnet = network === "mainnet";
+  const isMainnet = network === "Mainnet";
 
   return (
     <div className="space-y-4">

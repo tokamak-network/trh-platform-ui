@@ -81,7 +81,7 @@ export function BasicInfoStep() {
               <Select
                 value={network}
                 onValueChange={(val) =>
-                  setValue("presetBasicInfo.network", val as "testnet" | "mainnet", {
+                  setValue("presetBasicInfo.network", val as "Testnet" | "Mainnet", {
                     shouldValidate: true,
                   })
                 }
@@ -90,8 +90,8 @@ export function BasicInfoStep() {
                   <SelectValue placeholder="Select network" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="testnet">Testnet (Sepolia)</SelectItem>
-                  <SelectItem value="mainnet">Mainnet (Ethereum)</SelectItem>
+                  <SelectItem value="Testnet">Testnet (Sepolia)</SelectItem>
+                  <SelectItem value="Mainnet">Mainnet (Ethereum)</SelectItem>
                 </SelectContent>
               </Select>
               {errors.presetBasicInfo?.network && (
@@ -131,7 +131,7 @@ export function BasicInfoStep() {
             </div>
           </div>
 
-          {network === "mainnet" && (
+          {network === "Mainnet" && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
@@ -157,7 +157,7 @@ export function BasicInfoStep() {
               <Input
                 id="l1RpcUrl"
                 placeholder={
-                  network === "mainnet"
+                  network === "Mainnet"
                     ? "https://eth-mainnet.g.alchemy.com/v2/..."
                     : "https://eth-sepolia.g.alchemy.com/v2/..."
                 }
@@ -176,7 +176,7 @@ export function BasicInfoStep() {
               <Input
                 id="l1BeaconUrl"
                 placeholder={
-                  network === "mainnet"
+                  network === "Mainnet"
                     ? "https://eth-mainnet.g.alchemy.com/v2/..."
                     : "https://ethereum-sepolia-beacon-api.publicnode.com"
                 }
