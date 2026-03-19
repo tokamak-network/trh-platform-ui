@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info } from "lucide-react";
+import { Settings2, Info, Monitor } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
 
 interface ConfigReviewProps {
@@ -15,6 +15,7 @@ interface ConfigReviewProps {
   network: "Testnet" | "Mainnet";
   onOverridesChange: (overrides: PresetFieldOverride[]) => void;
   feeToken?: string;
+  infraProvider?: "aws" | "local";
 }
 
 const FIELD_LABELS: Record<string, { label: string; unit: string; description: string }> = {
@@ -60,6 +61,7 @@ export function ConfigReview({
   network,
   onOverridesChange,
   feeToken,
+  infraProvider = "aws",
 }: ConfigReviewProps) {
   const [expertMode, setExpertMode] = useState(false);
   const [overrideValues, setOverrideValues] = useState<Record<string, string | number | boolean>>({});
@@ -90,6 +92,30 @@ export function ConfigReview({
 
   return (
     <div className="space-y-4">
+      {/* Local deployment info */}
+      {infraProvider === "local" && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <Monitor className="h-5 w-5" />
+              Local Docker Deployment
+            </CardTitle>
+            <p className="text-sm text-blue-600">
+              L2 nodes will run on your machine via Docker Compose. L1 contracts deploy to Sepolia.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs font-medium text-blue-700 mb-2">Services will be available at:</p>
+            <div className="space-y-1 text-xs text-blue-600 font-mono">
+              <div>L2 RPC:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;http://localhost:8545</div>
+              <div>Bridge:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;http://localhost:3001</div>
+              <div>Explorer:&nbsp;&nbsp;&nbsp;http://localhost:4001</div>
+              <div>Monitoring: http://localhost:3002</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preset summary */}
       <Card>
         <CardHeader>

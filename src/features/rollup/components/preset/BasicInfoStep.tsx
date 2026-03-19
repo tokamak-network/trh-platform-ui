@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle, Info, Cloud, Monitor } from "lucide-react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
@@ -39,10 +39,66 @@ export function BasicInfoStep() {
 
   const network = watch("presetBasicInfo.network");
   const feeToken = watch("presetBasicInfo.feeToken");
+  const infraProvider = watch("presetBasicInfo.infraProvider") ?? "aws";
   const presetId = watch("presetId");
 
   return (
     <div className="space-y-6">
+      {/* Infrastructure Provider */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5 text-blue-500" />
+            Infrastructure Provider
+          </CardTitle>
+          <p className="text-sm text-gray-500">
+            Choose where your L2 nodes will run. Local Docker runs on your machine; AWS deploys to the cloud.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                setValue("presetBasicInfo.infraProvider", "aws", { shouldValidate: true })
+              }
+              className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                infraProvider === "aws"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <Cloud className={`h-8 w-8 ${infraProvider === "aws" ? "text-blue-500" : "text-gray-400"}`} />
+              <span className="text-sm font-medium">AWS Cloud</span>
+              <span className="text-xs text-gray-500 text-center">Deploy to AWS EKS (production-ready)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setValue("presetBasicInfo.infraProvider", "local", { shouldValidate: true });
+                if (network === "Mainnet") {
+                  setValue("presetBasicInfo.network", "Testnet", { shouldValidate: true });
+                }
+              }}
+              className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                infraProvider === "local"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <Monitor className={`h-8 w-8 ${infraProvider === "local" ? "text-blue-500" : "text-gray-400"}`} />
+              <span className="text-sm font-medium">Local Docker</span>
+              <span className="text-xs text-gray-500 text-center">Run on your machine via Docker Compose</span>
+            </button>
+          </div>
+          {errors.presetBasicInfo?.infraProvider && (
+            <p className="mt-2 text-xs text-red-500">
+              {errors.presetBasicInfo.infraProvider.message}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Chain Identity */}
       <Card>
         <CardHeader>
@@ -91,7 +147,9 @@ export function BasicInfoStep() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Testnet">Testnet (Sepolia)</SelectItem>
-                  <SelectItem value="Mainnet">Mainnet (Ethereum)</SelectItem>
+                  <SelectItem value="Mainnet" disabled={infraProvider === "local"}>
+                    Mainnet (Ethereum){infraProvider === "local" ? " — not available for local" : ""}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {errors.presetBasicInfo?.network && (
@@ -196,7 +254,7 @@ export function BasicInfoStep() {
       <AccountSetup mode="preset" />
 
       {/* AWS Configuration */}
-      <Card>
+      {infraProvider === "aws" && <Card>
         <CardHeader>
           <CardTitle>AWS Configuration</CardTitle>
           <p className="text-sm text-gray-500">
@@ -265,7 +323,7 @@ export function BasicInfoStep() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {presetId && (
         <Alert>

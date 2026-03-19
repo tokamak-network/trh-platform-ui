@@ -69,6 +69,7 @@ function PresetWizardContent() {
                 network={network}
                 onOverridesChange={setOverrides}
                 feeToken={form.watch("presetBasicInfo.feeToken")}
+                infraProvider={form.watch("presetBasicInfo.infraProvider")}
               />
             )}
             <FundingStatus
