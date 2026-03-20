@@ -95,14 +95,15 @@ export function usePresetWizard() {
         presetId: selectedPresetId!,
         chainName: basicInfo.chainName,
         network: basicInfo.network,
+        infraProvider: basicInfo.infraProvider,
         // Form stores seedPhrase as string[] (12 words) for per-word input UX,
         // but deployWithPresetRequestSchema and the backend PresetDeployRequest expect
         // a single space-joined string (e.g., "word1 word2 ... word12").
         seedPhrase: basicInfo.seedPhrase.join(" "),
         feeToken: basicInfo.feeToken,
-        awsAccessKey: basicInfo.awsAccessKey,
-        awsSecretKey: basicInfo.awsSecretKey,
-        awsRegion: basicInfo.awsRegion,
+        awsAccessKey: basicInfo.awsAccessKey ?? "",
+        awsSecretKey: basicInfo.awsSecretKey ?? "",
+        awsRegion: basicInfo.awsRegion ?? "",
         l1RpcUrl: basicInfo.l1RpcUrl,
         l1BeaconUrl: basicInfo.l1BeaconUrl,
         overrides: overrides.length > 0 ? overrides : undefined,
