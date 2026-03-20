@@ -81,6 +81,8 @@ export function NetworkAndChainStep() {
     }
   };
 
+  const TESTNET_DEFAULT_BEACON_URL = "https://ethereum-sepolia-beacon-api.publicnode.com";
+
   const handleNetworkChange = async (value: string) => {
     setValue("networkAndChain.network", value);
     // Update challenge period based on network if advanced config is enabled
@@ -89,6 +91,10 @@ export function NetworkAndChainStep() {
         ? MAINNET_CHALLENGE_PERIOD
         : TESTNET_CHALLENGE_PERIOD;
       setValue("networkAndChain.challengePeriod", challengePeriod);
+    }
+    // Set default beacon URL for testnet
+    if (value === CHAIN_NETWORK.TESTNET) {
+      setValue("networkAndChain.l1BeaconUrl", TESTNET_DEFAULT_BEACON_URL);
     }
     await trigger("networkAndChain.network" as const);
     if (advancedConfig) {
@@ -317,21 +323,30 @@ export function NetworkAndChainStep() {
                 allowSave={true}
               />
 
-              <RPCSelector
-                id="l1BeaconUrl"
-                label="L1 Beacon URL"
-                placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/4ed7d53b815c434c082db3eb2f49612c914afe48/"
-                value={formData.networkAndChain?.l1BeaconUrl || ""}
-                onChange={handleL1BeaconUrlChange}
-                rpcUrls={beaconChainRpcs}
-                error={errors.networkAndChain?.l1BeaconUrl?.message}
-                required
-                tooltip="The beacon chain endpoint for the L1 network"
-                rpcType="BeaconChain"
-                network={networkFilter as "Mainnet" | "Testnet"}
-                onSaveUrl={addRpcUrl}
-                allowSave={true}
-              />
+              {selectedNetwork === CHAIN_NETWORK.MAINNET ? (
+                <RPCSelector
+                  id="l1BeaconUrl"
+                  label="L1 Beacon URL"
+                  placeholder="https://boldest-newest-patron.ethereum-sepolia.quiknode.pro/..."
+                  value={formData.networkAndChain?.l1BeaconUrl || ""}
+                  onChange={handleL1BeaconUrlChange}
+                  rpcUrls={beaconChainRpcs}
+                  error={errors.networkAndChain?.l1BeaconUrl?.message}
+                  required
+                  tooltip="The beacon chain endpoint for the L1 network"
+                  rpcType="BeaconChain"
+                  network={networkFilter as "Mainnet" | "Testnet"}
+                  onSaveUrl={addRpcUrl}
+                  allowSave={true}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">L1 Beacon URL</label>
+                  <div className="text-sm bg-slate-50 border rounded-md p-3 text-slate-500">
+                    {TESTNET_DEFAULT_BEACON_URL}
+                  </div>
+                </div>
+              )}
             </div>
 
             {selectedNetwork === "mainnet" && (

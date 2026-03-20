@@ -12,10 +12,13 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Info, Cloud, Monitor } from "lucide-react";
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
 import { AccountSetup } from "../steps/AccountSetup";
+import { getDesktopBridge, DesktopAwsKeyInput } from "../steps/AwsConfig";
+import { useState } from "react";
 
 const AWS_REGIONS = [
   { value: "us-east-1", label: "US East (N. Virginia)" },
@@ -41,6 +44,14 @@ export function BasicInfoStep() {
   const feeToken = watch("presetBasicInfo.feeToken");
   const infraProvider = watch("presetBasicInfo.infraProvider") ?? "aws";
   const presetId = watch("presetId");
+
+  const TESTNET_DEFAULT_BEACON_URL = "https://ethereum-sepolia-beacon-api.publicnode.com";
+
+  useEffect(() => {
+    if (network === "Testnet") {
+      setValue("presetBasicInfo.l1BeaconUrl", TESTNET_DEFAULT_BEACON_URL);
+    }
+  }, [network, setValue]);
 
   return (
     <div className="space-y-6">
@@ -207,7 +218,7 @@ export function BasicInfoStep() {
           <CardTitle>L1 Connection</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 ${network === "Mainnet" ? "md:grid-cols-2" : ""} gap-4`}>
             <div className="space-y-2">
               <Label htmlFor="l1RpcUrl">
                 L1 RPC URL <span className="text-red-500">*</span>
@@ -227,25 +238,23 @@ export function BasicInfoStep() {
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="l1BeaconUrl">
-                L1 Beacon URL <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="l1BeaconUrl"
-                placeholder={
-                  network === "Mainnet"
-                    ? "https://eth-mainnet.g.alchemy.com/v2/..."
-                    : "https://ethereum-sepolia-beacon-api.publicnode.com"
-                }
-                {...register("presetBasicInfo.l1BeaconUrl")}
-              />
-              {errors.presetBasicInfo?.l1BeaconUrl && (
-                <p className="text-xs text-red-500">
-                  {errors.presetBasicInfo.l1BeaconUrl.message}
-                </p>
-              )}
-            </div>
+            {network === "Mainnet" && (
+              <div className="space-y-2">
+                <Label htmlFor="l1BeaconUrl">
+                  L1 Beacon URL <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="l1BeaconUrl"
+                  placeholder="https://eth-mainnet.g.alchemy.com/v2/..."
+                  {...register("presetBasicInfo.l1BeaconUrl")}
+                />
+                {errors.presetBasicInfo?.l1BeaconUrl && (
+                  <p className="text-xs text-red-500">
+                    {errors.presetBasicInfo.l1BeaconUrl.message}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -254,52 +263,111 @@ export function BasicInfoStep() {
       <AccountSetup mode="preset" />
 
       {/* AWS Configuration */}
-      {infraProvider === "aws" && <Card>
-        <CardHeader>
-          <CardTitle>AWS Configuration</CardTitle>
-          <p className="text-sm text-gray-500">
-            AWS credentials for infrastructure deployment. These will be used to provision
-            your rollup nodes.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="awsAccessKey">
-                Access Key ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="awsAccessKey"
-                placeholder="AKIA..."
-                {...register("presetBasicInfo.awsAccessKey")}
-              />
-              {errors.presetBasicInfo?.awsAccessKey && (
-                <p className="text-xs text-red-500">
-                  {errors.presetBasicInfo.awsAccessKey.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="awsSecretKey">
-                Secret Access Key <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="awsSecretKey"
-                type="password"
-                placeholder="Enter secret key"
-                {...register("presetBasicInfo.awsSecretKey")}
-              />
-              {errors.presetBasicInfo?.awsSecretKey && (
-                <p className="text-xs text-red-500">
-                  {errors.presetBasicInfo.awsSecretKey.message}
-                </p>
-              )}
-            </div>
+      {infraProvider === "aws" && (
+        getDesktopBridge() ? (
+          <PresetDesktopAwsConfig setValue={setValue} register={register} errors={errors} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>AWS Configuration</CardTitle>
+              <p className="text-sm text-gray-500">
+                AWS credentials for infrastructure deployment. These will be used to provision
+                your rollup nodes.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="awsAccessKey">
+                    Access Key ID <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="awsAccessKey"
+                    placeholder="AKIA..."
+                    {...register("presetBasicInfo.awsAccessKey")}
+                  />
+                  {errors.presetBasicInfo?.awsAccessKey && (
+                    <p className="text-xs text-red-500">
+                      {errors.presetBasicInfo.awsAccessKey.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="awsSecretKey">
+                    Secret Access Key <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="awsSecretKey"
+                    type="password"
+                    placeholder="Enter secret key"
+                    {...register("presetBasicInfo.awsSecretKey")}
+                  />
+                  {errors.presetBasicInfo?.awsSecretKey && (
+                    <p className="text-xs text-red-500">
+                      {errors.presetBasicInfo.awsSecretKey.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="awsRegion">
+                  Region <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  onValueChange={(val) =>
+                    setValue("presetBasicInfo.awsRegion", val, { shouldValidate: true })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select AWS region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AWS_REGIONS.map((region) => (
+                      <SelectItem key={region.value} value={region.value}>
+                        {region.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.presetBasicInfo?.awsRegion && (
+                  <p className="text-xs text-red-500">
+                    {errors.presetBasicInfo.awsRegion.message}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      )}
+
+      {presetId && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            The selected preset will fill in advanced parameters (block time, batch
+            frequency, etc.). You can review and adjust these in the next step.
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PresetDesktopAwsConfig({ setValue, register, errors }: { setValue: any; register: any; errors: any }) {
+  const [ssoCompleted, setSsoCompleted] = useState(false);
+
+  if (ssoCompleted) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800 font-medium">
+              AWS credentials provided via SSO. Using temporary session token.
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="awsRegion">
-              Region <span className="text-red-500">*</span>
-            </Label>
+          <div className="mt-4 space-y-2">
+            <Label>Region <span className="text-red-500">*</span></Label>
             <Select
               onValueChange={(val) =>
                 setValue("presetBasicInfo.awsRegion", val, { shouldValidate: true })
@@ -316,24 +384,20 @@ export function BasicInfoStep() {
                 ))}
               </SelectContent>
             </Select>
-            {errors.presetBasicInfo?.awsRegion && (
-              <p className="text-xs text-red-500">
-                {errors.presetBasicInfo.awsRegion.message}
-              </p>
-            )}
           </div>
         </CardContent>
-      </Card>}
+      </Card>
+    );
+  }
 
-      {presetId && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            The selected preset will fill in advanced parameters (block time, batch
-            frequency, etc.). You can review and adjust these in the next step.
-          </AlertDescription>
-        </Alert>
-      )}
-    </div>
+  return (
+    <DesktopAwsKeyInput
+      onComplete={(creds) => {
+        setValue("presetBasicInfo.awsAccessKey", creds.accessKeyId);
+        setValue("presetBasicInfo.awsSecretKey", creds.secretAccessKey);
+        setValue("presetBasicInfo.awsRegion", "us-east-1");
+        setSsoCompleted(true);
+      }}
+    />
   );
 }

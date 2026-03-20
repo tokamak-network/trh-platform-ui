@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AlertCircle, ExternalLink, RotateCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useFormContext } from "react-hook-form";
@@ -23,12 +24,220 @@ import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { useAwsCredentials } from "@/features/configuration/aws-credentials/hooks/useAwsCredentials";
 import { useAwsRegions } from "@/features/configuration/aws-credentials/hooks/useAwsRegions";
 
+// ---------------------------------------------------------------------------
+// Desktop bridge detection
+// ---------------------------------------------------------------------------
+
+interface DesktopAwsCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken?: string;
+  source: string;
+}
+
+interface DesktopBridge {
+  awsSsoLoginDirect: (startUrl: string, region: string) => Promise<void>;
+  awsSsoListAccounts: () => Promise<{ accountId: string; accountName: string; emailAddress: string }[]>;
+  awsSsoListRoles: (accountId: string) => Promise<{ roleName: string; accountId: string }[]>;
+  awsSsoAssumeRole: (accountId: string, roleName: string) => Promise<DesktopAwsCredentials>;
+  awsGetCredentials: () => Promise<DesktopAwsCredentials | null>;
+  awsClear: () => Promise<void>;
+}
+
+export function getDesktopBridge(): DesktopBridge | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as Record<string, any>;
+    if (w.__TRH_DESKTOP__?.awsSsoLoginDirect) return w.__TRH_DESKTOP__ as DesktopBridge;
+  } catch {}
+  return null;
+}
+
+function getDesktopAwsCredentials(): DesktopAwsCredentials | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as Record<string, any>;
+    const data: DesktopAwsCredentials | undefined = w.__TRH_AWS_CREDENTIALS__;
+    if (data?.accessKeyId && data?.secretAccessKey) return data;
+  } catch {}
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// SSO Login Flow component (Desktop only)
+// ---------------------------------------------------------------------------
+
+type SsoStep = "input" | "waiting" | "select-account" | "select-role" | "done";
+
+interface SsoAccount { accountId: string; accountName: string; emailAddress: string; }
+interface SsoRole { roleName: string; accountId: string; }
+
+const AWS_REGIONS = [
+  "us-east-1", "us-east-2", "us-west-1", "us-west-2",
+  "eu-west-1", "eu-central-1",
+  "ap-northeast-1", "ap-northeast-2", "ap-southeast-1",
+];
+
+export function DesktopAwsKeyInput({ onComplete }: { onComplete: (creds: DesktopAwsCredentials) => void }) {
+  const [accessKeyId, setAccessKeyId] = React.useState("");
+  const [secretAccessKey, setSecretAccessKey] = React.useState("");
+  const [region, setRegion] = React.useState("ap-northeast-2");
+  const [error, setError] = React.useState<string | null>(null);
+
+  const isValid = accessKeyId.trim().length >= 16 && secretAccessKey.trim().length >= 16;
+
+  const handleSubmit = () => {
+    if (!isValid) return;
+    setError(null);
+    onComplete({
+      accessKeyId: accessKeyId.trim(),
+      secretAccessKey: secretAccessKey.trim(),
+      source: `manual:${region}`,
+    });
+  };
+
+  return (
+    <Card className="border-0 shadow-lg">
+      <CardHeader>
+        <CardTitle>AWS Credentials</CardTitle>
+        <CardDescription>
+          Enter your AWS access keys. Credentials are stored in memory only and
+          never saved to disk.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Access Key ID <span className="text-destructive">*</span>
+            </label>
+            <Input
+              placeholder="AKIA..."
+              value={accessKeyId}
+              onChange={(e) => setAccessKeyId(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Secret Access Key <span className="text-destructive">*</span>
+            </label>
+            <Input
+              type="password"
+              placeholder="Enter secret key"
+              value={secretAccessKey}
+              onChange={(e) => setSecretAccessKey(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            Region <span className="text-destructive">*</span>
+          </label>
+          <Select value={region} onValueChange={setRegion}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {AWS_REGIONS.map((r) => (
+                <SelectItem key={r} value={r}>{r}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSubmit} disabled={!isValid}>
+            Continue
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Credentials are kept in memory only. They are discarded when the app closes.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main AwsConfig component
+// ---------------------------------------------------------------------------
+
 interface AwsConfigProps {
   onNext: () => void;
   onBack: () => void;
 }
 
+function DesktopAwsConfig({ onNext }: { onNext: () => void }) {
+  const { setValue } = useFormContext<CreateRollupFormData>();
+  const [desktopAwsApplied, setDesktopAwsApplied] = React.useState(false);
+
+  React.useEffect(() => {
+    if (desktopAwsApplied) return;
+    const desktop = getDesktopAwsCredentials();
+    if (!desktop) return;
+    applyCredentials(desktop);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const applyCredentials = (creds: DesktopAwsCredentials) => {
+    setValue("accountAndAws.awsAccessKey", creds.accessKeyId);
+    setValue("accountAndAws.awsSecretKey", creds.secretAccessKey);
+    setValue("accountAndAws.credentialId", "desktop-provided");
+    setValue("accountAndAws.accountName", creds.source);
+    setValue("accountAndAws.awsRegion", "us-east-1");
+    setDesktopAwsApplied(true);
+    onNext();
+  };
+
+  if (desktopAwsApplied) {
+    const desktop = getDesktopAwsCredentials();
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">AWS Configuration</h2>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800 font-medium">
+              AWS credentials provided via SSO ({desktop?.source ?? "desktop"}).
+              {desktop?.sessionToken ? " Using temporary session token." : ""}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold mb-2">AWS Configuration</h2>
+        <p className="text-muted-foreground">
+          Sign in with your AWS SSO to provide credentials for rollup deployment.
+        </p>
+      </div>
+      <DesktopAwsKeyInput onComplete={applyCredentials} />
+    </div>
+  );
+}
+
 export function AwsConfig({ onNext }: AwsConfigProps) {
+  const isDesktop = !!getDesktopBridge();
+
+  if (isDesktop) {
+    return <DesktopAwsConfig onNext={onNext} />;
+  }
+
+  return <WebAwsConfig onNext={onNext} />;
+}
+
+// eslint-disable-next-line react-hooks/rules-of-hooks -- standalone component, not conditional
+function WebAwsConfig({ onNext }: { onNext: () => void }) {
   const {
     setValue,
     watch,
@@ -36,7 +245,6 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
     formState: { errors },
   } = useFormContext<CreateRollupFormData>();
 
-  // Register fields with validation
   React.useEffect(() => {
     register("accountAndAws.credentialId", {
       required: "AWS Access Key is required",
@@ -44,22 +252,21 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
     register("accountAndAws.awsRegion", { required: "AWS Region is required" });
   }, [register]);
 
-  const { awsCredentials, isLoading, refreshCredentials } = useAwsCredentials();
+  const { awsCredentials, isLoading, refreshCredentials } = useAwsCredentials(); // eslint-disable-line react-hooks/rules-of-hooks
   const {
     regions,
     isLoading: isLoadingRegions,
     error: regionsError,
     fetchRegions,
     clearRegions,
-  } = useAwsRegions();
+  } = useAwsRegions(); // eslint-disable-line react-hooks/rules-of-hooks
   const selectedCredentialId = watch("accountAndAws.credentialId") as string;
 
-  // Track the last fetched credential to prevent refetching
   const [lastFetchedCredentialId, setLastFetchedCredentialId] =
-    React.useState<string>("");
+    React.useState<string>(""); // eslint-disable-line react-hooks/rules-of-hooks
 
   // Fetch regions when credentials are selected
-  React.useEffect(() => {
+  React.useEffect(() => { // eslint-disable-line react-hooks/rules-of-hooks
     if (
       selectedCredentialId &&
       awsCredentials &&
@@ -70,7 +277,6 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
       );
 
       if (selectedCredential) {
-        // Clear current region selection and fetch new regions
         setValue("accountAndAws.awsRegion", "");
         fetchRegions(
           selectedCredential.accessKeyId,
@@ -79,7 +285,6 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
         setLastFetchedCredentialId(selectedCredentialId);
       }
     } else if (!selectedCredentialId && lastFetchedCredentialId) {
-      // Clear regions when no credential is selected
       clearRegions();
       setValue("accountAndAws.awsRegion", "");
       setLastFetchedCredentialId("");
@@ -93,11 +298,9 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
     setValue,
   ]);
 
-  // Set default region when regions are loaded
   const currentRegion = watch("accountAndAws.awsRegion");
-  React.useEffect(() => {
+  React.useEffect(() => { // eslint-disable-line react-hooks/rules-of-hooks
     if (regions.length > 0 && !currentRegion && !isLoadingRegions) {
-      // Set first available region as default, or prefer us-east-1 if available
       const defaultRegion =
         regions.find((r) => r.value === "us-east-1") || regions[0];
       setValue("accountAndAws.awsRegion", defaultRegion.value);
@@ -106,8 +309,7 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
 
   const awsRegion = watch("accountAndAws.awsRegion");
 
-  // Call onNext when both fields are filled
-  React.useEffect(() => {
+  React.useEffect(() => { // eslint-disable-line react-hooks/rules-of-hooks
     if (selectedCredentialId && awsRegion) {
       onNext();
     }
@@ -145,26 +347,15 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
                       (cred) => cred.id === value
                     );
                     if (selectedCredential) {
-                      setValue(
-                        "accountAndAws.accountName",
-                        selectedCredential.name
-                      );
-                      setValue(
-                        "accountAndAws.awsAccessKey",
-                        selectedCredential.accessKeyId
-                      );
-                      setValue(
-                        "accountAndAws.awsSecretKey",
-                        selectedCredential.secretAccessKey
-                      );
+                      setValue("accountAndAws.accountName", selectedCredential.name);
+                      setValue("accountAndAws.awsAccessKey", selectedCredential.accessKeyId);
+                      setValue("accountAndAws.awsSecretKey", selectedCredential.secretAccessKey);
                     }
                   }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue
-                      placeholder={
-                        isLoading ? "Loading..." : "Choose an AWS access key"
-                      }
+                      placeholder={isLoading ? "Loading..." : "Choose an AWS access key"}
                     />
                   </SelectTrigger>
                   <SelectContent>
@@ -193,9 +384,7 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
                 </label>
                 <Select
                   value={watch("accountAndAws.awsRegion")}
-                  onValueChange={(value) =>
-                    setValue("accountAndAws.awsRegion", value)
-                  }
+                  onValueChange={(value) => setValue("accountAndAws.awsRegion", value)}
                   disabled={!selectedCredentialId || isLoadingRegions}
                 >
                   <SelectTrigger className="w-full">
@@ -210,9 +399,9 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {regions.map((region) => (
-                      <SelectItem key={region.value} value={region.value}>
-                        {region.label}
+                    {regions.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -247,13 +436,8 @@ export function AwsConfig({ onNext }: AwsConfigProps) {
                   Configuration section.
                 </span>
                 <Button variant="outline" size="sm" asChild>
-                  <a
-                    href="/configuration"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Go to Configuration{" "}
-                    <ExternalLink className="w-3 h-3 ml-1" />
+                  <a href="/configuration" target="_blank" rel="noopener noreferrer">
+                    Go to Configuration <ExternalLink className="w-3 h-3 ml-1" />
                   </a>
                 </Button>
               </AlertDescription>

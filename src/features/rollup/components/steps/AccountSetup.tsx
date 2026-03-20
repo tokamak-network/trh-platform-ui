@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,37 @@ import { useFormContext, useController } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { useEthereumAccounts, wordList } from "../../hooks/useEthereumAccounts";
 import * as bip39 from "bip39";
+import { ethers } from "ethers";
 import { THANOS_STACK_PREREQUISITE_GUIDE_URL } from "../../const";
 
 
 interface AccountSetupProps {
   /** "preset" mode uses presetBasicInfo.* paths and hides account selection UI */
   mode?: "classic" | "preset";
+}
+
+// Desktop app account data injected via window.__TRH_DESKTOP_ACCOUNTS__
+interface DesktopAccount {
+  address: string;
+  privateKey: string;
+}
+interface DesktopAccounts {
+  admin: DesktopAccount;
+  proposer: DesktopAccount;
+  batcher: DesktopAccount;
+  sequencer: DesktopAccount;
+}
+
+function getDesktopAccounts(): DesktopAccounts | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as Record<string, any>;
+    const data: DesktopAccounts | undefined = w.__TRH_DESKTOP_ACCOUNTS__;
+    if (data?.admin?.address && data?.proposer?.address && data?.batcher?.address && data?.sequencer?.address) {
+      return data;
+    }
+  } catch { /* not in desktop context */ }
+  return null;
 }
 
 export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
@@ -44,6 +69,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
 
   const [showSeedPhrase, setShowSeedPhrase] = useState(false);
   const [seedPhraseConfirmed, setSeedPhraseConfirmed] = useState(false);
+  const [desktopAccountsApplied, setDesktopAccountsApplied] = useState(false);
 
   const { field: seedPhraseField } = useController({
     name: isPreset ? "presetBasicInfo.seedPhrase" : "accountAndAws.seedPhrase",
@@ -95,6 +121,31 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
     seedPhrase,
     l1RpcUrlField.value ?? ""
   );
+
+  // Auto-apply desktop keystore accounts if available
+  useEffect(() => {
+    if (desktopAccountsApplied) return;
+    const desktop = getDesktopAccounts();
+    if (!desktop) return;
+
+    if (!isPreset) {
+      // Classic mode: set accounts and private keys from desktop keystore
+      adminAccountField.onChange(desktop.admin.address);
+      setValue("accountAndAws.adminPrivateKey", desktop.admin.privateKey);
+
+      proposerAccountField.onChange(desktop.proposer.address);
+      setValue("accountAndAws.proposerPrivateKey", desktop.proposer.privateKey);
+
+      batchAccountField.onChange(desktop.batcher.address);
+      setValue("accountAndAws.batchPrivateKey", desktop.batcher.privateKey);
+
+      sequencerAccountField.onChange(desktop.sequencer.address);
+      setValue("accountAndAws.sequencerPrivateKey", desktop.sequencer.privateKey);
+    }
+
+    setSeedPhraseConfirmed(true);
+    setDesktopAccountsApplied(true);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateRandomSeedPhrase = useCallback(() => {
     // Generate a valid BIP39 mnemonic
@@ -169,6 +220,111 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
       sequencerAccountField,
     ]
   );
+
+  // Read balances injected by Electron main process via window.__TRH_DESKTOP_BALANCES__
+  const [desktopBalances, setDesktopBalances] = useState<Record<string, string>>({});
+  const [balancesLoading, setBalancesLoading] = useState(true);
+
+  const desktopRoles = useMemo(() => {
+    if (!desktopAccountsApplied) return [];
+    const desktop = getDesktopAccounts();
+    if (!desktop) return [];
+    return [
+      { label: "Admin", address: desktop.admin.address },
+      { label: "Proposer", address: desktop.proposer.address },
+      { label: "Batcher", address: desktop.batcher.address },
+      { label: "Sequencer", address: desktop.sequencer.address },
+    ];
+  }, [desktopAccountsApplied]);
+
+  const loadInjectedBalances = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as Record<string, any>;
+    const balances = w.__TRH_DESKTOP_BALANCES__ as Record<string, string> | undefined;
+    if (balances && Object.keys(balances).length > 0) {
+      setDesktopBalances(balances);
+      setBalancesLoading(false);
+      return true;
+    }
+    return false;
+  }, []);
+
+  useEffect(() => {
+    if (!desktopAccountsApplied) return;
+    // Try immediately
+    if (loadInjectedBalances()) return;
+    // Listen for async injection from Electron main process
+    const handler = () => loadInjectedBalances();
+    window.addEventListener('trh-balances-loaded', handler);
+    // Timeout after 10s
+    const timeout = setTimeout(() => setBalancesLoading(false), 10000);
+    return () => {
+      window.removeEventListener('trh-balances-loaded', handler);
+      clearTimeout(timeout);
+    };
+  }, [desktopAccountsApplied, loadInjectedBalances]);
+
+  // If desktop accounts are applied, show a simplified read-only view
+  if (desktopAccountsApplied) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Account Selection</h2>
+          <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800 font-medium">
+              Accounts provided by TRH Desktop app. Keys are stored securely in your OS keychain.
+            </p>
+          </div>
+        </div>
+
+        <Card className="border-0 shadow-lg">
+          <CardContent className="pt-6 space-y-4">
+            {desktopRoles.map(({ label, address }) => (
+              <div key={label} className="space-y-1">
+                <Label className="text-sm font-medium text-slate-700">{label} Account</Label>
+                <div className="flex items-center justify-between font-mono text-sm bg-slate-50 border rounded-md p-3 text-slate-700">
+                  <span>{address}</span>
+                  <span className={`text-xs ${
+                    desktopBalances[address] === "—" ? "text-red-500" :
+                    desktopBalances[address] ? "text-slate-500" : "text-slate-400"
+                  }`}>
+                    {balancesLoading ? "Loading..." : desktopBalances[address] ?? "—"}
+                  </span>
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={loadInjectedBalances}
+              disabled={balancesLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${balancesLoading ? 'animate-spin' : ''}`} />
+              Refresh Balances
+            </Button>
+          </CardContent>
+        </Card>
+
+        {!isMainnet && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-slate-700">
+              Each account needs Sepolia ETH for gas fees.{" "}
+              <a
+                href="https://www.alchemy.com/faucets/ethereum-sepolia"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-700 underline font-medium"
+              >
+                Get Sepolia ETH from faucet
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
