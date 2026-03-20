@@ -264,6 +264,33 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
     };
   }, [desktopAccountsApplied, loadInjectedBalances]);
 
+  // Fetch balances via desktop bridge using the L1 RPC URL from the form
+  const handleRefreshBalances = useCallback(async () => {
+    const rpcUrl = l1RpcUrlField.value;
+    if (!rpcUrl) return;
+
+    setBalancesLoading(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as Record<string, any>;
+      if (w.__TRH_DESKTOP__?.fetchBalances) {
+        const balances = await w.__TRH_DESKTOP__.fetchBalances(rpcUrl);
+        if (balances && Object.keys(balances).length > 0) {
+          setDesktopBalances(balances);
+        }
+      } else {
+        // Fallback: read from injected balances
+        loadInjectedBalances();
+      }
+    } catch {
+      // ignore fetch errors
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, [l1RpcUrlField.value, loadInjectedBalances]);
+
+  const hasL1Rpc = !!(l1RpcUrlField.value && l1RpcUrlField.value.trim());
+
   // If desktop accounts are applied, show a simplified read-only view
   if (desktopAccountsApplied) {
     return (
@@ -293,17 +320,24 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
                 </div>
               </div>
             ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={loadInjectedBalances}
-              disabled={balancesLoading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${balancesLoading ? 'animate-spin' : ''}`} />
-              Refresh Balances
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshBalances}
+                disabled={balancesLoading || !hasL1Rpc}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${balancesLoading ? 'animate-spin' : ''}`} />
+                Refresh Balances
+              </Button>
+              {!hasL1Rpc && (
+                <p className="text-xs text-amber-600">
+                  Enter the L1 RPC URL above to check account balances.
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
