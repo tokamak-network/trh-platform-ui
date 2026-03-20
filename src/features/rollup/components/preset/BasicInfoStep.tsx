@@ -355,35 +355,17 @@ export function BasicInfoStep() {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function PresetDesktopAwsConfig({ setValue, register, errors }: { setValue: any; register: any; errors: any }) {
-  const [ssoCompleted, setSsoCompleted] = useState(false);
+  const [appliedRegion, setAppliedRegion] = useState<string | null>(null);
 
-  if (ssoCompleted) {
+  if (appliedRegion) {
+    const regionLabel = AWS_REGIONS.find((r) => r.value === appliedRegion)?.label ?? appliedRegion;
     return (
       <Card>
         <CardContent className="pt-6">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <p className="text-sm text-green-800 font-medium">
-              AWS credentials provided via SSO. Using temporary session token.
+              AWS credentials configured. Region: {regionLabel}
             </p>
-          </div>
-          <div className="mt-4 space-y-2">
-            <Label>Region <span className="text-red-500">*</span></Label>
-            <Select
-              onValueChange={(val) =>
-                setValue("presetBasicInfo.awsRegion", val, { shouldValidate: true })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select AWS region" />
-              </SelectTrigger>
-              <SelectContent>
-                {AWS_REGIONS.map((region) => (
-                  <SelectItem key={region.value} value={region.value}>
-                    {region.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -395,8 +377,10 @@ function PresetDesktopAwsConfig({ setValue, register, errors }: { setValue: any;
       onComplete={(creds) => {
         setValue("presetBasicInfo.awsAccessKey", creds.accessKeyId);
         setValue("presetBasicInfo.awsSecretKey", creds.secretAccessKey);
-        setValue("presetBasicInfo.awsRegion", "us-east-1");
-        setSsoCompleted(true);
+        // Extract region from source (format: "manual:<region>")
+        const region = creds.source.startsWith("manual:") ? creds.source.slice(7) : "us-east-1";
+        setValue("presetBasicInfo.awsRegion", region, { shouldValidate: true });
+        setAppliedRegion(region);
       }}
     />
   );

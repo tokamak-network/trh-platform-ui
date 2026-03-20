@@ -191,21 +191,21 @@ function DesktopAwsConfig({ onNext }: { onNext: () => void }) {
     setValue("accountAndAws.awsSecretKey", creds.secretAccessKey);
     setValue("accountAndAws.credentialId", "desktop-provided");
     setValue("accountAndAws.accountName", creds.source);
-    setValue("accountAndAws.awsRegion", "us-east-1");
+    // Extract region from source (format: "manual:<region>")
+    const region = creds.source.startsWith("manual:") ? creds.source.slice(7) : "us-east-1";
+    setValue("accountAndAws.awsRegion", region);
     setDesktopAwsApplied(true);
     onNext();
   };
 
   if (desktopAwsApplied) {
-    const desktop = getDesktopAwsCredentials();
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold mb-2">AWS Configuration</h2>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <p className="text-sm text-green-800 font-medium">
-              AWS credentials provided via SSO ({desktop?.source ?? "desktop"}).
-              {desktop?.sessionToken ? " Using temporary session token." : ""}
+              AWS credentials configured.
             </p>
           </div>
         </div>
@@ -218,7 +218,7 @@ function DesktopAwsConfig({ onNext }: { onNext: () => void }) {
       <div>
         <h2 className="text-2xl font-bold mb-2">AWS Configuration</h2>
         <p className="text-muted-foreground">
-          Sign in with your AWS SSO to provide credentials for rollup deployment.
+          Enter your AWS credentials for rollup deployment.
         </p>
       </div>
       <DesktopAwsKeyInput onComplete={applyCredentials} />
