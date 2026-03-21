@@ -135,7 +135,18 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
     const desktop = getDesktopAccounts();
     if (!desktop) return;
 
-    if (!isPreset) {
+    if (isPreset) {
+      // Preset mode: fetch seed words from desktop keystore and populate form
+      const w = window as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (w.__TRH_DESKTOP__?.getSeedWords) {
+        w.__TRH_DESKTOP__.getSeedWords().then((words: string[] | null) => {
+          if (words && words.length === 12) {
+            seedPhraseField.onChange(words);
+            setSeedPhraseConfirmed(true);
+          }
+        }).catch(() => { /* ignore */ });
+      }
+    } else {
       // Classic mode: set accounts and private keys from desktop keystore
       adminAccountField.onChange(desktop.admin.address);
       setValue("accountAndAws.adminPrivateKey", desktop.admin.privateKey);
@@ -151,9 +162,10 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
 
       sequencerAccountField.onChange(desktop.sequencer.address);
       setValue("accountAndAws.sequencerPrivateKey", desktop.sequencer.privateKey);
+
+      setSeedPhraseConfirmed(true);
     }
 
-    setSeedPhraseConfirmed(true);
     setDesktopAccountsApplied(true);
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -204,7 +204,7 @@ export const presetBasicInfoSchema = z
     infraProvider: z.enum(["aws", "local"]),
     l1RpcUrl: z.string().min(1, "L1 RPC URL is required").url("Must be a valid URL"),
     l1BeaconUrl: z.string().min(1, "L1 Beacon URL is required").url("Must be a valid URL"),
-    seedPhrase: z.array(z.string()).length(12, "Seed phrase must contain exactly 12 words"),
+    seedPhrase: z.array(z.string().min(1, "Each word is required")).length(12, "Seed phrase must contain exactly 12 words"),
     awsAccessKey: z.string().optional(),
     awsSecretKey: z.string().optional(),
     awsRegion: z.string().optional(),
