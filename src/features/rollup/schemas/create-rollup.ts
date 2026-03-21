@@ -140,6 +140,8 @@ export const accountAndAwsSchema = z.object({
   proposerPrivateKey: z.string().min(1, "Proposer private key is required"),
   batchAccount: z.string().min(1, "Batch account is required"),
   batchPrivateKey: z.string().min(1, "Batch private key is required"),
+  challengerAccount: z.string().min(1, "Challenger account is required"),
+  challengerPrivateKey: z.string().min(1, "Challenger private key is required"),
   sequencerAccount: z.string().min(1, "Sequencer account is required"),
   sequencerPrivateKey: z.string().min(1, "Sequencer private key is required"),
   accountName: z.string().min(1, "Account name is required"),
@@ -153,6 +155,7 @@ export const accountAndAwsSchema = z.object({
       data.adminAccount,
       data.proposerAccount,
       data.batchAccount,
+      data.challengerAccount,
       data.sequencerAccount,
     ];
     // Filter out empty strings to avoid validation errors on empty fields

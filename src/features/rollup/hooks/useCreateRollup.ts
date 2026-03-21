@@ -303,6 +303,8 @@ export function useCreateRollup() {
           "accountAndAws.proposerPrivateKey",
           "accountAndAws.batchAccount",
           "accountAndAws.batchPrivateKey",
+          "accountAndAws.challengerAccount",
+          "accountAndAws.challengerPrivateKey",
           "accountAndAws.sequencerAccount",
           "accountAndAws.sequencerPrivateKey",
           "accountAndAws.accountName",

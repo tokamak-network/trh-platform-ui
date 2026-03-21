@@ -50,6 +50,7 @@ export interface ThanosStackConfig {
   batcherAccount: string;
   deploymentPath: string;
   challengePeriod: number;
+  challengerAccount: string;
   proposerAccount: string;
   sequencerAccount: string;
   awsSecretAccessKey: string;

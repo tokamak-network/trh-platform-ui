@@ -43,6 +43,7 @@ interface DesktopAccounts {
   admin: DesktopAccount;
   proposer: DesktopAccount;
   batcher: DesktopAccount;
+  challenger: DesktopAccount;
   sequencer: DesktopAccount;
 }
 
@@ -51,7 +52,7 @@ function getDesktopAccounts(): DesktopAccounts | null {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as Record<string, any>;
     const data: DesktopAccounts | undefined = w.__TRH_DESKTOP_ACCOUNTS__;
-    if (data?.admin?.address && data?.proposer?.address && data?.batcher?.address && data?.sequencer?.address) {
+    if (data?.admin?.address && data?.proposer?.address && data?.batcher?.address && data?.challenger?.address && data?.sequencer?.address) {
       return data;
     }
   } catch { /* not in desktop context */ }
@@ -101,6 +102,12 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
     defaultValue: "",
   });
 
+  const { field: challengerAccountField } = useController({
+    name: "accountAndAws.challengerAccount",
+    control,
+    defaultValue: "",
+  });
+
   const { field: sequencerAccountField } = useController({
     name: "accountAndAws.sequencerAccount",
     control,
@@ -139,6 +146,9 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
       batchAccountField.onChange(desktop.batcher.address);
       setValue("accountAndAws.batchPrivateKey", desktop.batcher.privateKey);
 
+      challengerAccountField.onChange(desktop.challenger.address);
+      setValue("accountAndAws.challengerPrivateKey", desktop.challenger.privateKey);
+
       sequencerAccountField.onChange(desktop.sequencer.address);
       setValue("accountAndAws.sequencerPrivateKey", desktop.sequencer.privateKey);
     }
@@ -158,6 +168,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
       adminAccountField.onChange(undefined);
       proposerAccountField.onChange(undefined);
       batchAccountField.onChange(undefined);
+      challengerAccountField.onChange(undefined);
       sequencerAccountField.onChange(undefined);
     }
   }, [
@@ -165,6 +176,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
     adminAccountField,
     proposerAccountField,
     batchAccountField,
+    challengerAccountField,
     sequencerAccountField,
   ]);
 
@@ -191,6 +203,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
           adminAccountField.onChange(undefined);
           proposerAccountField.onChange(undefined);
           batchAccountField.onChange(undefined);
+          challengerAccountField.onChange(undefined);
           sequencerAccountField.onChange(undefined);
         }
       } else {
@@ -208,6 +221,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
           adminAccountField.onChange(undefined);
           proposerAccountField.onChange(undefined);
           batchAccountField.onChange(undefined);
+          challengerAccountField.onChange(undefined);
           sequencerAccountField.onChange(undefined);
         }
       }
@@ -217,6 +231,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
       adminAccountField,
       proposerAccountField,
       batchAccountField,
+      challengerAccountField,
       sequencerAccountField,
     ]
   );
@@ -233,6 +248,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
       { label: "Admin", address: desktop.admin.address },
       { label: "Proposer", address: desktop.proposer.address },
       { label: "Batcher", address: desktop.batcher.address },
+      { label: "Challenger", address: desktop.challenger.address },
       { label: "Sequencer", address: desktop.sequencer.address },
     ];
   }, [desktopAccountsApplied]);
@@ -744,6 +760,61 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
               {errors.accountAndAws?.sequencerAccount && (
                 <p className="text-sm text-red-500">
                   {errors.accountAndAws.sequencerAccount.message}
+                </p>
+              )}
+            </div>
+
+            {/* Challenger Account */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">
+                Challenger Account <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={challengerAccountField.value || undefined}
+                onValueChange={(value) => {
+                  challengerAccountField.onChange(value);
+                  const account = accounts.find((acc) => acc.address === value);
+                  if (account) {
+                    setValue("accountAndAws.challengerPrivateKey", account.privateKey);
+                  }
+                }}
+                disabled={
+                  !seedPhraseConfirmed || isLoading || accounts.length === 0
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      accounts.length === 0
+                        ? "No accounts available"
+                        : "Select an account"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.length > 0 ? (
+                    accounts.map((account, index) => (
+                      <SelectItem key={index} value={account.address}>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-mono text-sm">
+                            {account.address}
+                          </span>
+                          <span className="text-xs text-slate-500 ml-4">
+                            {account.balance}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-accounts" disabled>
+                      No accounts available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.accountAndAws?.challengerAccount && (
+                <p className="text-sm text-red-500">
+                  {errors.accountAndAws.challengerAccount.message}
                 </p>
               )}
             </div>

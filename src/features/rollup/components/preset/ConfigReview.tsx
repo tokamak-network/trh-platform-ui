@@ -89,6 +89,7 @@ export function ConfigReview({
 
   const changedFields = Object.keys(overrideValues);
   const isMainnet = network === "Mainnet";
+  const MAINNET_CHALLENGE_PERIOD = 6048000;
 
   return (
     <div className="space-y-4">
@@ -160,7 +161,9 @@ export function ConfigReview({
               const isFeeToken = field === "feeToken";
               const currentValue = isFeeToken
                 ? (feeToken ?? defaultValue)
-                : (overrideValues[field] ?? defaultValue);
+                : isLockedOnMainnet
+                  ? MAINNET_CHALLENGE_PERIOD
+                  : (overrideValues[field] ?? defaultValue);
               const isChanged = !isFeeToken && field in overrideValues;
 
               if (!meta) return null;
