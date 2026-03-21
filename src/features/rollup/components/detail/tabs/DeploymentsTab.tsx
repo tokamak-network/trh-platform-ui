@@ -113,8 +113,8 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
 
   const StepnameMap: Record<string, string> = {
     "deploy-l1-contracts": "Deploy L1 Contracts",
-    "deploy-aws-infra": "Deploy AWS Infrastructure",
-    "destroy-aws-infra": "Destroy AWS Infrastructure",
+    "deploy-aws-infra": "Deploy Infrastructure",
+    "destroy-aws-infra": "Destroy Infrastructure",
     "install-bridge": "Install Bridge",
     "uninstall-bridge": "Uninstall Bridge",
     "install-block-explorer": "Install Block Explorer",
@@ -122,6 +122,20 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     "install-monitoring": "Install Monitoring Dashboard",
     "uninstall-monitoring": "Uninstall Monitoring Dashboard",
     "register-candidate": "Staking/DAO Candidate Registration",
+  };
+
+  const getStepDisplayName = (deployment: ThanosDeployment): string => {
+    if (deployment.step === "deploy-aws-infra" && deployment.config) {
+      const provider = deployment.config.infraProvider as string | undefined;
+      if (provider === "local") return "Deploy Local Infrastructure";
+      if (provider === "aws") return "Deploy AWS Infrastructure";
+    }
+    if (deployment.step === "destroy-aws-infra" && deployment.config) {
+      const provider = deployment.config.infraProvider as string | undefined;
+      if (provider === "local") return "Destroy Local Infrastructure";
+      if (provider === "aws") return "Destroy AWS Infrastructure";
+    }
+    return StepnameMap[deployment.step] || deployment.step.replace(/-/g, " ");
   };
 
   if (!stack) return null;
@@ -200,7 +214,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                     return (
                       <tr key={d.id} className="border-t border-slate-200/60">
                         <td className="py-3 pr-4 font-medium text-slate-800 capitalize">
-                          {StepnameMap[d.step] || name}
+                          {getStepDisplayName(d)}
                         </td>
                         <td className="py-3 pr-4">
                           <StatusBadge status={d.status} />
