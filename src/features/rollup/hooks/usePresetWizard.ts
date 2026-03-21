@@ -106,6 +106,7 @@ export function usePresetWizard() {
         awsRegion: basicInfo.awsRegion ?? "",
         l1RpcUrl: basicInfo.l1RpcUrl,
         l1BeaconUrl: basicInfo.l1BeaconUrl,
+        reuseDeployment: basicInfo.network === "Mainnet" ? (basicInfo.reuseDeployment ?? true) : undefined,
         overrides: overrides.length > 0 ? overrides : undefined,
       });
 

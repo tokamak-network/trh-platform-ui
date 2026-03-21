@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, Info, Cloud, Monitor } from "lucide-react";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
@@ -201,13 +202,35 @@ export function BasicInfoStep() {
           </div>
 
           {network === "Mainnet" && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                You are deploying to <strong>Mainnet</strong>. This involves real assets and
-                irreversible costs. Ensure all settings are correct before proceeding.
-              </AlertDescription>
-            </Alert>
+            <>
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  You are deploying to <strong>Mainnet</strong>. This involves real assets and
+                  irreversible costs. Ensure all settings are correct before proceeding.
+                </AlertDescription>
+              </Alert>
+              <div className="flex items-center space-x-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <Checkbox
+                  id="preset-reuse-deployment"
+                  checked={watch("presetBasicInfo.reuseDeployment") ?? true}
+                  onCheckedChange={(checked) =>
+                    setValue("presetBasicInfo.reuseDeployment", !!checked)
+                  }
+                />
+                <div className="flex flex-col">
+                  <Label
+                    htmlFor="preset-reuse-deployment"
+                    className="text-sm font-medium text-slate-900"
+                  >
+                    Reuse Existing Deployment
+                  </Label>
+                  <p className="text-xs text-slate-500">
+                    Uses existing implementation contracts. Uncheck to deploy both implementation and proxy contracts from scratch.
+                  </p>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

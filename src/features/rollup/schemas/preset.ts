@@ -113,6 +113,7 @@ export const deployWithPresetRequestSchema = z.object({
   l1RpcUrl: z.string().url(),
   l1BeaconUrl: z.string().url(),
   feeToken: feeTokenSchema,
+  reuseDeployment: z.boolean().optional(),
   overrides: z.array(presetFieldOverrideSchema).optional(),
 });
 export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;

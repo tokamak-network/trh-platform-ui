@@ -209,6 +209,7 @@ export const presetBasicInfoSchema = z
     awsSecretKey: z.string().optional(),
     awsRegion: z.string().optional(),
     feeToken: feeTokenSchema,
+    reuseDeployment: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.infraProvider === "aws") {
