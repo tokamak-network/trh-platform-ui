@@ -337,7 +337,7 @@ export const convertFormToDeploymentRequest = (
         nameInfo: daoCandidate.nameInfo,
       }
       : undefined,
-reuseDeployment: networkAndChain.reuseDeployment || false,
+reuseDeployment: networkAndChain.reuseDeployment ?? true,
     mainnetConfirmation:
       networkAndChain.network === "mainnet" && confirmation?.agreedToMainnetRisks
         ? {
