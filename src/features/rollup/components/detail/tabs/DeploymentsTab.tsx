@@ -112,8 +112,10 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
   }, [deployments]);
 
   const StepnameMap: Record<string, string> = {
+    "build-l1-contracts": "Build L1 Contracts",
     "deploy-l1-contracts": "Deploy L1 Contracts",
     "deploy-aws-infra": "Deploy AWS Infrastructure",
+    "deploy-local-infra": "Deploy Local Infrastructure",
     "destroy-aws-infra": "Destroy AWS Infrastructure",
     "install-bridge": "Install Bridge",
     "uninstall-bridge": "Uninstall Bridge",
