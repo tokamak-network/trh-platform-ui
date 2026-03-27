@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider, AuthProvider, ToasterProvider } from "@/providers";
+import { MSWProvider } from "@/providers/msw-provider";
 import { RollupCreationProvider } from "@/features/rollup/context/RollupCreationContext";
 import { PublicEnvScript } from "next-runtime-env";
 
@@ -34,14 +35,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryProvider>
-          <AuthProvider>
-            <RollupCreationProvider>
-              {children}
-              <ToasterProvider />
-            </RollupCreationProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <MSWProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <RollupCreationProvider>
+                {children}
+                <ToasterProvider />
+              </RollupCreationProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </MSWProvider>
       </body>
     </html>
   );
