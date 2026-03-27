@@ -121,7 +121,7 @@ export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSche
 // ─── Funding status ──────────────────────────────────────────────────────────
 
 export const fundingAccountSchema = z.object({
-  role: z.enum(["deployer", "batcher", "proposer", "challenger"]),
+  role: z.enum(["admin", "sequencer", "batcher", "proposer"]),
   address: z.string(),
   requiredWei: z.string(),
   currentWei: z.string(),

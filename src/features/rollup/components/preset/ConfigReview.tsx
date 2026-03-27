@@ -159,6 +159,8 @@ export function ConfigReview({
               const isLockedOnMainnet = field === "challengePeriod" && isMainnet;
               // feeToken is set in Basic Info step — always read-only here
               const isFeeToken = field === "feeToken";
+              // registerCandidate is under development — always read-only
+              const isRegisterCandidate = field === "registerCandidate";
               const currentValue = isFeeToken
                 ? (feeToken ?? defaultValue)
                 : isLockedOnMainnet
@@ -188,12 +190,17 @@ export function ConfigReview({
                           Fixed (Mainnet)
                         </Badge>
                       )}
+                      {isRegisterCandidate && (
+                        <Badge variant="secondary" className="text-xs">
+                          Coming Soon
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs text-gray-500">{meta.description}</p>
                   </div>
 
                   <div className="ml-4 flex items-center gap-2">
-                    {expertMode && isEditable && !isLockedOnMainnet && !isFeeToken ? (
+                    {expertMode && isEditable && !isLockedOnMainnet && !isFeeToken && !isRegisterCandidate ? (
                       typeof defaultValue === "boolean" ? (
                         <Switch
                           checked={Boolean(currentValue)}

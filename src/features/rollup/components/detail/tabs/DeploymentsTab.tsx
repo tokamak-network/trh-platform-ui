@@ -35,10 +35,10 @@ const formatDateTime = (iso?: string) => {
   return d.toLocaleString();
 };
 
-const formatDuration = (start?: string, end?: string) => {
+const formatDuration = (start?: string, end?: string, now: number = Date.now()) => {
   if (!start) return "-";
   const startMs = new Date(start).getTime();
-  const endMs = end ? new Date(end).getTime() : Date.now();
+  const endMs = end ? new Date(end).getTime() : now;
   if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs)
     return "-";
   const totalSeconds = Math.floor((endMs - startMs) / 1000);
@@ -97,6 +97,16 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     refetch,
   } = useThanosDeploymentsQuery(stackId);
   const [open, setOpen] = React.useState(false);
+  const [now, setNow] = React.useState(Date.now());
+
+  React.useEffect(() => {
+    const hasActive = deployments.some(
+      (d) => d.status === "InProgress" || d.status === "Pending"
+    );
+    if (!hasActive) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [deployments]);
   const [selected, setSelected] = React.useState<ThanosDeployment | null>(null);
   const [logsOpen, setLogsOpen] = React.useState(false);
   const [logsSelected, setLogsSelected] =
@@ -210,7 +220,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
                     const duration =
                       d.status === "Success" || d.status === "Failed"
                         ? formatDuration(d.started_at, d.finished_at)
-                        : formatDuration(d.started_at);
+                        : formatDuration(d.started_at, undefined, now);
                     return (
                       <tr key={d.id} className="border-t border-slate-200/60">
                         <td className="py-3 pr-4 font-medium text-slate-800 capitalize">

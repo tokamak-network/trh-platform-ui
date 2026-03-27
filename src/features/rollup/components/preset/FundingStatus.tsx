@@ -29,10 +29,10 @@ const STATUS_LABELS: Record<FundingStatusType, string> = {
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  deployer: "Deployer",
+  admin: "Admin",
+  sequencer: "Sequencer",
   batcher: "Batcher",
   proposer: "Proposer",
-  challenger: "Challenger",
 };
 
 interface FundingStatusProps {

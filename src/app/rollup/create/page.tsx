@@ -20,7 +20,6 @@ import {
   PresetSelectionStep,
   BasicInfoStep,
   ConfigReview,
-  FundingStatus,
 } from "@/features/rollup/components/preset";
 import { FormProvider } from "react-hook-form";
 
@@ -72,10 +71,6 @@ function PresetWizardContent() {
                 infraProvider={form.watch("presetBasicInfo.infraProvider")}
               />
             )}
-            <FundingStatus
-              deploymentId={pendingDeploymentId ?? undefined}
-              network={network}
-            />
           </div>
         );
       default:
