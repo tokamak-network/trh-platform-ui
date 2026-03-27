@@ -72,10 +72,13 @@ export const handlers = [
   }),
 
   // GET /api/proxy/auth/profile — Auth profile (prevents redirect to /auth)
+  // NOTE: authService.getCurrentUser() calls userSchema.parse(response) directly
+  // (not response.data), so we return the user object without the API wrapper.
   http.get('/api/proxy/auth/profile', () => {
     return HttpResponse.json({
-      data: { id: 'test-user', email: 'admin@gmail.com', role: 'Admin' },
-      success: true,
+      id: 'test-user',
+      email: 'admin@gmail.com',
+      role: 'Admin',
     });
   }),
 
