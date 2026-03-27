@@ -309,7 +309,6 @@ export const MOCK_PRESETS: PresetSummary[] = [
       "batchSubmissionFrequency",
       "outputRootFrequency",
       "challengePeriod",
-      "registerCandidate",
     ],
     availableFeeTokens: ["TON", "ETH", "USDT", "USDC"],
   },
