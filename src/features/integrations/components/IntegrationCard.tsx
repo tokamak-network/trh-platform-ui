@@ -228,8 +228,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                 </Badge>
                 {/* Removed register candidate exclusion now cancel should work for all integration types */}
                 {/* {integration.type !== "register-candidate" && ( */}
-                {integration.type !== "drb" && <>
-                {(integration.status === "InProgress" || integration.status === "Pending") && (
+                {integration.type !== "drb" && (integration.status === "InProgress" || integration.status === "Pending") && (
                     <Button
                       aria-label="Cancel"
                       variant="outline"
@@ -245,7 +244,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                     </Button>
                   )}
                   {/* {(integration.status === "Failed" || integration.status === "Cancelled") && ( */}
-                  {integration.status === "Cancelled" && (
+                  {integration.type !== "drb" && integration.status === "Cancelled" && (
                     <Button
                       aria-label="Retry"
                       variant="outline"
@@ -275,7 +274,6 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                       </span>
                     </Button>
                   )}
-                </>}
               </div>
               {integration.status === "Cancelling" && integration.reason && (
                 <p className="text-xs text-orange-700 text-right max-w-md mt-0.5">
