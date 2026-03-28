@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Link, Network, Zap, GitPullRequest } from "lucide-react";
+import { Copy, CheckCircle, Download, Eye, Link, Network, Zap, GitPullRequest } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { TabsContent } from "@/components/ui/tabs";
 import { formatDate } from "../../../utils/dateUtils";
@@ -12,10 +12,23 @@ import { useRegisterMetadataDAOQuery } from "../../../api/queries";
 import toast from "react-hot-toast";
 
 export function OverviewTab({ stack }: RollupDetailTabProps) {
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+
   // Query to fetch metadata - must be called before any conditional returns
   const { data: metadataData } = useRegisterMetadataDAOQuery(stack?.id);
 
   if (!stack) return null;
+
+  const copyToClipboard = async (text: string, itemId: string) => {
+    if (text === "Not available") return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemId);
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
 
   const rollup = {
     network: stack.network,
@@ -56,36 +69,43 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              { label: "Layer 1", value: rollup.layer1 },
-              { label: "L1 Chain ID", value: rollup.l1ChainId, mono: true },
-              { label: "Layer 2", value: rollup.layer2 },
-              { label: "L2 Chain ID", value: rollup.l2ChainId, mono: true },
-              {
-                label: "RPC URL",
-                value: rollup.rpcUrl,
-                mono: true,
-                link: true,
-              },
-              { label: "Created", value: rollup.created },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors duration-200"
-              >
-                <span className="text-sm font-medium text-slate-700">
-                  {item.label}:
-                </span>
-                <span
-                  className={`text-sm ${item.mono ? "font-mono" : ""} ${
-                    item.link
-                      ? "text-blue-600 hover:text-cyan-400"
-                      : "text-slate-800"
-                  } font-medium`}
+              { label: "Layer 1", value: rollup.layer1, id: "layer1" },
+              { label: "L1 Chain ID", value: rollup.l1ChainId, mono: true, id: "l1ChainId" },
+              { label: "Layer 2", value: rollup.layer2, id: "layer2" },
+              { label: "L2 Chain ID", value: rollup.l2ChainId, mono: true, id: "l2ChainId" },
+              { label: "RPC URL", value: rollup.rpcUrl, mono: true, link: true, id: "rpcUrl" },
+              { label: "Created", value: rollup.created, id: "created", noCopy: true },
+            ].map((item) => {
+              const canCopy = !item.noCopy && item.value !== "Not available";
+              return (
+                <div
+                  key={item.id}
+                  className={`flex justify-between items-center p-2 rounded-lg transition-colors duration-200 group ${canCopy ? "hover:bg-white/70 cursor-pointer" : "hover:bg-white/50"}`}
+                  onClick={() => canCopy && copyToClipboard(item.value, item.id)}
+                  title={canCopy ? "Click to copy" : undefined}
                 >
-                  {item.value}
-                </span>
-              </div>
-            ))}
+                  <span className="text-sm font-medium text-slate-700">
+                    {item.label}:
+                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className={`text-sm ${item.mono ? "font-mono" : ""} ${
+                        item.link ? "text-blue-600" : "text-slate-800"
+                      } font-medium truncate max-w-[220px]`}
+                    >
+                      {item.value}
+                    </span>
+                    {canCopy && (
+                      copiedItem === item.id ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
