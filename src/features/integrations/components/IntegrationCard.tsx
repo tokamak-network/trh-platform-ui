@@ -36,6 +36,7 @@ import { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
+import { DRBCard, DRBCompactInfo } from "./DRBCard";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -163,6 +164,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <MonitoringCard {...commonProps} stackId={stackId} />;
       case "register-candidate":
         return <RegisterCandidateCard {...commonProps} />;
+      case "drb":
+        return <DRBCard {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -186,6 +189,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <MonitoringCompactInfo {...commonProps} />;
       case "register-candidate":
         return <RegisterCandidateCompactInfo {...commonProps} />;
+      case "drb":
+        return <DRBCompactInfo {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -223,7 +228,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                 </Badge>
                 {/* Removed register candidate exclusion now cancel should work for all integration types */}
                 {/* {integration.type !== "register-candidate" && ( */}
-                <>
+                {integration.type !== "drb" && <>
                 {(integration.status === "InProgress" || integration.status === "Pending") && (
                     <Button
                       aria-label="Cancel"
@@ -270,7 +275,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                       </span>
                     </Button>
                   )}
-                </>
+                </>}
               </div>
               {integration.status === "Cancelling" && integration.reason && (
                 <p className="text-xs text-orange-700 text-right max-w-md mt-0.5">

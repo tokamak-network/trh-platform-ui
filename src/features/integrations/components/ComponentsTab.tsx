@@ -249,7 +249,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                   deployed.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {Object.entries(INTEGRATION_TYPES).map(([type, config]) => (
+                  {Object.entries(INTEGRATION_TYPES)
+                    .filter(([type]) => type !== "drb")
+                    .map(([type, config]) => (
                     <Badge key={type} variant="outline" className="text-sm">
                       {config.icon} {config.label}
                     </Badge>
@@ -281,7 +283,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(INTEGRATION_TYPES).map(([type, config]) => (
+              {Object.entries(INTEGRATION_TYPES)
+                .filter(([type]) => type !== "drb")
+                .map(([type, config]) => (
                 <div
                   key={type}
                   className="p-4 bg-white/50 rounded-lg border border-gray-200"

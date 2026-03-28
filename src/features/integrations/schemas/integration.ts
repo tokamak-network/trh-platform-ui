@@ -37,7 +37,7 @@ export interface IntegrationInfo {
 export interface Integration {
   id: string;
   stack_id: string;
-  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse";
+  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "drb";
   status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
@@ -79,5 +79,11 @@ export const INTEGRATION_TYPES = {
     description: "System Pulse provides real-time visibility into platform health and service availability",
     icon: "⏱️",
     color: "from-indigo-500 to-blue-400",
+  },
+  drb: {
+    label: "DRB",
+    description: "Decentralized Random Beacon (auto-installed)",
+    icon: "🎲",
+    color: "from-violet-500 to-purple-400",
   },
 } as const;

@@ -11,6 +11,7 @@ export { UptimeCard, UptimeCompactInfo } from "./UptimeCard";
 export { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard";
 export { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 export { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
+export { DRBCard, DRBCompactInfo } from "./DRBCard";
 
 // Shared types
 export * from "./types";
