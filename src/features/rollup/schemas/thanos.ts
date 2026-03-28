@@ -41,6 +41,7 @@ export interface ThanosStackConfig {
   network: string;
   type: RollupType;
   l1RpcUrl: string;
+  infraProvider?: "aws" | "local";
   awsRegion: string;
   chainName: string;
   l1BeaconUrl: string;

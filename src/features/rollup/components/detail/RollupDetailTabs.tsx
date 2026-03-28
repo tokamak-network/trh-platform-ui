@@ -27,6 +27,8 @@ export function RollupDetailTabs({
 }: RollupDetailTabsProps) {
   const router = useRouter();
 
+  const isLocalDeployment = stack?.config.infraProvider === "local";
+
   const handleTabChange = (value: string) => {
     if (value === "backup" && stack?.status !== ThanosStackStatus.DEPLOYED) {
       return;
@@ -68,13 +70,15 @@ export function RollupDetailTabs({
         >
           Integrations
         </TabsTrigger>
-        <TabsTrigger
-          value="backup"
-          disabled={stack?.status !== ThanosStackStatus.DEPLOYED}
-          className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Backup
-        </TabsTrigger>
+        {!isLocalDeployment && (
+          <TabsTrigger
+            value="backup"
+            disabled={stack?.status !== ThanosStackStatus.DEPLOYED}
+            className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Backup
+          </TabsTrigger>
+        )}
         {/* <TabsTrigger
           value="monitoring"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -112,9 +116,11 @@ export function RollupDetailTabs({
       </TabsContent>
 
       {/* Backup Tab */}
-      <TabsContent value="backup" className="space-y-6">
-        <BackupTab stack={stack} />
-      </TabsContent>
+      {!isLocalDeployment && (
+        <TabsContent value="backup" className="space-y-6">
+          <BackupTab stack={stack} />
+        </TabsContent>
+      )}
 
       {/* Monitoring Tab */}
       <TabsContent value="monitoring" className="space-y-6">
