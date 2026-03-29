@@ -140,12 +140,20 @@ export function ConfigReview({
               <li>
                 <strong>1 TON</strong> deposited to EntryPoint for MultiTokenPaymaster gas sponsorship
               </li>
+              {feeToken === "USDT" && (
+                <li>
+                  Bridged <strong>USDT</strong> deployed on L2 via OptimismMintableERC20Factory
+                </li>
+              )}
               <li>
                 <strong>{feeToken}</strong> registered with MultiTokenPaymaster (
                 {feeToken === "ETH" ? "5%" : "3%"} markup)
               </li>
               <li>
-                SimplePriceOracle initial price set — update post-deployment for accurate rates
+                Uniswap V3 WTON/{feeToken} pool created and initialized on L2
+              </li>
+              <li>
+                <strong>UniswapV3TwapOracle</strong> deployed — live price feed, no manual updates needed
               </li>
             </ul>
             <p className="text-xs text-purple-500 mt-2">
