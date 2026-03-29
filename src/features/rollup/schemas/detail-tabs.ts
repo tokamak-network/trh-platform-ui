@@ -6,7 +6,8 @@ export type RollupDetailTab =
   | "settings"
   | "logs"
   | "metadata"
-  | "backup";
+  | "backup"
+  | "chain-data";
 
 import { ThanosStack } from "./thanos";
 

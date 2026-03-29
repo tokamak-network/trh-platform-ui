@@ -57,6 +57,8 @@ export interface ThanosStackConfig {
   awsSecretAccessKey: string;
   outputRootFrequency: number;
   batchSubmissionFrequency: number;
+  preset?: string;
+  feeToken?: string;
 }
 
 export interface ThanosStack {

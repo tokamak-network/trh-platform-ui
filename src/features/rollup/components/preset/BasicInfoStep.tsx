@@ -12,11 +12,12 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, Info, Cloud, Monitor } from "lucide-react";
+import { AlertTriangle, Info, Cloud, Monitor, Zap } from "lucide-react";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
+import { useRollupCreationContext } from "../../context/RollupCreationContext";
 import { AccountSetup } from "../steps/AccountSetup";
 import { getDesktopBridge, DesktopAwsKeyInput } from "../steps/AwsConfig";
 import { useState } from "react";
@@ -44,7 +45,13 @@ export function BasicInfoStep() {
   const network = watch("presetBasicInfo.network");
   const feeToken = watch("presetBasicInfo.feeToken");
   const infraProvider = watch("presetBasicInfo.infraProvider") ?? "aws";
-  const presetId = watch("presetId");
+
+  const { state: rollupState } = useRollupCreationContext();
+  const selectedPresetId = rollupState.selectedPreset?.id ?? null;
+
+  const isAAPreset = selectedPresetId ? ["gaming", "full"].includes(selectedPresetId) : false;
+  const showAANotice = isAAPreset && !!feeToken && feeToken !== "TON";
+  const showNativeGasNotice = !isAAPreset && !!feeToken && feeToken !== "TON";
 
   const TESTNET_DEFAULT_BEACON_URL = "https://ethereum-sepolia-beacon-api.publicnode.com";
 
@@ -201,6 +208,28 @@ export function BasicInfoStep() {
             </div>
           </div>
 
+          {showAANotice && (
+            <Alert className="border-purple-200 bg-purple-50">
+              <Zap className="h-4 w-4 text-purple-600" />
+              <AlertDescription className="text-sm text-purple-700">
+                <strong>AA Smart Wallet Infrastructure</strong> will be enabled with this preset.{" "}
+                <strong>{feeToken}</strong> will be registered with MultiTokenPaymaster (
+                {feeToken === "ETH" ? "5%" : "3%"} markup). An{" "}
+                <strong>aa-operator</strong> service will run continuously to update CoinGecko
+                oracle prices and auto-refill the EntryPoint.
+              </AlertDescription>
+            </Alert>
+          )}
+          {showNativeGasNotice && (
+            <Alert className="border-amber-200 bg-amber-50">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm text-amber-700">
+                <strong>{feeToken}</strong> will be set as the native L2 gas token at genesis. All
+                users pay transaction fees directly in <strong>{feeToken}</strong> — no paymaster or
+                token conversion required.
+              </AlertDescription>
+            </Alert>
+          )}
           {network === "Mainnet" && (
             <>
               <Alert variant="destructive">
@@ -363,7 +392,7 @@ export function BasicInfoStep() {
         )
       )}
 
-      {presetId && (
+      {selectedPresetId && (
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>

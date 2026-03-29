@@ -13,6 +13,7 @@ import {
   DeploymentsTab,
   MetadataTab,
   BackupTab,
+  ChainDataTab,
 } from "./tabs";
 import { ComponentsTab } from "@/features/integrations";
 
@@ -28,6 +29,11 @@ export function RollupDetailTabs({
   const router = useRouter();
 
   const isLocalDeployment = stack?.config.infraProvider === "local";
+
+  const isAAChainData =
+    ["gaming", "full"].includes(stack?.config.preset ?? "") &&
+    !!stack?.config.feeToken &&
+    stack.config.feeToken !== "TON";
 
   const handleTabChange = (value: string) => {
     if (value === "backup" && stack?.status !== ThanosStackStatus.DEPLOYED) {
@@ -51,7 +57,7 @@ export function RollupDetailTabs({
       onValueChange={handleTabChange}
       className="space-y-6"
     >
-      <TabsList className="grid w-full grid-cols-6 bg-white/60 backdrop-blur-sm border-0 shadow-lg">
+      <TabsList className="flex w-full h-auto flex-wrap gap-1 bg-white/60 backdrop-blur-sm border-0 shadow-lg p-1">
         <TabsTrigger
           value="overview"
           className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
@@ -77,6 +83,14 @@ export function RollupDetailTabs({
             className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Backup
+          </TabsTrigger>
+        )}
+        {isAAChainData && (
+          <TabsTrigger
+            value="chain-data"
+            className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
+          >
+            Chain Data
           </TabsTrigger>
         )}
         {/* <TabsTrigger
@@ -146,6 +160,13 @@ export function RollupDetailTabs({
       <TabsContent value="logs" className="space-y-6">
         <LogsTab stack={stack} />
       </TabsContent>
+
+      {/* Chain Data Tab */}
+      {isAAChainData && (
+        <TabsContent value="chain-data" className="space-y-6">
+          <ChainDataTab stack={stack} />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
