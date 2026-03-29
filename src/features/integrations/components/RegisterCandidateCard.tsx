@@ -230,20 +230,15 @@ export function RegisterCandidateCompactInfo({ integration }: {
   ) {
     const reg = integration.info?.candidate_registration;
     return (
-      <div className="text-sm text-gray-600">
-        <p className="truncate">
-          <span className="font-medium">Candidate:</span> {reg.candidate_name}
-        </p>
-        <p className="truncate">
-          <span className="font-medium">Stake:</span> {reg.staking_amount} TON
-        </p>
+      <div className="flex items-center gap-3 min-w-0 text-xs text-gray-600">
+        <span><span className="font-medium text-gray-500">Candidate:</span> {reg.candidate_name}</span>
+        <span className="text-gray-300">|</span>
+        <span><span className="font-medium text-gray-500">Stake:</span> {reg.staking_amount} TON</span>
       </div>
     );
   }
 
   return (
-    <div className="text-sm text-gray-600">
-      No additional information available
-    </div>
+    <span className="text-xs text-gray-400">No information available</span>
   );
 }

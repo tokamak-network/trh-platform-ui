@@ -261,11 +261,9 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-3">
             {integrations
               .filter((integration) =>
-                // Show active integrations: Completed, InProgress, Pending, Cancelling
-                // and hide: failed, Cancelled, terminated, Stopped 
                 integration.status === "Completed" ||
                 integration.status === "InProgress" ||
                 integration.status === "Pending" ||

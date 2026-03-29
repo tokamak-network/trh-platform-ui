@@ -86,17 +86,18 @@ export function DRBCard({ integration, copiedItem, copyToClipboard }: DRBCardPro
 export function DRBCompactInfo({ integration }: { integration: { info?: { url?: string } } }) {
   if (integration.info?.url) {
     return (
-      <div className="text-sm text-gray-600">
-        <p className="truncate">
-          <span className="font-medium">URL:</span> {integration.info.url}
-        </p>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-xs text-gray-500 shrink-0">URL:</span>
+        <span className="text-xs font-mono text-gray-700 truncate flex-1">{integration.info.url}</span>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => navigator.clipboard.writeText(integration.info?.url || "")}>
+          <Copy className="w-3 h-3" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => window.open(integration.info?.url, "_blank")}>
+          <ExternalLink className="w-3 h-3" />
+        </Button>
       </div>
     );
   }
 
-  return (
-    <div className="text-sm text-gray-600">
-      No additional information available
-    </div>
-  );
+  return <span className="text-xs text-gray-400">No URL available</span>;
 }
