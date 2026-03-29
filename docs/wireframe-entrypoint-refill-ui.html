@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wireframe — EntryPoint Auto-Refill UI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; padding: 32px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 36px; }
+
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin: 40px 0 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+
+  .row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+
+  /* Card shell */
+  .screen { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; flex: 1; min-width: 320px; max-width: 520px; }
+  .screen-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 12px; }
+  .screen-title { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 14px; }
+
+  /* Notice cards */
+  .notice { border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .notice.purple { background: #f5f3ff; border: 1px solid #c4b5fd; }
+  .notice.amber  { background: #fffbeb; border: 1px solid #fcd34d; }
+  .notice.blue   { background: #eff6ff; border: 1px solid #93c5fd; }
+  .notice.green  { background: #f0fdf4; border: 1px solid #86efac; }
+  .notice.red    { background: #fff1f2; border: 1px solid #fca5a5; }
+  .notice.slate  { background: #f8fafc; border: 1px solid #cbd5e1; }
+
+  .notice-title { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap-  6px; margin-bottom: 8px; }
+  .notice-title.purple { color: #7c3aed; }
+  .notice-title.amber  { color: #d97706; }
+  .notice-title.blue   { color: #2563eb; }
+  .notice-title.green  { color: #16a34a; }
+  .notice-title.red    { color: #dc2626; }
+  .notice-title.slate  { color: #475569; }
+
+  .notice-body { font-size: 12px; color: #64748b; line-height: 1.6; }
+  .notice ul { margin: 6px 0 0 16px; }
+  .notice li { margin-bottom: 3px; }
+  .notice code { background: rgba(0,0,0,0.07); border-radius: 3px; padding: 1px 4px; font-family: monospace; font-size: 11px; }
+
+  /* Sub-section within notice */
+  .sub-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .sub-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 6px; }
+
+  /* Inline status row */
+  .status-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; background: rgba(0,0,0,0.03); margin-bottom: 4px; font-size: 12px; }
+  .status-row .label { color: #475569; font-weight: 500; }
+  .status-row .value { color: #1e293b; font-weight: 600; }
+  .badge { display: inline-block; border-radius: 9999px; font-size: 10px; font-weight: 600; padding: 2px 8px; }
+  .badge.green  { background: #dcfce7; color: #16a34a; }
+  .badge.amber  { background: #fef3c7; color: #d97706; }
+  .badge.red    { background: #fee2e2; color: #dc2626; }
+  .badge.blue   { background: #dbeafe; color: #2563eb; }
+  .badge.purple { background: #ede9fe; color: #7c3aed; }
+  .badge.slate  { background: #f1f5f9; color: #64748b; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 10px 0; }
+
+  /* Icon placeholders */
+  .icon { display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: currentColor; opacity: 0.5; vertical-align: middle; margin-right: 4px; position: relative; top: -1px; }
+
+  /* Param row */
+  .param-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+  .param-row:last-child { border-bottom: none; }
+  .param-label { color: #475569; }
+  .param-value { font-weight: 600; color: #1e293b; font-family: monospace; }
+
+  /* Progress bar */
+  .progress-bar { height: 6px; border-radius: 3px; background: #e2e8f0; overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 3px; }
+  .progress-fill.green { background: #22c55e; }
+  .progress-fill.amber { background: #f59e0b; }
+  .progress-fill.red   { background: #ef4444; }
+
+  /* Annotation */
+  .annotation { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 6px; }
+
+  /* Wide card */
+  .wide { max-width: 100%; }
+
+  /* Matrix table */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f8fafc; text-align: left; padding: 8px 10px; font-weight: 600; color: #475569; border: 1px solid #e2e8f0; }
+  td { padding: 7px 10px; border: 1px solid #e2e8f0; color: #374151; vertical-align: top; }
+  td.check { text-align: center; font-size: 14px; }
+
+  .flow-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; font-size: 12px; text-align: center; }
+  .flow-arrow { text-align: center; font-size: 16px; color: #94a3b8; margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>Wireframe — EntryPoint Auto-Refill UI</h1>
+<p class="subtitle">ConfigReview Step 3 · Gaming/Full preset + non-TON fee token (USDT shown)</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section-title">Screen A — Full AA Notice (Gaming + USDT)</div>
+<div class="row">
+  <div class="screen">
+    <div class="screen-label">ConfigReview · Step 3</div>
+    <div class="notice purple">
+      <div class="notice-title purple">⚡ AA Smart Wallet Infrastructure</div>
+      <div class="notice-body">
+        ERC-4337 Account Abstraction infrastructure is automatically deployed with this preset to support smart wallet functionality:
+        <ul>
+          <li>ERC-4337 <strong>EntryPoint</strong> predeploy</li>
+          <li><strong>MultiTokenPaymaster</strong> predeploy for gas fee sponsorship</li>
+          <li><strong>SimplePriceOracle</strong> predeploy for token price feeds</li>
+          <!-- ↓ Shown only when hasMultiTokenPaymaster (non-TON fee token) -->
+          <li><strong>1 TON</strong> deposited to EntryPoint for MultiTokenPaymaster gas sponsorship</li>
+          <li>Bridged <strong>USDT</strong> deployed on L2 via OptimismMintableERC20Factory</li>
+          <li><strong>USDT</strong> registered with MultiTokenPaymaster (3% markup)</li>
+          <li>TON/USDT price auto-updated from CoinGecko every 10 min — no manual oracle management needed</li>
+          <li>
+            EntryPoint TON balance <strong>auto-refilled</strong> from admin wallet when below
+            <strong>0.5 TON</strong> (top-up <strong>5 TON</strong>)
+          </li>
+          <li><strong>aa-operator</strong> Docker service runs continuously to manage the above two tasks</li>
+        </ul>
+        <div class="sub-section">
+          <code>USDT.approve(MultiTokenPaymaster, amount)</code> must be called before submitting UserOps with this paymaster.
+        </div>
+      </div>
+    </div>
+    <p class="annotation">Purple card shown for Gaming/Full preset always. Non-TON bullet items shown only when fee token ≠ TON.</p>
+  </div>
+
+  <div class="screen">
+    <div class="screen-label">ConfigReview · Step 3 (Gaming + TON — no paymaster bullets)</div>
+    <div class="notice purple">
+      <div class="notice-title purple">⚡ AA Smart Wallet Infrastructure</div>
+      <div class="notice-body">
+        ERC-4337 Account Abstraction infrastructure is automatically deployed with this preset to support smart wallet functionality:
+        <ul>
+          <li>ERC-4337 <strong>EntryPoint</strong> predeploy</li>
+          <li><strong>MultiTokenPaymaster</strong> predeploy for gas fee sponsorship</li>
+          <li><strong>SimplePriceOracle</strong> predeploy for token price feeds</li>
+          <!-- No extra bullets when fee token = TON -->
+        </ul>
+      </div>
+    </div>
+    <p class="annotation">When feeToken=TON: no paymaster configuration, no aa-operator, no auto-refill bullets.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section-title">Screen B — aa-operator Service Detail (Rollup Detail Page)</div>
+<div class="row">
+  <div class="screen" style="max-width:560px;">
+    <div class="screen-label">Rollup Detail · Services tab or Integrations panel</div>
+    <div class="screen-title">AA Operator Service</div>
+
+    <div class="status-row">
+      <span class="label">Service</span>
+      <span class="value">aa-operator</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Status</span>
+      <span class="badge green">Running</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Fee Token</span>
+      <span class="value">USDT</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Docker Image</span>
+      <span class="value" style="font-family:monospace; font-size:11px;">tokamaknetwork/aa-operator:v1.2.0</span>
+    </div>
+    <hr/>
+
+    <div class="sub-title">SimplePriceOracle (TON/USDT)</div>
+    <div class="status-row">
+      <span class="label">Last Updated</span>
+      <span class="value">3 min ago</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Current Price</span>
+      <span class="value">1.48 USDT / TON</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Next Update</span>
+      <span class="value">~7 min</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Price Source</span>
+      <span class="value">CoinGecko (free tier)</span>
+    </div>
+    <hr/>
+
+    <div class="sub-title">EntryPoint Auto-Refill</div>
+    <div class="status-row">
+      <span class="label">Current Deposit</span>
+      <span class="value">2.3 TON</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Refill Threshold</span>
+      <span class="value">0.5 TON</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Refill Amount</span>
+      <span class="value">5 TON per top-up</span>
+    </div>
+    <div style="padding: 8px 10px 0;">
+      <div style="font-size:11px; color:#64748b; margin-bottom:4px;">Deposit level</div>
+      <div class="progress-bar"><div class="progress-fill green" style="width: 46%;"></div></div>
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; margin-top:2px;"><span>0</span><span>⚠ 0.5</span><span>5 TON</span></div>
+    </div>
+    <div class="status-row" style="margin-top:8px;">
+      <span class="label">Last Refill</span>
+      <span class="value">18 hours ago (+5 TON)</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Admin Wallet Balance</span>
+      <span class="value">8.7 TON <span class="badge green">Healthy</span></span>
+    </div>
+  </div>
+
+  <div class="screen" style="max-width:400px;">
+    <div class="screen-label">EntryPoint Deposit Low Warning State</div>
+    <div class="screen-title">AA Operator — Refill in Progress</div>
+
+    <div class="status-row">
+      <span class="label">Status</span>
+      <span class="badge amber">Refilling...</span>
+    </div>
+    <hr/>
+    <div class="sub-title">EntryPoint Auto-Refill</div>
+    <div class="status-row">
+      <span class="label">Current Deposit</span>
+      <span class="value">0.3 TON <span class="badge red">Low</span></span>
+    </div>
+    <div style="padding: 8px 10px 0;">
+      <div class="progress-bar"><div class="progress-fill red" style="width: 6%;"></div></div>
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; margin-top:2px;"><span>0</span><span>⚠ 0.5</span><span>5 TON</span></div>
+    </div>
+    <div class="notice amber" style="margin-top:12px;">
+      <div class="notice-title amber">⚠ Refill triggered</div>
+      <div class="notice-body">Deposit fell below 0.5 TON threshold. Depositing 5 TON from admin wallet to EntryPoint...</div>
+    </div>
+    <div style="margin-top:10px;" class="notice slate">
+      <div class="notice-title slate">ℹ After refill completes</div>
+      <div class="notice-body">Deposit will return to ~5.3 TON. Next check in 5 minutes.</div>
+    </div>
+    <p class="annotation">Low balance warning with amber badge + refill in progress state.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section-title">Screen C — Admin Wallet Low Warning</div>
+<div class="row">
+  <div class="screen" style="max-width: 480px;">
+    <div class="screen-label">Rollup Detail · Services tab — Admin wallet running low</div>
+    <div class="screen-title">AA Operator — Admin Wallet Warning</div>
+
+    <div class="notice red">
+      <div class="notice-title red">⚠ Admin wallet TON balance is low</div>
+      <div class="notice-body">
+        The admin wallet balance has dropped below <strong>2 TON</strong>. EntryPoint auto-refill may fail on the next top-up.
+        <div class="sub-section">
+          <div class="param-row"><span class="param-label">Admin wallet balance</span><span class="param-value">1.4 TON</span></div>
+          <div class="param-row"><span class="param-label">Warning threshold</span><span class="param-value">2 TON</span></div>
+          <div class="param-row"><span class="param-label">Refill amount needed</span><span class="param-value">5 TON</span></div>
+        </div>
+        <div style="margin-top:10px;">Please top up the admin wallet to ensure uninterrupted EntryPoint refills.</div>
+      </div>
+    </div>
+    <p class="annotation">Red warning card shown when admin balance &lt; 2 TON. Operator logs the warning already; this surfaces it in UI.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section-title">Architecture — aa-operator in Docker Compose Stack</div>
+<div class="row">
+  <div class="screen wide" style="max-width:100%; padding:24px;">
+    <div class="screen-label">Docker Compose Service Architecture (Gaming/Full + non-TON fee token)</div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-top:8px;">
+
+      <div style="flex:1; min-width:160px;">
+        <div class="flow-box" style="border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; font-weight:700;">op-geth<br/><span style="font-size:10px; font-weight:400;">L2 execution (port 8545)</span></div>
+        <div class="flow-arrow">↕</div>
+        <div class="flow-box" style="border-color:#c4b5fd; background:#f5f3ff; color:#6d28d9; font-weight:700;">aa-operator<br/><span style="font-size:10px; font-weight:400;">L2_RPC_URL=http://op-geth:8545</span></div>
+      </div>
+
+      <div style="flex:0; display:flex; flex-direction:column; align-items:center; padding-top:16px;">
+        <div style="font-size:20px; color:#94a3b8;">→</div>
+      </div>
+
+      <div style="flex:2; min-width:260px;">
+        <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:8px;">aa-operator manages:</div>
+
+        <div class="notice purple" style="margin-bottom:8px;">
+          <div class="notice-title purple">🔄 Price Updater (every 10 min)</div>
+          <div class="notice-body">
+            <div class="param-row"><span class="param-label">Source</span><span class="param-value">CoinGecko API</span></div>
+            <div class="param-row"><span class="param-label">API Key</span><span class="param-value">COINGECKO_API_KEY (optional)</span></div>
+            <div class="param-row"><span class="param-label">Trigger</span><span class="param-value">price Δ &gt; 2% OR &gt;23h since last push</span></div>
+            <div class="param-row"><span class="param-label">Target</span><span class="param-value">SimplePriceOracle.updatePrice()</span></div>
+          </div>
+        </div>
+
+        <div class="notice purple">
+          <div class="notice-title purple">💰 EntryPoint Refill Monitor (every 5 min)</div>
+          <div class="notice-body">
+            <div class="param-row"><span class="param-label">Check</span><span class="param-value">EntryPoint.balanceOf(paymaster)</span></div>
+            <div class="param-row"><span class="param-label">Threshold</span><span class="param-value">0.5 TON</span></div>
+            <div class="param-row"><span class="param-label">Refill amount</span><span class="param-value">5 TON per top-up</span></div>
+            <div class="param-row"><span class="param-label">Method</span><span class="param-value">EntryPoint.depositTo(paymaster)</span></div>
+            <div class="param-row"><span class="param-label">Admin warn</span><span class="param-value">logs ⚠️ when balance &lt; 2 TON</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:0; display:flex; flex-direction:column; align-items:center; padding-top:16px;">
+        <div style="font-size:20px; color:#94a3b8;">→</div>
+      </div>
+
+      <div style="flex:1; min-width:180px;">
+        <div style="font-size:12px; font-weight:700; color:#475569; margin-bottom:8px;">On-chain predeploys:</div>
+        <div class="flow-box" style="border-color:#a7f3d0; background:#f0fdf4; color:#065f46; margin-bottom:8px;">
+          SimplePriceOracle<br/><span style="font-size:10px;">0x4200…0066</span>
+        </div>
+        <div class="flow-box" style="border-color:#a7f3d0; background:#f0fdf4; color:#065f46; margin-bottom:8px;">
+          EntryPoint<br/><span style="font-size:10px;">ERC-4337</span>
+        </div>
+        <div class="flow-box" style="border-color:#a7f3d0; background:#f0fdf4; color:#065f46;">
+          MultiTokenPaymaster<br/><span style="font-size:10px;">accepts USDT/ETH/USDC</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid #e2e8f0; font-size:12px; color:#64748b;">
+      <strong>Deployment condition:</strong> aa-operator service is included in docker-compose.local.yml only when
+      <code style="background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:11px;">preset ∈ {gaming, full} AND feeToken ≠ TON</code>.
+      The service has <code style="background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:11px;">restart: unless-stopped</code>
+      and starts only after <code style="background:#f1f5f9; padding:1px 4px; border-radius:3px; font-size:11px;">op-geth</code> is healthy.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section-title">Screen D — Condition Matrix: When Auto-Refill is Active</div>
+<div class="row">
+  <div class="screen wide" style="max-width:100%;">
+    <table>
+      <thead>
+        <tr>
+          <th>Preset</th>
+          <th>Fee Token</th>
+          <th class="check">AA Predeploys</th>
+          <th class="check">aa-operator service</th>
+          <th class="check">Price Updater</th>
+          <th class="check">EntryPoint Auto-Refill</th>
+          <th>UI Notice</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Gaming / Full</td>
+          <td>TON (default)</td>
+          <td class="check">✅</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td>Purple card (base AA only — no paymaster bullets)</td>
+        </tr>
+        <tr style="background:#faf5ff;">
+          <td>Gaming / Full</td>
+          <td>ETH</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td>Purple card + full paymaster bullets + aa-operator bullet</td>
+        </tr>
+        <tr style="background:#faf5ff;">
+          <td>Gaming / Full</td>
+          <td>USDT</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td>Purple card + full paymaster bullets + USDT bridge bullet + aa-operator bullet</td>
+        </tr>
+        <tr style="background:#faf5ff;">
+          <td>Gaming / Full</td>
+          <td>USDC</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td class="check">✅</td>
+          <td>Purple card + full paymaster bullets + aa-operator bullet</td>
+        </tr>
+        <tr>
+          <td>General / DeFi</td>
+          <td>TON (default)</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td>No notice card</td>
+        </tr>
+        <tr>
+          <td>General / DeFi</td>
+          <td>ETH / USDT / USDC</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td class="check">—</td>
+          <td>Amber card: "{feeToken} as Native L2 Gas Token"</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="annotation" style="margin-top:8px;">Note: General/DeFi presets do not have AA predeploys. Non-TON tokens are set as native gas token at genesis — no paymaster or oracle needed.</p>
+  </div>
+</div>
+
+</body>
+</html>

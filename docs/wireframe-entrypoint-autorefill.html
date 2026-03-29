@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EntryPoint Auto-Refill — Architecture Wireframe</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; padding: 28px; color: #1e293b; }
+
+h1 { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 24px; }
+.section-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; padding: 20px 0 10px; }
+
+/* Cards */
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+.card-title { font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.card-body  { font-size: 11px; color: #475569; line-height: 1.7; }
+
+/* Problem diagram */
+.problem-flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.pf-box { border-radius: 8px; padding: 10px 14px; font-size: 11px; text-align: center; }
+.pf-arrow { color: #94a3b8; font-size: 18px; }
+.box-entrypoint { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1d4ed8; }
+.box-paymaster  { background: #f5f3ff; border: 1.5px solid #ddd6fe; color: #6d28d9; }
+.box-user       { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #15803d; }
+.box-admin      { background: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; }
+.box-contract   { background: #fdf4ff; border: 1.5px solid #f0abfc; color: #86198f; }
+.box-uniswap    { background: #fefce8; border: 1.5px solid #fde68a; color: #92400e; }
+.box-empty      { background: #fef2f2; border: 1.5px dashed #fca5a5; color: #b91c1c; }
+.pf-label { font-weight: 700; font-size: 12px; }
+.pf-sub   { font-size: 10px; color: inherit; opacity: .75; margin-top: 2px; }
+
+/* Option comparison */
+.options-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+.option-card { flex: 1; min-width: 280px; max-width: 340px; border-radius: 10px; overflow: hidden; border: 1.5px solid; }
+.option-header { padding: 12px 14px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.option-body   { padding: 12px 14px; font-size: 11px; display: flex; flex-direction: column; gap: 7px; background: #fff; }
+.opt-a { border-color: #6366f1; }
+.opt-a .option-header { background: #eef2ff; color: #4338ca; }
+.opt-b { border-color: #10b981; }
+.opt-b .option-header { background: #ecfdf5; color: #065f46; }
+.opt-c { border-color: #f59e0b; }
+.opt-c .option-header { background: #fffbeb; color: #92400e; }
+
+.pros-cons { display: flex; flex-direction: column; gap: 4px; }
+.pro { color: #15803d; }
+.con { color: #b91c1c; }
+.neutral { color: #64748b; }
+.row-item { display: flex; gap: 6px; }
+
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+.badge-now    { background: #dcfce7; color: #15803d; }
+.badge-phase3 { background: #e0e7ff; color: #4338ca; }
+.badge-alt    { background: #fff7ed; color: #c2410c; }
+
+/* Flow diagram */
+.flow-diagram { display: flex; flex-direction: column; gap: 6px; }
+.flow-step { display: flex; align-items: flex-start; gap: 10px; }
+.flow-num  { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.fn-blue  { background: #6366f1; color: #fff; }
+.fn-green { background: #10b981; color: #fff; }
+.flow-text { font-size: 11px; color: #475569; }
+.flow-code { font-family: monospace; font-size: 10px; background: #f1f5f9; border-radius: 4px; padding: 1px 5px; color: #334155; }
+.flow-connector { margin-left: 9px; width: 2px; height: 12px; background: #e2e8f0; }
+
+/* Architecture diagram */
+.arch { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+.arch-col { display: flex; flex-direction: column; gap: 10px; }
+.arch-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; text-align: center; margin-bottom: 2px; }
+
+.contract-box { border-radius: 8px; padding: 12px 14px; font-size: 11px; }
+.cb-title { font-weight: 700; font-size: 12px; margin-bottom: 6px; }
+.cb-fn { display: flex; gap: 4px; align-items: flex-start; margin-top: 3px; font-size: 10px; font-family: monospace; }
+.cb-fn-pub { color: #6366f1; }
+.cb-fn-ext { color: #10b981; }
+.cb-fn-pvt { color: #94a3b8; }
+
+/* Cycle diagram */
+.cycle { display: flex; flex-direction: column; gap: 4px; max-width: 420px; }
+.cycle-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; font-size: 11px; }
+.ci-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.cycle-arrow { text-align: center; color: #94a3b8; font-size: 14px; padding-left: 11px; }
+
+/* Threshold config */
+.threshold-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; font-size: 11px; }
+.th-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+.th-row:last-child { border-bottom: none; }
+.th-key { color: #64748b; }
+.th-val { font-weight: 700; color: #1e293b; font-family: monospace; }
+
+.divider { height: 1px; background: #e2e8f0; margin: 4px 0; }
+.note { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px 14px; font-size: 11px; color: #64748b; line-height: 1.7; max-width: 900px; margin-top: 12px; }
+.note strong { color: #334155; }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 880px; }
+.cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; max-width: 1000px; }
+</style>
+</head>
+<body>
+
+<h1>EntryPoint Auto-Refill — Architecture &amp; Options</h1>
+
+<!-- Problem statement -->
+<div class="section-label">문제: EntryPoint TON 잔고 소진 시 가스 스폰서십 중단</div>
+<div class="card" style="max-width:820px">
+  <div class="card-title">현재 구조 — 수동 관리</div>
+  <div class="problem-flow">
+    <div class="pf-box box-user"><div class="pf-label">User</div><div class="pf-sub">UserOp 제출</div></div>
+    <div class="pf-arrow">→</div>
+    <div class="pf-box box-paymaster"><div class="pf-label">MultiTokenPaymaster</div><div class="pf-sub">USDT로 가스 대납</div></div>
+    <div class="pf-arrow">→</div>
+    <div class="pf-box box-entrypoint"><div class="pf-label">EntryPoint</div><div class="pf-sub">deposit[paymaster] -= gas</div></div>
+    <div class="pf-arrow">⚠️</div>
+    <div class="pf-box box-empty"><div class="pf-label">잔고 소진</div><div class="pf-sub">스폰서십 중단</div></div>
+  </div>
+  <div class="card-body">
+    <div class="row-item"><span>•</span><span>Paymaster가 수집한 USDT 수수료는 <code>collectedFees[token]</code>에 쌓임. EntryPoint TON 잔고와 <strong>단절</strong>된 구조.</span></div>
+    <div class="row-item" style="margin-top:3px"><span>•</span><span>운영자가 <code>EntryPoint.depositTo(paymaster)</code>를 수동 호출해야만 잔고 보충 가능.</span></div>
+  </div>
+</div>
+
+<!-- Option overview -->
+<div class="section-label">해결책 옵션 비교</div>
+<div class="options-row">
+
+  <div class="option-card opt-a">
+    <div class="option-header">⚡ Option A — Backend Auto-Refill <span class="badge badge-now">지금 구현 가능</span></div>
+    <div class="option-body">
+      <div>trh-sdk 백엔드에 백그라운드 고루틴을 추가.</div>
+      <div>주기적으로 <span class="flow-code">EntryPoint.balanceOf(paymaster)</span>를 확인, 임계값 미만이면 어드민 지갑에서 <span class="flow-code">depositTo()</span> 자동 호출.</div>
+      <div class="divider"></div>
+      <div class="pros-cons">
+        <div class="row-item pro"><span>✓</span><span>새 컨트랙트 불필요 — 순수 Go</span></div>
+        <div class="row-item pro"><span>✓</span><span>즉시 구현 가능 (∼100 LOC)</span></div>
+        <div class="row-item con"><span>✗</span><span>어드민 지갑에 TON 잔고 필요</span></div>
+        <div class="row-item con"><span>✗</span><span>백엔드 프로세스가 항상 실행 중이어야 함</span></div>
+        <div class="row-item neutral"><span>→</span><span>프리미엄 TON이 어드민에서 소모됨</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option-card opt-b">
+    <div class="option-header">♻️ Option B — Self-Funded AutoRefiller <span class="badge badge-phase3">Phase 3</span></div>
+    <div class="option-body">
+      <div>새 컨트랙트 <code>EntryPointAutoRefiller</code>를 배포.</div>
+      <div>Paymaster의 수집된 수수료(USDT)를 가져와 Uniswap V3 WTON/USDT 풀에서 WTON으로 스왑, WTON→TON 언랩 후 EntryPoint에 재예치.</div>
+      <div class="divider"></div>
+      <div class="pros-cons">
+        <div class="row-item pro"><span>✓</span><span>자기 지속(self-sustaining) — 수수료 재활용</span></div>
+        <div class="row-item pro"><span>✓</span><span>어드민 지갑 TON 불필요</span></div>
+        <div class="row-item pro"><span>✓</span><span>누구나 트리거 가능 (permissionless)</span></div>
+        <div class="row-item con"><span>✗</span><span>새 Solidity 컨트랙트 + WTON 언랩 로직 필요</span></div>
+        <div class="row-item con"><span>✗</span><span>Uniswap V3 ISwapRouter 의존성</span></div>
+        <div class="row-item neutral"><span>→</span><span>구현 복잡도 ↑, 감사(audit) 필요</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option-card opt-c">
+    <div class="option-header">🏦 Option C — TON Reserve Contract <span class="badge badge-alt">대안</span></div>
+    <div class="option-body">
+      <div>TON을 보관하는 <code>RefillReserve</code> 컨트랙트 배포.</div>
+      <div>백엔드가 잔고 확인 후 컨트랙트의 <span class="flow-code">checkAndRefill()</span> 호출. 컨트랙트가 EntryPoint로 직접 depositTo.</div>
+      <div class="divider"></div>
+      <div class="pros-cons">
+        <div class="row-item pro"><span>✓</span><span>컨트랙트가 TON 보유 → 어드민 지갑 노출 최소화</span></div>
+        <div class="row-item pro"><span>✓</span><span>투명한 온체인 로직</span></div>
+        <div class="row-item con"><span>✗</span><span>초기 TON 예치 필요 (수동)</span></div>
+        <div class="row-item con"><span>✗</span><span>Option A보다 복잡, Option B보다 단순</span></div>
+        <div class="row-item neutral"><span>→</span><span>중간 복잡도</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Selected: Option A + B path -->
+<div class="section-label">선택 전략: Option A 즉시 구현 → Option B 로드맵</div>
+<div class="cols2">
+
+  <!-- Option A design -->
+  <div class="card">
+    <div class="card-title">⚡ Option A 구현 설계 — Backend Monitor Goroutine</div>
+    <div class="threshold-box" style="margin-bottom:12px">
+      <div class="th-row"><span class="th-key">Poll 주기</span><span class="th-val">5분 (300s)</span></div>
+      <div class="th-row"><span class="th-key">Refill 임계값</span><span class="th-val">0.5 TON</span></div>
+      <div class="th-row"><span class="th-key">Refill 양</span><span class="th-val">5.0 TON (1회)</span></div>
+      <div class="th-row"><span class="th-key">어드민 지갑 경고</span><span class="th-val">&lt; 2 TON 시 로그 경고</span></div>
+    </div>
+    <div class="flow-diagram">
+      <div class="flow-step">
+        <div class="flow-num fn-blue">1</div>
+        <div class="flow-text"><span class="flow-code">EntryPoint.balanceOf(paymaster)</span> 조회</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-num fn-blue">2</div>
+        <div class="flow-text">balance &lt; <strong>0.5 TON</strong>?</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-num fn-blue">3</div>
+        <div class="flow-text">어드민 지갑 TON 잔고 확인. 부족하면 <span style="color:#b91c1c">경고 로그</span></div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-num fn-blue">4</div>
+        <div class="flow-text"><span class="flow-code">EntryPoint.depositTo{value:5TON}(paymaster)</span> 전송</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-num fn-blue">5</div>
+        <div class="flow-text">5분 후 재반복 (ticker loop)</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:#eef2ff;border-radius:7px;padding:9px 11px;font-size:11px;color:#3730a3">
+      <strong>구현 위치:</strong> <code>trh-sdk/pkg/stacks/thanos/aa_refill_monitor.go</code><br>
+      <code>ThanosStack.startEntryPointRefillMonitor(ctx)</code> 를 AA setup 완료 후 goroutine으로 실행
+    </div>
+  </div>
+
+  <!-- Option B design -->
+  <div class="card">
+    <div class="card-title">♻️ Option B 설계 (Phase 3) — Self-Funded on-chain Cycle</div>
+    <div class="cycle">
+      <div class="cycle-item" style="background:#fefce8;border:1px solid #fde68a">
+        <div class="ci-num" style="background:#ca8a04;color:#fff">1</div>
+        <div><strong>수수료 인출</strong><br><span style="font-size:10px;color:#92400e"><code>MultiTokenPaymaster.withdrawCollectedFees(USDT, refiller, amt)</code></span></div>
+      </div>
+      <div class="cycle-arrow">↓</div>
+      <div class="cycle-item" style="background:#fefce8;border:1px solid #fde68a">
+        <div class="ci-num" style="background:#ca8a04;color:#fff">2</div>
+        <div><strong>USDT → WTON 스왑</strong><br><span style="font-size:10px;color:#92400e"><code>ISwapRouter.exactInputSingle(USDT→WTON)</code> (V3 pool)</span></div>
+      </div>
+      <div class="cycle-arrow">↓</div>
+      <div class="cycle-item" style="background:#fff7ed;border:1px solid #fed7aa">
+        <div class="ci-num" style="background:#ea580c;color:#fff">3</div>
+        <div><strong>WTON → TON 언랩</strong><br><span style="font-size:10px;color:#c2410c"><code>IWTON(wton).withdraw(amount)</code></span></div>
+      </div>
+      <div class="cycle-arrow">↓</div>
+      <div class="cycle-item" style="background:#eff6ff;border:1px solid #bfdbfe">
+        <div class="ci-num" style="background:#2563eb;color:#fff">4</div>
+        <div><strong>EntryPoint 재예치</strong><br><span style="font-size:10px;color:#1d4ed8"><code>EntryPoint.depositTo{value:ton}(paymaster)</code></span></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:#ecfdf5;border-radius:7px;padding:9px 11px;font-size:11px;color:#065f46">
+      <strong>트리거:</strong> 누구나 <code>refiller.checkAndRefill()</code> 호출 가능<br>
+      백엔드 포함, 리워드 없이 permissionless.<br>
+      <strong>요구사항:</strong> ISwapRouter 예치, 초기 USDT 잔고 &gt; 스왑 비용
+    </div>
+  </div>
+
+</div>
+
+<!-- Option A: new contract design for B -->
+<div class="section-label">Option B 컨트랙트 설계 스케치 (Phase 3)</div>
+<div class="card" style="max-width:820px">
+  <div class="card-title">EntryPointAutoRefiller.sol</div>
+  <div style="font-family:monospace;font-size:11px;background:#f8fafc;border-radius:7px;padding:14px;color:#334155;line-height:1.9;overflow-x:auto">
+<pre>contract EntryPointAutoRefiller {
+    IEntryPoint    public entryPoint;       // predeploy 0x4200...0063
+    IMultiTokenPaymaster public paymaster;  // predeploy 0x4200...0067
+    ISwapRouter    public swapRouter;       // Uniswap V3 SwapRouter
+    address        public wton;             // 0x4200...0006
+    address        public feeToken;         // USDT / USDC / WETH
+
+    uint256 public refillThreshold  = 0.5 ether;  // TON
+    uint256 public swapMinFeeAmount = 10e6;        // 10 USDT (skip if less)
+
+    /// @notice Permissionless — anyone can trigger
+    function checkAndRefill() external {
+        if (entryPoint.balanceOf(address(paymaster)) >= refillThreshold) return;
+
+        // 1. Withdraw collected fees from paymaster
+        uint256 feeAmt = paymaster.collectedFees(feeToken);
+        if (feeAmt < swapMinFeeAmount) return;
+        paymaster.withdrawCollectedFees(feeToken, address(this), feeAmt);
+
+        // 2. Swap feeToken → WTON via Uniswap V3
+        IERC20(feeToken).approve(address(swapRouter), feeAmt);
+        uint256 wtonOut = swapRouter.exactInputSingle(ISwapRouter.ExactInputSingleParams({
+            tokenIn: feeToken, tokenOut: wton,
+            fee: 3000, recipient: address(this),
+            amountIn: feeAmt, amountOutMinimum: 0, sqrtPriceLimitX96: 0
+        }));
+
+        // 3. Unwrap WTON → TON
+        IWTON(wton).withdraw(wtonOut);
+
+        // 4. Deposit TON to EntryPoint
+        entryPoint.depositTo{value: wtonOut}(address(paymaster));
+    }
+
+    receive() external payable {}
+}</pre>
+  </div>
+  <div style="margin-top:10px;font-size:11px;color:#64748b">
+    ⚠️ <code>MultiTokenPaymaster.withdrawCollectedFees</code>의 호출권 → Refiller 컨트랙트를 owner로 설정하거나 별도 withdrawer role 추가 필요 (현재 MultiTokenPaymaster는 owner만 인출 가능).
+  </div>
+</div>
+
+<!-- What to implement now -->
+<div class="section-label">즉시 구현: Option A — aa_refill_monitor.go 설계</div>
+<div class="card" style="max-width:820px">
+  <div class="card-title">ThanosStack.startEntryPointRefillMonitor() 동작 구조</div>
+  <div class="card-body">
+    <div style="font-family:monospace;font-size:11px;background:#f8fafc;border-radius:7px;padding:14px;color:#334155;line-height:1.8;overflow-x:auto">
+<pre>func (t *ThanosStack) startEntryPointRefillMonitor(ctx context.Context) {
+    go func() {
+        ticker := time.NewTicker(5 * time.Minute)
+        defer ticker.Stop()
+        for {
+            select {
+            case &lt;-ctx.Done():
+                return
+            case &lt;-ticker.C:
+                if err := t.checkAndRefillEntryPoint(ctx); err != nil {
+                    t.logger.Warnf("EntryPoint refill check failed: %v", err)
+                }
+            }
+        }
+    }()
+}
+
+func (t *ThanosStack) checkAndRefillEntryPoint(ctx context.Context) error {
+    // 1. balanceOf(paymaster) via eth_call
+    // 2. if balance >= threshold: return nil
+    // 3. check admin wallet balance — warn if low
+    // 4. send depositTo(paymaster) with refillAmount TON
+}</pre>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+    <div class="threshold-box">
+      <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:#334155">상수 (aa_constants.go에 추가)</div>
+      <div class="th-row"><span class="th-key">RefillThreshold</span><span class="th-val">0.5e18 wei (0.5 TON)</span></div>
+      <div class="th-row"><span class="th-key">RefillAmount</span><span class="th-val">5e18 wei (5 TON)</span></div>
+      <div class="th-row"><span class="th-key">AdminWarnThreshold</span><span class="th-val">2e18 wei (2 TON)</span></div>
+      <div class="th-row"><span class="th-key">PollInterval</span><span class="th-val">300s (5분)</span></div>
+    </div>
+    <div class="threshold-box">
+      <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:#334155">호출 시점</div>
+      <div class="th-row"><span class="th-key">시작</span><span class="th-val">setupAAPaymaster 완료 후</span></div>
+      <div class="th-row"><span class="th-key">종료</span><span class="th-val">ctx 취소 (스택 종료) 시</span></div>
+      <div class="th-row"><span class="th-key">에러 처리</span><span class="th-val">Warn 로그, 계속 실행</span></div>
+      <div class="th-row"><span class="th-key">중복 방지</span><span class="th-val">뮤텍스 (refilling 플래그)</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>요약:</strong><br>
+  • <strong>오라클(UniswapV3TwapOracle)</strong>은 완전 자동 — L2 배포 후 별도 액션 없이 영구 동작.<br>
+  • <strong>EntryPoint TON 잔고</strong>는 오라클과 별개 문제. Option A (backend poller)로 자동화 가능, 어드민 지갑에 TON이 충분하면 됨.<br>
+  • 장기적으로는 Option B (self-funded cycle: USDT 수수료 → Uniswap 스왑 → TON → depositTo)가 완전 무인화 가능. MultiTokenPaymaster에 withdrawer role 추가가 선행 필요.
+</div>
+
+</body>
+</html>

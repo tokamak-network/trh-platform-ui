@@ -91,9 +91,16 @@ export function ConfigReview({
   const isMainnet = network === "Mainnet";
   const MAINNET_CHALLENGE_PERIOD = 6048000;
 
+  // AA predeploys (EntryPoint, MultiTokenPaymaster, SimplePriceOracle) are deployed for
+  // Gaming and Full presets to support smart wallet (ERC-4337) functionality.
+  // This is independent of the fee token selection.
   const AA_PRESETS = ["gaming", "full"];
-  const needsAAPaymaster =
-    AA_PRESETS.includes(preset.id) && feeToken != null && feeToken !== "TON";
+  const isAAPreset = AA_PRESETS.includes(preset.id);
+
+  // When a non-TON fee token is selected with an AA preset, MultiTokenPaymaster is also
+  // configured to accept that token — on top of the existing AA smart wallet infrastructure.
+  const isNonTonFeeToken = feeToken != null && feeToken !== "TON";
+  const hasMultiTokenPaymaster = isAAPreset && isNonTonFeeToken;
 
   return (
     <div className="space-y-4">
@@ -121,44 +128,77 @@ export function ConfigReview({
         </Card>
       )}
 
-      {/* AA Paymaster auto-configuration notice */}
-      {needsAAPaymaster && (
+      {/* AA Smart Wallet infrastructure notice — Gaming/Full presets always */}
+      {isAAPreset && (
         <Card className="border-purple-200 bg-purple-50">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-purple-700 text-sm">
               <Zap className="h-4 w-4" />
-              AA Paymaster Auto-Configuration
+              AA Smart Wallet Infrastructure
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
             <p className="text-sm text-purple-700">
-              <strong>{feeToken}</strong> is selected as the fee token. Since TON is the L2 native
-              gas token, AA (Account Abstraction) infrastructure will be automatically configured
-              after the L2 network starts:
+              ERC-4337 Account Abstraction infrastructure is automatically deployed with this
+              preset to support smart wallet functionality:
             </p>
             <ul className="text-xs text-purple-600 space-y-1 list-disc list-inside">
-              <li>
-                <strong>1 TON</strong> deposited to EntryPoint for MultiTokenPaymaster gas sponsorship
-              </li>
-              {feeToken === "USDT" && (
-                <li>
-                  Bridged <strong>USDT</strong> deployed on L2 via OptimismMintableERC20Factory
-                </li>
+              <li>ERC-4337 <strong>EntryPoint</strong> predeploy</li>
+              <li><strong>MultiTokenPaymaster</strong> predeploy for gas fee sponsorship</li>
+              <li><strong>SimplePriceOracle</strong> predeploy for token price feeds</li>
+              {hasMultiTokenPaymaster && (
+                <>
+                  <li>
+                    <strong>1 TON</strong> deposited to EntryPoint for MultiTokenPaymaster gas sponsorship
+                  </li>
+                  {feeToken === "USDT" && (
+                    <li>
+                      Bridged <strong>USDT</strong> deployed on L2 via OptimismMintableERC20Factory
+                    </li>
+                  )}
+                  <li>
+                    <strong>{feeToken}</strong> registered with MultiTokenPaymaster (
+                    {feeToken === "ETH" ? "5%" : "3%"} markup)
+                  </li>
+                  <li>
+                    TON/{feeToken} price auto-updated from CoinGecko every 10 min — no manual oracle management needed
+                  </li>
+                  <li>
+                    EntryPoint TON balance auto-refilled from admin wallet when below 0.5 TON (top-up 5 TON)
+                  </li>
+                  <li>
+                    <strong>aa-operator</strong> Docker service runs continuously to manage the above two tasks
+                  </li>
+                </>
               )}
-              <li>
-                <strong>{feeToken}</strong> registered with MultiTokenPaymaster (
-                {feeToken === "ETH" ? "5%" : "3%"} markup)
-              </li>
-              <li>
-                TON/{feeToken} price auto-updated from CoinGecko every 10 min — no manual oracle management needed
-              </li>
             </ul>
-            <p className="text-xs text-purple-500 mt-2">
-              Users must call{" "}
-              <code className="bg-purple-100 px-1 rounded">
-                {feeToken}.approve(MultiTokenPaymaster, amount)
-              </code>{" "}
-              before submitting UserOps with this paymaster.
+            {hasMultiTokenPaymaster && (
+              <p className="text-xs text-purple-500 mt-2">
+                Users must call{" "}
+                <code className="bg-purple-100 px-1 rounded">
+                  {feeToken}.approve(MultiTokenPaymaster, amount)
+                </code>{" "}
+                before submitting UserOps with this paymaster.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Non-TON native fee token notice — General/DeFi presets with non-TON token */}
+      {!isAAPreset && isNonTonFeeToken && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-amber-700 text-sm">
+              <Info className="h-4 w-4" />
+              {feeToken} as Native L2 Gas Token
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm text-amber-700">
+              <strong>{feeToken}</strong> will be set as the native L2 gas token at genesis.
+              All users pay transaction fees directly in <strong>{feeToken}</strong> — no
+              paymaster or token conversion is required.
             </p>
           </CardContent>
         </Card>
