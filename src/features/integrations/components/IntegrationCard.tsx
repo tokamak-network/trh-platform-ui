@@ -278,9 +278,9 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
               {(integration.status === "Completed" || integration.status === "Failed" || integration.status === "Cancelled") && (
                 <Button
                   aria-label="Remove"
-                  variant="destructive"
+                  variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
                   disabled={uninstallMutation.isPending}
                   onClick={() => setShowUninstallConfirm(true)}
                 >

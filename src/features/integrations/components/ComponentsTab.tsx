@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -15,7 +15,6 @@ import {
   AlertCircle,
   Plus,
   Package,
-  CheckCircle,
 } from "lucide-react";
 import { RollupDetailTabProps } from "../../rollup/schemas/detail-tabs";
 import { ThanosStackStatus } from "../../rollup/schemas/thanos";
@@ -67,44 +66,25 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
   );
 
   const getStatusCounts = () => {
-    // Define which statuses are "active" should be counted
-    // this exclude: Cancelled, Cancelling, Terminated, Stopped, Unknown 
-    const activeStatuses = ["Completed", "InProgress", "Pending"];
-
-    const counts = {
-      completed: 0,
-      inProgress: 0,
-      failed: 0,
-      total: 0,  //calculate from active statuses
-    };
-
+    const counts = { running: 0, inProgress: 0 };
     integrations.forEach((integration) => {
-      // Only counts active integrations (exclude Cancelled, Cancelling, Terminated, etc)
-      if (!activeStatuses.includes(integration.status)) {
-        return; // skip this integration
-      }
-
-      counts.total++; // Increment total for active integrations only
-
-      switch (integration.status) {
-        case "Completed":
-          counts.completed++;
-          break;
-        case "InProgress":
-        case "Pending":
-          counts.inProgress++; // groups all "in progress" states
-          break;
-        case "Failed":
-          counts.failed++;
-          break;
-      }
+      if (integration.status === "Completed") counts.running++;
+      else if (integration.status === "InProgress" || integration.status === "Pending") counts.inProgress++;
     });
-
     return counts;
   };
 
   const statusCounts = getStatusCounts();
   const isStackDeployed = stack?.status === ThanosStackStatus.DEPLOYED;
+
+  const activeTypeKeys = new Set(
+    integrations
+      .filter((i) => ["Completed", "InProgress", "Pending", "Cancelling"].includes(i.status))
+      .map((i) => i.type)
+  );
+  const availableTypeEntries = Object.entries(INTEGRATION_TYPES).filter(
+    ([type]) => type !== "drb" && !activeTypeKeys.has(type as Integration["type"])
+  );
 
   if (!stack) {
     return (
@@ -174,60 +154,43 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
 
   return (
     <>
-      <div className="space-y-6">
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 to-cyan-100">
-          <CardHeader>
+      <div className="space-y-4">
+        <Card className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
-                  <Package className="w-5 h-5 text-white" />
+                <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
+                  <Package className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">
-                    Integration Components
-                  </CardTitle>
-                  <p className="text-sm text-slate-600">
-                    Manage and monitor your rollup&apos;s integration components
-                  </p>
+                  <CardTitle className="text-base">Integration Components</CardTitle>
+                  <p className="text-xs text-slate-500">Manage your rollup integrations</p>
                 </div>
               </div>
-              <Button
-                onClick={() => refetch()}
-                variant="outline"
-                size="sm"
-                disabled={isFetching}
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
-                />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-white/50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {statusCounts.total}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 rounded-full border border-green-100">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <span className="text-xs font-medium text-green-700">{statusCounts.running} Running</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                    <span className="text-xs font-medium text-blue-700">{statusCounts.inProgress} In Progress</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-200">
+                    <div className="w-2 h-2 bg-slate-400 rounded-full" />
+                    <span className="text-xs font-medium text-slate-600">{availableTypeEntries.length} Available</span>
+                  </div>
                 </div>
-                <div className="text-sm text-slate-600">Total</div>
-              </div>
-              <div className="text-center p-4 bg-white/50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {statusCounts.completed}
-                </div>
-                <div className="text-sm text-slate-600">Installed</div>
-              </div>
-              <div className="text-center p-4 bg-white/50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {statusCounts.inProgress}
-                </div>
-                <div className="text-sm text-slate-600">In Progress</div>
-              </div>
-              <div className="text-center p-4 bg-white/50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
-                  {statusCounts.failed}
-                </div>
-                <div className="text-sm text-slate-600">Failed</div>
+                <Button
+                  onClick={() => refetch()}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={isFetching}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -275,105 +238,31 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
           </div>
         )}
 
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-gray-100">
-          <CardHeader>
-            <CardTitle className="text-lg">Available Component Types</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(INTEGRATION_TYPES)
-                .filter(([type]) => type !== "drb")
-                .map(([type, config]) => (
-                <div
-                  key={type}
-                  className="p-4 bg-white/50 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div
-                      className={`w-8 h-8 bg-gradient-to-r ${config.color} rounded-lg flex items-center justify-center text-white text-sm`}
+        {availableTypeEntries.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-slate-500 shrink-0">Add:</span>
+            {availableTypeEntries.map(([type, config]) => (
+              <Tooltip key={type}>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2.5 text-xs gap-1.5 border-dashed hover:border-solid hover:bg-slate-50"
+                      disabled={!isStackDeployed || isAnyInstallPending}
+                      onClick={() => setInstallType(type as Integration["type"])}
                     >
-                      {config.icon}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800">
-                        {config.label}
-                      </h4>
-                      <p className="text-xs text-slate-600">
-                        {config.description}
-                      </p>
-                    </div>
-                  </div>
-                  {(() => {
-                    const isInstalled = integrations.some(
-                      (i) => i.type === type && i.status === "Completed"
-                    );
-                    return (
-                      <div className="flex items-center justify-between gap-2">
-                        {isInstalled ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Integrated
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-slate-600">
-                            <Plus className="w-3 h-3 mr-1" />
-                            Available
-                          </Badge>
-                        )}
-                        {!isInstalled && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <Button
-                                  aria-label="Install"
-                                  size="icon"
-                                  disabled={
-                                    !isStackDeployed || isAnyInstallPending
-                                  }
-                                  onClick={() => {
-                                    if (type === "bridge") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "system-pulse") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "block-explorer") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "monitoring") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else if (type === "register-candidate") {
-                                      setInstallType(
-                                        type as Integration["type"]
-                                      );
-                                    } else {
-                                      console.log(
-                                        "Install integration (coming soon)",
-                                        { type, stackId: stack?.id }
-                                      );
-                                    }
-                                  }}
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>Install</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                      <span>{config.icon}</span>
+                      <span>{config.label}</span>
+                      <Plus className="w-3 h-3 text-slate-400" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{isStackDeployed ? `Install ${config.label}` : "Deploy the rollup first"}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        )}
       </div>
 
       <InstallBridgeDialog
