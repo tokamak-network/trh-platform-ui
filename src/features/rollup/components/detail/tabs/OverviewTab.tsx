@@ -95,12 +95,10 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
                     >
                       {item.value}
                     </span>
-                    {canCopy && (
-                      copiedItem === item.id ? (
-                        <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                      )
+                    {copiedItem === item.id ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                    ) : (
+                      <Copy className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-opacity ${canCopy ? "opacity-0 group-hover:opacity-100" : "opacity-0 pointer-events-none"}`} />
                     )}
                   </div>
                 </div>
