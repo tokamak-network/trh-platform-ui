@@ -150,10 +150,7 @@ export function ConfigReview({
                 {feeToken === "ETH" ? "5%" : "3%"} markup)
               </li>
               <li>
-                Uniswap V3 WTON/{feeToken} pool created and initialized on L2
-              </li>
-              <li>
-                <strong>UniswapV3TwapOracle</strong> deployed — live price feed, no manual updates needed
+                TON/{feeToken} price auto-updated from CoinGecko every 10 min — no manual oracle management needed
               </li>
             </ul>
             <p className="text-xs text-purple-500 mt-2">
