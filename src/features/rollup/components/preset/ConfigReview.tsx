@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info, Monitor } from "lucide-react";
+import { Settings2, Info, Monitor, Zap } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
 
 interface ConfigReviewProps {
@@ -91,6 +91,10 @@ export function ConfigReview({
   const isMainnet = network === "Mainnet";
   const MAINNET_CHALLENGE_PERIOD = 6048000;
 
+  const AA_PRESETS = ["gaming", "full"];
+  const needsAAPaymaster =
+    AA_PRESETS.includes(preset.id) && feeToken != null && feeToken !== "TON";
+
   return (
     <div className="space-y-4">
       {/* Local deployment info */}
@@ -113,6 +117,44 @@ export function ConfigReview({
               <div>Explorer:&nbsp;&nbsp;&nbsp;http://localhost:4001</div>
               <div>Monitoring: http://localhost:3002</div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AA Paymaster auto-configuration notice */}
+      {needsAAPaymaster && (
+        <Card className="border-purple-200 bg-purple-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-purple-700 text-sm">
+              <Zap className="h-4 w-4" />
+              AA Paymaster Auto-Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            <p className="text-sm text-purple-700">
+              <strong>{feeToken}</strong> is selected as the fee token. Since TON is the L2 native
+              gas token, AA (Account Abstraction) infrastructure will be automatically configured
+              after the L2 network starts:
+            </p>
+            <ul className="text-xs text-purple-600 space-y-1 list-disc list-inside">
+              <li>
+                <strong>1 TON</strong> deposited to EntryPoint for MultiTokenPaymaster gas sponsorship
+              </li>
+              <li>
+                <strong>{feeToken}</strong> registered with MultiTokenPaymaster (
+                {feeToken === "ETH" ? "5%" : "3%"} markup)
+              </li>
+              <li>
+                SimplePriceOracle initial price set — update post-deployment for accurate rates
+              </li>
+            </ul>
+            <p className="text-xs text-purple-500 mt-2">
+              Users must call{" "}
+              <code className="bg-purple-100 px-1 rounded">
+                {feeToken}.approve(MultiTokenPaymaster, amount)
+              </code>{" "}
+              before submitting UserOps with this paymaster.
+            </p>
           </CardContent>
         </Card>
       )}
