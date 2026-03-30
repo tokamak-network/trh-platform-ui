@@ -212,11 +212,10 @@ export function BasicInfoStep() {
             <Alert className="border-purple-200 bg-purple-50">
               <Zap className="h-4 w-4 text-purple-600" />
               <AlertDescription className="text-sm text-purple-700">
-                <strong>AA Smart Wallet Infrastructure</strong> will be enabled with this preset.{" "}
-                <strong>{feeToken}</strong> will be registered with MultiTokenPaymaster (
-                {feeToken === "ETH" ? "5%" : "3%"} markup). An{" "}
-                <strong>aa-operator</strong> service will run continuously to update CoinGecko
-                oracle prices and auto-refill the EntryPoint.
+                <strong>Account Abstraction Enabled</strong> — Using a non-TON fee token enables
+                Account Abstraction. TON will be pre-deposited to fund the EntryPoint on your
+                behalf. Your admin account must maintain a{" "}
+                <strong>minimum TON balance</strong> to cover this deposit.
               </AlertDescription>
             </Alert>
           )}

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info, Monitor, Zap } from "lucide-react";
+import { Settings2, Info, Monitor } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
 
 interface ConfigReviewProps {
@@ -97,10 +97,7 @@ export function ConfigReview({
   const AA_PRESETS = ["gaming", "full"];
   const isAAPreset = AA_PRESETS.includes(preset.id);
 
-  // When a non-TON fee token is selected with an AA preset, MultiTokenPaymaster is also
-  // configured to accept that token — on top of the existing AA smart wallet infrastructure.
   const isNonTonFeeToken = feeToken != null && feeToken !== "TON";
-  const hasMultiTokenPaymaster = isAAPreset && isNonTonFeeToken;
 
   return (
     <div className="space-y-4">
@@ -128,62 +125,6 @@ export function ConfigReview({
         </Card>
       )}
 
-      {/* AA Smart Wallet infrastructure notice — Gaming/Full presets always */}
-      {isAAPreset && (
-        <Card className="border-purple-200 bg-purple-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-purple-700 text-sm">
-              <Zap className="h-4 w-4" />
-              AA Smart Wallet Infrastructure
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            <p className="text-sm text-purple-700">
-              ERC-4337 Account Abstraction infrastructure is automatically deployed with this
-              preset to support smart wallet functionality:
-            </p>
-            <ul className="text-xs text-purple-600 space-y-1 list-disc list-inside">
-              <li>ERC-4337 <strong>EntryPoint</strong> predeploy</li>
-              <li><strong>MultiTokenPaymaster</strong> predeploy for gas fee sponsorship</li>
-              <li><strong>SimplePriceOracle</strong> predeploy for token price feeds</li>
-              {hasMultiTokenPaymaster && (
-                <>
-                  <li>
-                    <strong>1 TON</strong> deposited to EntryPoint for MultiTokenPaymaster gas sponsorship
-                  </li>
-                  {feeToken === "USDT" && (
-                    <li>
-                      Bridged <strong>USDT</strong> deployed on L2 via OptimismMintableERC20Factory
-                    </li>
-                  )}
-                  <li>
-                    <strong>{feeToken}</strong> registered with MultiTokenPaymaster (
-                    {feeToken === "ETH" ? "5%" : "3%"} markup)
-                  </li>
-                  <li>
-                    TON/{feeToken} price auto-updated from CoinGecko every 10 min — no manual oracle management needed
-                  </li>
-                  <li>
-                    EntryPoint TON balance auto-refilled from admin wallet when below 0.5 TON (top-up 5 TON)
-                  </li>
-                  <li>
-                    <strong>aa-operator</strong> Docker service runs continuously to manage the above two tasks
-                  </li>
-                </>
-              )}
-            </ul>
-            {hasMultiTokenPaymaster && (
-              <p className="text-xs text-purple-500 mt-2">
-                Users must call{" "}
-                <code className="bg-purple-100 px-1 rounded">
-                  {feeToken}.approve(MultiTokenPaymaster, amount)
-                </code>{" "}
-                before submitting UserOps with this paymaster.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Non-TON native fee token notice — General/DeFi presets with non-TON token */}
       {!isAAPreset && isNonTonFeeToken && (
