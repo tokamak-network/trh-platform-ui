@@ -3,7 +3,6 @@ import {
   Activity,
   CheckCircle,
   DollarSign,
-  TrendingUp,
   Users,
 } from "lucide-react";
 
@@ -30,10 +29,6 @@ export function RollupStats({
                 Total Rollups
               </p>
               <p className="text-2xl font-bold">{totalRollups}</p>
-              <p className="text-xs text-green-600 flex items-center mt-1">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                +12% from last month
-              </p>
             </div>
             <div className="p-2 bg-blue-100 rounded-full">
               <Activity className="w-5 h-5 text-blue-600" />
@@ -50,10 +45,6 @@ export function RollupStats({
                 Active Rollups
               </p>
               <p className="text-2xl font-bold">{activeRollups}</p>
-              <p className="text-xs text-green-600 flex items-center mt-1">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                +8% from last month
-              </p>
             </div>
             <div className="p-2 bg-green-100 rounded-full">
               <CheckCircle className="w-5 h-5 text-green-600" />
