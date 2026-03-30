@@ -111,14 +111,14 @@ export function AccountAbstractionTab({ stack }: RollupDetailTabProps) {
 
   return (
     <TabsContent value="account-abstraction" className="space-y-6">
-      {/* Smart Wallet Service status */}
+      {/* Fee Token Oracle status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-800">
             <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600">
               <Zap className="h-4 w-4 text-white" />
             </div>
-            Smart Wallet Service
+            Fee Token Oracle
             <Badge
               className={
                 isRunning
