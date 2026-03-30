@@ -5,4 +5,4 @@ export { LogsTab } from "./LogsTab";
 export { DeploymentsTab } from "./DeploymentsTab";
 export { MetadataTab } from "./MetadataTab";
 export { BackupTab } from "./BackupTab";
-export { ChainDataTab } from "./ChainDataTab";
+export { AccountAbstractionTab } from "./AccountAbstractionTab";

@@ -13,7 +13,7 @@ import {
   DeploymentsTab,
   MetadataTab,
   BackupTab,
-  ChainDataTab,
+  AccountAbstractionTab,
 } from "./tabs";
 import { ComponentsTab } from "@/features/integrations";
 
@@ -30,8 +30,9 @@ export function RollupDetailTabs({
 
   const isLocalDeployment = stack?.config.infraProvider === "local";
 
+  const effectivePreset = stack?.config.presetId ?? stack?.config.preset ?? "";
   const isAAChainData =
-    ["gaming", "full"].includes(stack?.config.preset ?? "") &&
+    ["gaming", "full"].includes(effectivePreset) &&
     !!stack?.config.feeToken &&
     stack.config.feeToken !== "TON";
 
@@ -87,10 +88,10 @@ export function RollupDetailTabs({
         )}
         {isAAChainData && (
           <TabsTrigger
-            value="chain-data"
+            value="account-abstraction"
             className="cursor-pointer data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-400 data-[state=active]:text-white data-[state=active]:shadow-lg font-medium"
           >
-            Chain Data
+            Account Abstraction
           </TabsTrigger>
         )}
         {/* <TabsTrigger
@@ -161,10 +162,10 @@ export function RollupDetailTabs({
         <LogsTab stack={stack} />
       </TabsContent>
 
-      {/* Chain Data Tab */}
+      {/* Account Abstraction Tab */}
       {isAAChainData && (
-        <TabsContent value="chain-data" className="space-y-6">
-          <ChainDataTab stack={stack} />
+        <TabsContent value="account-abstraction" className="space-y-6">
+          <AccountAbstractionTab stack={stack} />
         </TabsContent>
       )}
     </Tabs>
