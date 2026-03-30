@@ -57,7 +57,8 @@ export interface ThanosStackConfig {
   awsSecretAccessKey: string;
   outputRootFrequency: number;
   batchSubmissionFrequency: number;
-  preset?: string;
+  preset?: string;    // legacy alias — new stacks use presetId
+  presetId?: string;  // backend JSON field name
   feeToken?: string;
 }
 

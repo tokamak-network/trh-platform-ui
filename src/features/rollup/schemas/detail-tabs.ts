@@ -7,7 +7,7 @@ export type RollupDetailTab =
   | "logs"
   | "metadata"
   | "backup"
-  | "chain-data";
+  | "account-abstraction";
 
 import { ThanosStack } from "./thanos";
 
