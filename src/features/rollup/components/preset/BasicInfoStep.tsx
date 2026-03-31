@@ -212,10 +212,7 @@ export function BasicInfoStep() {
             <Alert className="border-purple-200 bg-purple-50">
               <Zap className="h-4 w-4 text-purple-600" />
               <AlertDescription className="text-sm text-purple-700">
-                <strong>Account Abstraction Enabled</strong> — Using a non-TON fee token enables
-                Account Abstraction. TON will be pre-deposited to fund the EntryPoint on your
-                behalf. Your admin account must maintain a{" "}
-                <strong>minimum TON balance</strong> to cover this deposit.
+                <strong>Account Abstraction Enabled</strong> — Using a non-TON fee token enables Account Abstraction. TON will be pre-deposited to fund the EntryPoint on your behalf. Your admin account must maintain a <strong>minimum TON balance</strong> to cover this deposit.
               </AlertDescription>
             </Alert>
           )}
