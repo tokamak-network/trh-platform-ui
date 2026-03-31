@@ -154,7 +154,7 @@ export function ConfigReview({
               Preset Configuration Review
             </CardTitle>
             <Badge variant="outline" className="capitalize">
-              {preset.name} Preset
+              {preset.name === "General Purpose" ? "General" : preset.name} Preset
             </Badge>
           </div>
           <p className="text-sm text-gray-500">{preset.description}</p>

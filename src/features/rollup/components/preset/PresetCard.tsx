@@ -73,7 +73,7 @@ export function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
 
           {/* Name & Description */}
           <div>
-            <h3 className="text-lg font-semibold">{preset.name}</h3>
+            <h3 className="text-lg font-semibold">{preset.name === "General Purpose" ? "General" : preset.name}</h3>
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">
               {preset.description}
             </p>
