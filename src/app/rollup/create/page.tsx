@@ -8,6 +8,7 @@ import { useCreateRollup } from "@/features/rollup/hooks/useCreateRollup";
 import { usePresetWizard } from "@/features/rollup/hooks/usePresetWizard";
 import { useRollupCreationContext } from "@/features/rollup/context/RollupCreationContext";
 
+
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Rocket } from "lucide-react";
 import {
@@ -304,8 +305,12 @@ function WizardModeTabs() {
 
 // --- Mode Selector ---
 function CreateRollupContent() {
-  const { state } = useRollupCreationContext();
+  const { state, resetState } = useRollupCreationContext();
   const { wizardMode } = state;
+
+  useEffect(() => {
+    resetState();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (wizardMode === "preset") {
     return <PresetWizardContent />;

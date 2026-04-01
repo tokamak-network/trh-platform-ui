@@ -42,7 +42,7 @@ type PresetWizardFormData = z.infer<typeof presetWizardSchema>;
 
 export function usePresetWizard() {
   const router = useRouter();
-  const { state, updateCurrentStep, setSelectedPreset, setPendingDeploymentId } =
+  const { state, updateCurrentStep, setSelectedPreset, setPendingDeploymentId, resetState } =
     useRollupCreationContext();
 
   const [overrides, setOverrides] = useState<PresetFieldOverride[]>([]);
@@ -112,6 +112,7 @@ export function usePresetWizard() {
 
       toast.success("Deployment initiated!", { id: "preset-deploy" });
       setPendingDeploymentId(result.deploymentId);
+      resetState();
       router.push("/rollup");
     } catch (error) {
       toast.error(
