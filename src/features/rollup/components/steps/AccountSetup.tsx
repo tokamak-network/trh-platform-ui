@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   Loader2,
   RefreshCw,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useFormContext, useController } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
@@ -251,6 +253,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
   // Read balances injected by Electron main process via window.__TRH_DESKTOP_BALANCES__
   const [desktopBalances, setDesktopBalances] = useState<Record<string, string>>({});
   const [balancesLoading, setBalancesLoading] = useState(true);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   const desktopRoles = useMemo(() => {
     if (!desktopAccountsApplied) return [];
@@ -293,6 +296,12 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
   }, [desktopAccountsApplied, loadInjectedBalances]);
 
   // Fetch balances via desktop bridge using the L1 RPC URL from the form
+  const handleCopyAddress = useCallback((address: string) => {
+    navigator.clipboard.writeText(address);
+    setCopiedAddress(address);
+    setTimeout(() => setCopiedAddress(null), 2000);
+  }, []);
+
   const handleRefreshBalances = useCallback(async () => {
     const rpcUrl = l1RpcUrlField.value;
     if (!rpcUrl) return;
@@ -338,13 +347,28 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
               <div key={label} className="space-y-1">
                 <Label className="text-sm font-medium text-slate-700">{label} Account</Label>
                 <div className="flex items-center justify-between font-mono text-sm bg-slate-50 border rounded-md p-3 text-slate-700">
-                  <span>{address}</span>
-                  <span className={`text-xs ${
-                    desktopBalances[address] === "—" ? "text-red-500" :
-                    desktopBalances[address] ? "text-slate-500" : "text-slate-400"
-                  }`}>
-                    {balancesLoading ? "Loading..." : desktopBalances[address] ?? "—"}
-                  </span>
+                  <span className="truncate">{address}</span>
+                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600"
+                      onClick={() => handleCopyAddress(address)}
+                    >
+                      {copiedAddress === address ? (
+                        <Check className="w-3.5 h-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                    <span className={`text-xs ${
+                      desktopBalances[address] === "—" ? "text-red-500" :
+                      desktopBalances[address] ? "text-slate-500" : "text-slate-400"
+                    }`}>
+                      {balancesLoading ? "Loading..." : desktopBalances[address] ?? "—"}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
