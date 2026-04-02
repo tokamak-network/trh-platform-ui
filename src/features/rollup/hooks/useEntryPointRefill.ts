@@ -85,7 +85,7 @@ async function fetchRefillData(stack: ThanosStack): Promise<EntryPointRefillData
         return {
           blockNumber: log.blockNumber,
           transactionHash: log.transactionHash,
-          amount: amount.toFixed(4),
+          amount: amount.toFixed(6),
           timestamp: block?.timestamp,
         };
       })
@@ -112,9 +112,9 @@ async function fetchRefillData(stack: ThanosStack): Promise<EntryPointRefillData
   }
 
   return {
-    balance: balance.toFixed(4),
+    balance: balance.toFixed(6),
     balanceNum: balance,
-    adminBalance: adminBalance.toFixed(4),
+    adminBalance: adminBalance.toFixed(6),
     adminBalanceNum: adminBalance,
     status,
     etaSeconds,

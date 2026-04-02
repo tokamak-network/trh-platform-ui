@@ -258,13 +258,15 @@ export function AccountAbstractionTab({ stack }: RollupDetailTabProps) {
                     <Wallet className="h-3.5 w-3.5" />
                     Admin Wallet
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-mono text-gray-500 truncate max-w-[180px]">
-                      {stack.config.adminAccount || "—"}
-                    </span>
-                    <span className="text-sm font-mono font-semibold text-slate-800">
-                      {rd.adminBalance} TON
-                    </span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-gray-500">
+                        {stack.config.adminAccount || "—"}
+                      </span>
+                      <span className="text-sm font-mono font-semibold text-slate-800">
+                        {rd.adminBalance} TON
+                      </span>
+                    </div>
                   </div>
                   {estimatedRefills !== null && (
                     <p className="text-[11px] text-gray-400">
