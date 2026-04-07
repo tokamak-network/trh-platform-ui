@@ -201,7 +201,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
       bridge: true,
       blockExplorer: true,
       monitoring: true,
-      crossTrade: false,
+      crossTrade: true,   // UI-01: DeFi has crossTrade
       uptimeService: true,
     },
     genesisPredeploys: [
@@ -222,7 +222,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
       "bridge.enabled": true,
       "monitoring.enabled": true,
       "blockscout.enabled": true,
-      "crossTrade.enabled": false,
+      "crossTrade.enabled": true,   // UI-01: DeFi has crossTrade
       "uptimeService.enabled": true,
     },
     overridableFields: [
@@ -240,7 +240,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
       bridge: true,
       blockExplorer: true,
       monitoring: true,
-      crossTrade: true,
+      crossTrade: false,   // UI-02: Gaming has no crossTrade
       uptimeService: true,
     },
     genesisPredeploys: [
@@ -261,7 +261,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
       "bridge.enabled": true,
       "monitoring.enabled": true,
       "blockscout.enabled": true,
-      "crossTrade.enabled": true,
+      "crossTrade.enabled": false,   // UI-02: Gaming has no crossTrade
       "uptimeService.enabled": true,
     },
     overridableFields: [
