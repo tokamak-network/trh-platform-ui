@@ -37,6 +37,7 @@ import { BlockExplorerCard, BlockExplorerCompactInfo } from "./BlockExplorerCard
 import { MonitoringCard, MonitoringCompactInfo } from "./MonitoringCard";
 import { RegisterCandidateCard, RegisterCandidateCompactInfo } from "./RegisterCandidateCard";
 import { DRBCard, DRBCompactInfo } from "./DRBCard";
+import { CrossTradeCard, CrossTradeCompactInfo } from "./CrossTradeCard";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -166,6 +167,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <RegisterCandidateCard {...commonProps} />;
       case "drb":
         return <DRBCard {...commonProps} />;
+      case "cross-trade":
+        return <CrossTradeCard {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -191,6 +194,8 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
         return <RegisterCandidateCompactInfo {...commonProps} />;
       case "drb":
         return <DRBCompactInfo {...commonProps} />;
+      case "cross-trade":
+        return <CrossTradeCompactInfo {...commonProps} />;
       default:
         return (
           <div className="text-sm text-gray-600">
@@ -251,7 +256,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
               >
                 <Eye className="w-4 h-4" />
               </Button>
-              {integration.type !== "drb" && (integration.status === "InProgress" || integration.status === "Pending") && (
+              {integration.type !== "drb" && integration.type !== "cross-trade" && (integration.status === "InProgress" || integration.status === "Pending") && (
                 <Button
                   aria-label="Cancel"
                   variant="outline"
@@ -263,7 +268,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
                   <X className="w-4 h-4" />
                 </Button>
               )}
-              {integration.type !== "drb" && integration.status === "Cancelled" && (
+              {integration.type !== "drb" && integration.type !== "cross-trade" && integration.status === "Cancelled" && (
                 <Button
                   aria-label="Retry"
                   variant="outline"
