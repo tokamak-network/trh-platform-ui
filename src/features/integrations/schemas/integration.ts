@@ -37,7 +37,7 @@ export interface IntegrationInfo {
 export interface Integration {
   id: string;
   stack_id: string;
-  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "drb";
+  type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "drb" | "cross-trade";
   status: "Pending" | "InProgress" | "Failed" | "Stopped" | "Completed" | "Terminating" | "Terminated" | "Cancelling" | "Cancelled" | "Unknown";
   config: Record<string, unknown>;
   info: IntegrationInfo;
@@ -85,5 +85,11 @@ export const INTEGRATION_TYPES = {
     description: "Decentralized Random Beacon (auto-installed)",
     icon: "🎲",
     color: "from-violet-500 to-purple-400",
+  },
+  "cross-trade": {
+    label: "CrossTrade",
+    description: "Fast cross-chain token exchange (auto-installed for DeFi/Full)",
+    icon: "🔄",
+    color: "from-teal-500 to-cyan-400",
   },
 } as const;

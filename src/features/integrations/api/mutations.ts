@@ -66,7 +66,7 @@ function createMutationHook<TData, TVariables, TError = Error>(config: {
 
 export const useUninstallIntegrationMutation = createMutationHook<
   void,
-  { stackId: string; type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "drb" }
+  { stackId: string; type: "bridge" | "block-explorer" | "monitoring" | "register-candidate" | "system-pulse" | "drb" | "cross-trade" }
 >({
   mutationFn: ({ stackId, type }) => uninstallIntegration(stackId, type),
   toastId: "uninstall-integration",
