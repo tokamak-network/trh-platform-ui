@@ -83,7 +83,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
       .map((i) => i.type)
   );
   const availableTypeEntries = Object.entries(INTEGRATION_TYPES).filter(
-    ([type]) => type !== "drb" && !activeTypeKeys.has(type as Integration["type"])
+    ([type]) => type !== "drb" && type !== "cross-trade" && !activeTypeKeys.has(type as Integration["type"])
   );
 
   if (!stack) {
@@ -213,7 +213,7 @@ export function ComponentsTab({ stack }: RollupDetailTabProps) {
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {Object.entries(INTEGRATION_TYPES)
-                    .filter(([type]) => type !== "drb")
+                    .filter(([type]) => type !== "drb" && type !== "cross-trade")
                     .map(([type, config]) => (
                     <Badge key={type} variant="outline" className="text-sm">
                       {config.icon} {config.label}
