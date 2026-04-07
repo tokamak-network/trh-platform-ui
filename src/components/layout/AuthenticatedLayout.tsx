@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/molecules";
 import { useAuthContext } from "@/providers";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { ChatWidget } from "@/features/chat";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,8 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
       </div>
       {/* Main content with left margin to account for fixed sidebar */}
       <div className="ml-[250px] min-h-screen bg-gray-100">{children}</div>
+      {/* Chat widget - Tokamak Architect */}
+      <ChatWidget />
     </div>
   );
 };
