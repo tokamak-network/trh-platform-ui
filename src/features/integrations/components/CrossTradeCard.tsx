@@ -78,7 +78,7 @@ export function CrossTradeCard({ integration, copiedItem, copyToClipboard }: Cro
 
   return (
     <div className="text-sm text-gray-600">
-      CrossTrade dApp URL not available
+      Cross Trade dApp URL not available
     </div>
   );
 }

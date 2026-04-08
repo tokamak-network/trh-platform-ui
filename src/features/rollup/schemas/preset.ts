@@ -50,6 +50,12 @@ export interface PresetUIMetadata {
   icon: string;
   recommendedFor: string[];
   defaultFeeToken: FeeToken;
+  subtitle: string;
+  tagline: string;
+  accentColor: string;   // border/text Tailwind color classes
+  accentBg: string;      // bg Tailwind class (subtle)
+  dotColor: string;      // Tailwind bg class for dot indicators
+  aaEnabled: boolean;    // whether Smart Account section shows
 }
 
 const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
@@ -58,24 +64,48 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     icon: "layers",
     recommendedFor: ["General dApps", "Mixed workloads", "Getting started"],
     defaultFeeToken: "TON",
+    subtitle: "Baseline L2 + bridge",
+    tagline: "The essentials, nothing extra.",
+    accentColor: "border-blue-500 text-blue-600",
+    accentBg: "bg-blue-50",
+    dotColor: "bg-blue-500",
+    aaEnabled: false,
   },
   defi: {
     key: "defi",
     icon: "trending-up",
     recommendedFor: ["DEX", "Lending protocols", "Yield farming"],
     defaultFeeToken: "TON",
+    subtitle: "Cross-chain + block explorer",
+    tagline: "Built for traders and liquidity.",
+    accentColor: "border-green-600 text-green-700",
+    accentBg: "bg-green-50",
+    dotColor: "bg-green-600",
+    aaEnabled: false,
   },
   gaming: {
     key: "gaming",
     icon: "gamepad-2",
     recommendedFor: ["GameFi", "NFT marketplaces", "Real-time apps"],
     defaultFeeToken: "TON",
+    subtitle: "Bridge + Explorer + Smart Account",
+    tagline: "Fast chain, gasless UX for players.",
+    accentColor: "border-purple-600 text-purple-700",
+    accentBg: "bg-purple-50",
+    dotColor: "bg-purple-600",
+    aaEnabled: true,
   },
   full: {
     key: "full",
     icon: "building-2",
     recommendedFor: ["Enterprise apps", "Regulated industries", "High-value assets"],
     defaultFeeToken: "TON",
+    subtitle: "All modules included",
+    tagline: "Every service, ready to go.",
+    accentColor: "border-orange-500 text-orange-600",
+    accentBg: "bg-orange-50",
+    dotColor: "bg-orange-500",
+    aaEnabled: true,
   },
 };
 
@@ -84,6 +114,12 @@ const DEFAULT_UI_METADATA: PresetUIMetadata = {
   icon: "layers",
   recommendedFor: [],
   defaultFeeToken: "TON",
+  subtitle: "",
+  tagline: "",
+  accentColor: "border-gray-400 text-gray-600",
+  accentBg: "bg-gray-50",
+  dotColor: "bg-gray-400",
+  aaEnabled: false,
 };
 
 export function getPresetUIMetadata(id: string): PresetUIMetadata {
@@ -148,6 +184,84 @@ export const fundingStatusResponseSchema = z.object({
   message: z.string().optional(),
 });
 export type FundingStatusResponse = z.infer<typeof fundingStatusResponseSchema>;
+
+// ─── Module metadata ─────────────────────────────────────────────────────────
+
+export const MODULE_DISPLAY_ORDER = [
+  "bridge",
+  "blockExplorer",
+  "crossTrade",
+  "monitoring",
+  "uptimeService",
+] as const;
+
+export type ModuleKey = typeof MODULE_DISPLAY_ORDER[number];
+
+export const MODULE_METADATA: Record<ModuleKey, {
+  label: string;
+  description: string;
+  icon: string;
+  accentColor: string;   // Tailwind bg class for left accent bar
+  iconBg: string;        // Tailwind bg+text+border classes for icon box
+  tag: string;
+}> = {
+  bridge: {
+    label: "Token Bridge",
+    description: "Your users can move tokens freely between Ethereum and your chain.",
+    icon: "🌉",
+    accentColor: "bg-blue-500",
+    iconBg: "bg-blue-50 text-blue-600 border-blue-200",
+    tag: "Essential",
+  },
+  blockExplorer: {
+    label: "Block Explorer",
+    description: "Browse every transaction, block, and contract on-chain.",
+    icon: "🔭",
+    accentColor: "bg-purple-500",
+    iconBg: "bg-purple-50 text-purple-600 border-purple-200",
+    tag: "Transparency",
+  },
+  crossTrade: {
+    label: "Cross Trade",
+    description: "Move tokens across chains and withdraw to L1 instantly — no waiting for the challenge period.",
+    icon: "↔",
+    accentColor: "bg-green-500",
+    iconBg: "bg-green-50 text-green-600 border-green-200",
+    tag: "DeFi",
+  },
+  monitoring: {
+    label: "Monitoring",
+    description: "Live dashboard for TVL, transaction volume, and node health.",
+    icon: "📊",
+    accentColor: "bg-amber-500",
+    iconBg: "bg-amber-50 text-amber-600 border-amber-200",
+    tag: "Ops",
+  },
+  uptimeService: {
+    label: "Uptime Service",
+    description: "Instantly alerts your team if any node or service goes offline.",
+    icon: "🟢",
+    accentColor: "bg-teal-500",
+    iconBg: "bg-teal-50 text-teal-600 border-teal-200",
+    tag: "Reliability",
+  },
+};
+
+export const AA_SERVICE_METADATA = {
+  label: "Smart Account",
+  description: "Programmable accounts for players — the game sets the rules. Sponsor gas, accept any fee token, no wallet setup required.",
+  icon: "🪪",
+};
+
+// Returns true if the preset's UI metadata declares AA support
+export function hasAASupport(preset: PresetSummary): boolean {
+  return getPresetUIMetadata(preset.id).aaEnabled;
+}
+
+// Returns ordered list of enabled module keys
+export function getEnabledModules(preset: PresetSummary): ModuleKey[] {
+  return MODULE_DISPLAY_ORDER.filter((key) => preset.modules[key] === true);
+}
 
 // ─── Legacy mock data (kept for reference, not used when USE_MOCK = false) ──
 

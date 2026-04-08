@@ -87,8 +87,8 @@ export const INTEGRATION_TYPES = {
     color: "from-violet-500 to-purple-400",
   },
   "cross-trade": {
-    label: "CrossTrade",
-    description: "Fast cross-chain token exchange (auto-installed for DeFi/Full)",
+    label: "Cross Trade",
+    description: "Move tokens across chains and withdraw to L1 instantly — no waiting for the challenge period.",
     icon: "🔄",
     color: "from-teal-500 to-cyan-400",
   },
