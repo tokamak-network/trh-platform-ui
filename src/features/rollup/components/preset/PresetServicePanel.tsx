@@ -15,7 +15,7 @@ interface PresetServicePanelProps {
   preset: PresetSummary | null;
 }
 
-const TOTAL_COVERAGE = 5;
+const TOTAL_COVERAGE = 7;
 
 export function PresetServicePanel({ preset }: PresetServicePanelProps) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -53,6 +53,7 @@ export function PresetServicePanel({ preset }: PresetServicePanelProps) {
   const uiMeta = getPresetUIMetadata(preset.id);
   const enabledModules = getEnabledModules(preset);
   const showAA = hasAASupport(preset);
+  const totalServices = enabledModules.length + (showAA ? 1 : 0);
 
   // Extract the text color class from accentColor (e.g. "border-blue-500 text-blue-600" → "text-blue-600")
   const accentTextClass = uiMeta.accentColor.split(" ").find((c) => c.startsWith("text-")) ?? "";
@@ -91,7 +92,7 @@ export function PresetServicePanel({ preset }: PresetServicePanelProps) {
         {/* Service count */}
         <div className="relative flex items-baseline gap-2">
           <span className={cn("text-4xl font-bold leading-none", accentTextClass)}>
-            {enabledModules.length}
+            {totalServices}
           </span>
           <span className="text-xs text-gray-500 leading-tight">
             <strong className="text-gray-700 font-semibold">services</strong>
@@ -106,7 +107,7 @@ export function PresetServicePanel({ preset }: PresetServicePanelProps) {
               key={i}
               className={cn(
                 "flex-1 h-1 rounded-full transition-all duration-500",
-                i < enabledModules.length ? uiMeta.dotColor : "bg-gray-200"
+                i < totalServices ? uiMeta.dotColor : "bg-gray-200"
               )}
             />
           ))}
@@ -147,35 +148,26 @@ export function PresetServicePanel({ preset }: PresetServicePanelProps) {
           );
         })}
 
-        {/* Smart Account conditional section */}
+        {/* Smart Account — included in Gaming and Full presets */}
         {showAA && (
-          <>
-            <div className="flex items-center gap-2 my-0.5">
-              <div className="flex-1 border-t border-dashed border-gray-200" />
-              <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wide whitespace-nowrap">
-                ◎ if non-TON fee token
-              </span>
-              <div className="flex-1 border-t border-dashed border-gray-200" />
+          <div
+            data-svc=""
+            className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-100 relative overflow-hidden shadow-sm"
+          >
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-amber-400" />
+            <div className="w-9 h-9 rounded-lg border border-amber-200 bg-amber-50 flex items-center justify-center text-base flex-shrink-0">
+              {AA_SERVICE_METADATA.icon}
             </div>
-            <div
-              data-svc=""
-              className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-amber-200 bg-amber-50/60 relative overflow-hidden"
-            >
-              <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-amber-400" />
-              <div className="w-9 h-9 rounded-lg border border-amber-200 bg-amber-50 flex items-center justify-center text-base flex-shrink-0">
-                {AA_SERVICE_METADATA.icon}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900">{AA_SERVICE_METADATA.label}</p>
-                <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
-                  {AA_SERVICE_METADATA.description}
-                </p>
-              </div>
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-amber-200 text-amber-600 flex-shrink-0 italic">
-                AA
-              </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900">{AA_SERVICE_METADATA.label}</p>
+              <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
+                {AA_SERVICE_METADATA.description}
+              </p>
             </div>
-          </>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-amber-200 text-amber-600 flex-shrink-0 italic">
+              AA
+            </span>
+          </div>
         )}
       </div>
     </div>

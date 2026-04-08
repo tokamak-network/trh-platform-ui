@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { usePresetsQuery } from "../../api/queries";
@@ -18,10 +17,8 @@ export function PresetSelectionStep({
   onSelect,
 }: PresetSelectionStepProps) {
   const { data: presets, isLoading, error } = usePresetsQuery();
-  const [hoveredPreset, setHoveredPreset] = useState<PresetSummary | null>(null);
 
   const selectedPreset = presets?.find((p) => p.id === selectedPresetId) ?? null;
-  const panelPreset = hoveredPreset ?? selectedPreset;
 
   if (isLoading) {
     return (
@@ -67,15 +64,13 @@ export function PresetSelectionStep({
                 preset={preset}
                 isSelected={selectedPresetId === preset.id}
                 onClick={() => onSelect(preset)}
-                onMouseEnter={() => setHoveredPreset(preset)}
-                onMouseLeave={() => setHoveredPreset(null)}
               />
             ))}
           </div>
 
           {/* Right: service detail panel */}
           <div className="flex-1 min-w-0">
-            <PresetServicePanel preset={panelPreset} />
+            <PresetServicePanel preset={selectedPreset} />
           </div>
         </div>
 

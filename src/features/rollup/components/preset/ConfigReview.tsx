@@ -113,15 +113,6 @@ export function ConfigReview({
               L2 nodes will run on your machine via Docker Compose. L1 contracts deploy to Sepolia.
             </p>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs font-medium text-blue-700 mb-2">Services will be available at:</p>
-            <div className="space-y-1 text-xs text-blue-600 font-mono">
-              <div>L2 RPC:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;http://localhost:8545</div>
-              <div>Bridge:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;http://localhost:3001</div>
-              <div>Explorer:&nbsp;&nbsp;&nbsp;http://localhost:4001</div>
-              <div>Monitoring: http://localhost:3002</div>
-            </div>
-          </CardContent>
         </Card>
       )}
 
@@ -137,9 +128,7 @@ export function ConfigReview({
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-sm text-amber-700">
-              <strong>{feeToken}</strong> will be set as the native L2 gas token at genesis.
-              All users pay transaction fees directly in <strong>{feeToken}</strong> — no
-              paymaster or token conversion is required.
+              <strong>{feeToken}</strong>{" "}will be set as the native L2 gas token at genesis. All users pay transaction fees directly in <strong>{feeToken}</strong> — no paymaster or token conversion is required.
             </p>
           </CardContent>
         </Card>

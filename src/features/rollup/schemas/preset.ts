@@ -193,6 +193,7 @@ export const MODULE_DISPLAY_ORDER = [
   "crossTrade",
   "monitoring",
   "uptimeService",
+  "drb",
 ] as const;
 
 export type ModuleKey = typeof MODULE_DISPLAY_ORDER[number];
@@ -245,6 +246,14 @@ export const MODULE_METADATA: Record<ModuleKey, {
     iconBg: "bg-teal-50 text-teal-600 border-teal-200",
     tag: "Reliability",
   },
+  drb: {
+    label: "Distributed Random Beacon",
+    description: "On-chain verifiable randomness via a distributed randomness generation protocol — no single point of trust.",
+    icon: "🎲",
+    accentColor: "bg-indigo-500",
+    iconBg: "bg-indigo-50 text-indigo-600 border-indigo-200",
+    tag: "Randomness",
+  },
 };
 
 export const AA_SERVICE_METADATA = {
@@ -272,7 +281,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
     description: "Baseline rollup preset for standard application workloads.",
     modules: {
       bridge: true,
-      blockExplorer: false,
+      blockExplorer: true,
       monitoring: false,
       crossTrade: false,
       uptimeService: false,
@@ -356,6 +365,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
       monitoring: true,
       crossTrade: false,   // UI-02: Gaming has no crossTrade
       uptimeService: true,
+      drb: true,
     },
     genesisPredeploys: [
       "L2StandardBridge",
@@ -396,6 +406,7 @@ export const MOCK_PRESETS: PresetSummary[] = [
       monitoring: true,
       crossTrade: true,
       uptimeService: true,
+      drb: true,
     },
     genesisPredeploys: [
       "L2StandardBridge",

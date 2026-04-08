@@ -12,22 +12,18 @@ const PRESET_ICONS: Record<string, React.ReactNode> = {
   "building-2": <Building2 className="h-5 w-5" />,
 };
 
-const TOTAL_DOTS = 5;
+const TOTAL_DOTS = 6;
 
 interface PresetCardProps {
   preset: PresetSummary;
   isSelected: boolean;
   onClick: () => void;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
 }
 
 export function PresetCard({
   preset,
   isSelected,
   onClick,
-  onMouseEnter,
-  onMouseLeave,
 }: PresetCardProps) {
   const uiMeta = getPresetUIMetadata(preset.id);
   const enabledCount = getEnabledModules(preset).length;
@@ -37,8 +33,6 @@ export function PresetCard({
       role="button"
       tabIndex={0}
       onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
       className={cn(
         "relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200",

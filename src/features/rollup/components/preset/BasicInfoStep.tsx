@@ -220,9 +220,7 @@ export function BasicInfoStep() {
             <Alert className="border-amber-200 bg-amber-50">
               <Info className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-sm text-amber-700">
-                <strong>{feeToken}</strong> will be set as the native L2 gas token at genesis. All
-                users pay transaction fees directly in <strong>{feeToken}</strong> — no paymaster or
-                token conversion required.
+                <strong>{feeToken}</strong>{" "}will be set as the native L2 gas token at genesis. All users pay transaction fees directly in <strong>{feeToken}</strong> — no paymaster or token conversion required.
               </AlertDescription>
             </Alert>
           )}
