@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Layers, TrendingUp, Gamepad2, Building2, CheckCircle2 } from "lucide-react";
 import type { PresetSummary } from "../../schemas/preset";
-import { getPresetUIMetadata, getEnabledModules } from "../../schemas/preset";
+import { getPresetUIMetadata, getEnabledModules, hasAASupport } from "../../schemas/preset";
 
 const PRESET_ICONS: Record<string, React.ReactNode> = {
   layers: <Layers className="h-5 w-5" />,
@@ -12,7 +12,7 @@ const PRESET_ICONS: Record<string, React.ReactNode> = {
   "building-2": <Building2 className="h-5 w-5" />,
 };
 
-const TOTAL_DOTS = 6;
+const TOTAL_DOTS = 7;
 
 interface PresetCardProps {
   preset: PresetSummary;
@@ -26,7 +26,7 @@ export function PresetCard({
   onClick,
 }: PresetCardProps) {
   const uiMeta = getPresetUIMetadata(preset.id);
-  const enabledCount = getEnabledModules(preset).length;
+  const enabledCount = getEnabledModules(preset).length + (hasAASupport(preset) ? 1 : 0);
 
   return (
     <div
