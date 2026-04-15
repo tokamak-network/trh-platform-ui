@@ -115,10 +115,13 @@ export function usePresetWizard() {
       resetState();
       router.push("/rollup");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to initiate deployment",
-        { id: "preset-deploy" }
-      );
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Failed to initiate deployment";
+      toast.error(message, { id: "preset-deploy" });
     }
   }, [form, selectedPresetId, overrides, setPendingDeploymentId, router]);
 
