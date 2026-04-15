@@ -75,13 +75,13 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
   const [desktopAccountsApplied, setDesktopAccountsApplied] = useState(false);
 
   const { field: seedPhraseField } = useController({
-    name: isPreset ? "presetBasicInfo.seedPhrase" : "accountAndAws.seedPhrase",
+    name: "accountAndAws.seedPhrase",
     control,
     defaultValue: Array(12).fill(""),
   });
 
   const { field: l1RpcUrlField } = useController({
-    name: isPreset ? "presetBasicInfo.l1RpcUrl" : "networkAndChain.l1RpcUrl",
+    name: "networkAndChain.l1RpcUrl",
     control,
     defaultValue: "https://rpc.sepolia.org",
   });
@@ -117,7 +117,7 @@ export function AccountSetup({ mode = "classic" }: AccountSetupProps) {
   });
 
   const { field: networkField } = useController({
-    name: isPreset ? "presetBasicInfo.network" : "networkAndChain.network",
+    name: "networkAndChain.network",
     control,
     defaultValue: "",
   });

@@ -35,10 +35,7 @@ function PresetWizardContent() {
     goToNextStep,
     goToPreviousStep,
     selectedPresetId,
-    presetDetail,
-    setOverrides,
     handleSelectPreset,
-    network,
     pendingDeploymentId,
   } = usePresetWizard();
 
@@ -59,20 +56,6 @@ function PresetWizardContent() {
           <FormProvider {...form}>
             <BasicInfoStep />
           </FormProvider>
-        );
-      case 3:
-        return (
-          <div className="space-y-6">
-            {presetDetail && (
-              <ConfigReview
-                preset={presetDetail}
-                network={network}
-                onOverridesChange={setOverrides}
-                feeToken={form.watch("presetBasicInfo.feeToken")}
-                infraProvider={form.watch("presetBasicInfo.infraProvider")}
-              />
-            )}
-          </div>
         );
       default:
         return null;
