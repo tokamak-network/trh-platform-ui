@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { Layers, FileText } from "lucide-react";
+import { Layers, FileText, CheckCircle } from "lucide-react";
 import { z } from "zod";
 import { useRollupCreationContext } from "../context/RollupCreationContext";
 import { usePresetDetailQuery } from "../api/queries";
 import { toast } from "react-hot-toast";
-import type { PresetSummary, PresetDetail } from "../schemas/preset";
+import type { PresetSummary, PresetDetail, PresetFieldOverride } from "../schemas/preset";
+import { getPresetUIMetadata } from "../schemas/preset";
 import { presetBasicInfoSchema } from "../schemas/create-rollup";
 
 export const PRESET_STEPS = [
@@ -21,9 +22,15 @@ export const PRESET_STEPS = [
   },
   {
     id: 2,
-    title: "Basic Info & Deploy",
+    title: "Basic Info",
     description: "Chain name, network and credentials",
     icon: FileText,
+  },
+  {
+    id: 3,
+    title: "Review & Deploy",
+    description: "Confirm configuration and deploy",
+    icon: CheckCircle,
   },
 ];
 
@@ -38,15 +45,21 @@ export function usePresetWizard() {
   const { state, updateCurrentStep, setSelectedPreset, setPendingDeploymentId, resetState } =
     useRollupCreationContext();
 
+  const [overrides, setOverrides] = useState<PresetFieldOverride[]>([]);
+
   const form = useForm<PresetWizardFormData>({
     resolver: zodResolver(presetWizardSchema),
     defaultValues: {
       presetBasicInfo: {
-        presetId: "",
         chainName: "",
         network: "Testnet",
+        l1RpcUrl: "",
+        l1BeaconUrl: "",
+        seedPhrase: Array(12).fill(""),
         awsAccessKey: "",
         awsSecretKey: "",
+        awsRegion: "",
+        feeToken: "TON" as const,
       },
     },
   });
@@ -59,7 +72,8 @@ export function usePresetWizard() {
     (preset: PresetSummary) => {
       // PresetSummary and PresetDetail are both aliases for PresetDefinition
       setSelectedPreset(preset as PresetDetail);
-      form.setValue("presetBasicInfo.presetId", preset.id, { shouldValidate: true });
+      const uiMeta = getPresetUIMetadata(preset.id);
+      form.setValue("presetBasicInfo.feeToken", uiMeta.defaultFeeToken, { shouldValidate: true });
     },
     [setSelectedPreset, form]
   );
@@ -78,11 +92,22 @@ export function usePresetWizard() {
 
       const { startPresetDeployment } = await import("../services/presetService");
       const result = await startPresetDeployment({
-        presetId: basicInfo.presetId,
+        presetId: selectedPresetId!,
         chainName: basicInfo.chainName,
         network: basicInfo.network,
-        awsAccessKey: basicInfo.awsAccessKey,
-        awsSecretKey: basicInfo.awsSecretKey,
+        infraProvider: basicInfo.infraProvider,
+        // Form stores seedPhrase as string[] (12 words) for per-word input UX,
+        // but deployWithPresetRequestSchema and the backend PresetDeployRequest expect
+        // a single space-joined string (e.g., "word1 word2 ... word12").
+        seedPhrase: basicInfo.seedPhrase.join(" "),
+        feeToken: basicInfo.feeToken,
+        awsAccessKey: basicInfo.awsAccessKey ?? "",
+        awsSecretKey: basicInfo.awsSecretKey ?? "",
+        awsRegion: basicInfo.awsRegion ?? "",
+        l1RpcUrl: basicInfo.l1RpcUrl,
+        l1BeaconUrl: basicInfo.l1BeaconUrl,
+        reuseDeployment: basicInfo.network === "Mainnet" ? (basicInfo.reuseDeployment ?? true) : undefined,
+        overrides: overrides.length > 0 ? overrides : undefined,
       });
 
       toast.success("Deployment initiated!", { id: "preset-deploy" });
@@ -95,7 +120,7 @@ export function usePresetWizard() {
         { id: "preset-deploy" }
       );
     }
-  }, [form, setPendingDeploymentId, resetState, router]);
+  }, [form, selectedPresetId, overrides, setPendingDeploymentId, router]);
 
   const goToNextStep = useCallback(async () => {
     if (state.currentStep === 1) {
@@ -110,6 +135,11 @@ export function usePresetWizard() {
     if (state.currentStep === 2) {
       const isValid = await form.trigger("presetBasicInfo");
       if (!isValid) return;
+      updateCurrentStep(3);
+      return;
+    }
+
+    if (state.currentStep === 3) {
       await handleDeploy();
     }
   }, [state.currentStep, selectedPresetId, form, updateCurrentStep, handleDeploy]);
@@ -132,8 +162,9 @@ export function usePresetWizard() {
     selectedPresetId,
     selectedPreset: state.selectedPreset,
     presetDetail: presetDetail ?? null,
+    overrides,
+    setOverrides,
     handleSelectPreset,
-    handleDeploy,
     goToNextStep,
     goToPreviousStep,
     onBack,

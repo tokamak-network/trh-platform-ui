@@ -138,13 +138,19 @@ export type PresetFieldOverride = z.infer<typeof presetFieldOverrideSchema>;
 // Mirrors pkg/api/dtos/thanos.go PresetDeployRequest struct
 
 export const deployWithPresetRequestSchema = z.object({
-  presetId: z.string().min(1),
+  presetId: z.string(),
   chainName: z.string().regex(/^[a-z0-9-]{3,32}$/, "Must be 3-32 lowercase alphanumeric characters or hyphens"),
   network: z.enum(["Testnet", "Mainnet"]),
-  awsAccessKey: z.string().min(1),
-  awsSecretKey: z.string().min(1),
-  awsRegion: z.string().optional(),
-  awsSessionToken: z.string().optional(),
+  seedPhrase: z.string().min(1),
+  infraProvider: z.enum(["aws", "local"]),
+  awsAccessKey: z.string().optional().default(""),
+  awsSecretKey: z.string().optional().default(""),
+  awsRegion: z.string().optional().default(""),
+  l1RpcUrl: z.string().url(),
+  l1BeaconUrl: z.string().url(),
+  feeToken: feeTokenSchema,
+  reuseDeployment: z.boolean().optional(),
+  overrides: z.array(presetFieldOverrideSchema).optional(),
 });
 export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;
 

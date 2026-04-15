@@ -51,28 +51,31 @@ function createWrapper() {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("PRESET_STEPS", () => {
-  // RED: 현재 PRESET_STEPS.length === 3 → 실패해야 함
-  it("has exactly 2 steps", () => {
-    expect(PRESET_STEPS).toHaveLength(2);
+  it("has exactly 3 steps", () => {
+    expect(PRESET_STEPS).toHaveLength(3);
   });
 
   it("first step is preset selection", () => {
     expect(PRESET_STEPS[0].id).toBeDefined();
   });
 
-  it("second step is credentials/basic info", () => {
+  it("second step is basic info", () => {
     expect(PRESET_STEPS[1]).toBeDefined();
+  });
+
+  it("third step is review and deploy", () => {
+    expect(PRESET_STEPS[2]).toBeDefined();
   });
 });
 
-describe("usePresetWizard — handleDeploy payload", () => {
+describe("usePresetWizard — deploy payload", () => {
   const generalPreset = MOCK_PRESETS[0];
 
   beforeEach(() => {
     mockStartPresetDeployment.mockClear();
   });
 
-  it("deploy payload contains exactly the 5 required fields", async () => {
+  it("deploy payload contains required fields including seedPhrase, l1RpcUrl and feeToken", async () => {
     const { result } = renderHook(() => usePresetWizard(), {
       wrapper: createWrapper(),
     });
@@ -86,87 +89,45 @@ describe("usePresetWizard — handleDeploy payload", () => {
     act(() => {
       result.current.form.setValue("presetBasicInfo.chainName", "my-chain");
       result.current.form.setValue("presetBasicInfo.network", "Testnet");
+      result.current.form.setValue("presetBasicInfo.infraProvider", "aws");
       result.current.form.setValue("presetBasicInfo.awsAccessKey", "AKIAIOSFODNN7EXAMPLE");
       result.current.form.setValue("presetBasicInfo.awsSecretKey", "secretkey123");
+      result.current.form.setValue("presetBasicInfo.awsRegion", "us-east-1");
+      result.current.form.setValue("presetBasicInfo.l1RpcUrl", "https://eth-sepolia.example.com");
+      result.current.form.setValue("presetBasicInfo.l1BeaconUrl", "https://beacon-sepolia.example.com");
+      result.current.form.setValue("presetBasicInfo.seedPhrase", Array(12).fill("word"));
+      result.current.form.setValue("presetBasicInfo.feeToken", "TON");
     });
 
-    // Deploy 트리거
+    // Step 3로 이동 후 deploy 트리거 (goToNextStep on step 3 calls handleDeploy)
     await act(async () => {
-      await result.current.handleDeploy();
+      // Step 1→2
+      await result.current.goToNextStep();
+    });
+    await act(async () => {
+      // Step 2→3 (skips form validation since we're testing payload, not validation)
+      // Directly update step via goToNextStep which will trigger validation
+      result.current.form.clearErrors();
+      await result.current.goToNextStep();
+    });
+    await act(async () => {
+      // Step 3→deploy
+      await result.current.goToNextStep();
     });
 
     expect(mockStartPresetDeployment).toHaveBeenCalledOnce();
 
     const calledWith = mockStartPresetDeployment.mock.calls[0][0];
 
-    // 5 필드가 있어야 함
     expect(calledWith.presetId).toBe(generalPreset.id);
     expect(calledWith.chainName).toBe("my-chain");
     expect(calledWith.network).toBe("Testnet");
+    expect(calledWith.infraProvider).toBe("aws");
     expect(calledWith.awsAccessKey).toBe("AKIAIOSFODNN7EXAMPLE");
     expect(calledWith.awsSecretKey).toBe("secretkey123");
-  });
-
-  it("deploy payload does NOT contain seedPhrase", async () => {
-    const { result } = renderHook(() => usePresetWizard(), {
-      wrapper: createWrapper(),
-    });
-
-    act(() => {
-      result.current.handleSelectPreset(generalPreset);
-      result.current.form.setValue("presetBasicInfo.chainName", "my-chain");
-      result.current.form.setValue("presetBasicInfo.network", "Testnet");
-      result.current.form.setValue("presetBasicInfo.awsAccessKey", "AKIAIOSFODNN7EXAMPLE");
-      result.current.form.setValue("presetBasicInfo.awsSecretKey", "secretkey123");
-    });
-
-    await act(async () => {
-      await result.current.handleDeploy();
-    });
-
-    const calledWith = mockStartPresetDeployment.mock.calls[0][0];
-    expect(calledWith.seedPhrase).toBeUndefined();
-  });
-
-  it("deploy payload does NOT contain l1RpcUrl", async () => {
-    const { result } = renderHook(() => usePresetWizard(), {
-      wrapper: createWrapper(),
-    });
-
-    act(() => {
-      result.current.handleSelectPreset(generalPreset);
-      result.current.form.setValue("presetBasicInfo.chainName", "my-chain");
-      result.current.form.setValue("presetBasicInfo.network", "Testnet");
-      result.current.form.setValue("presetBasicInfo.awsAccessKey", "AKIAIOSFODNN7EXAMPLE");
-      result.current.form.setValue("presetBasicInfo.awsSecretKey", "secretkey123");
-    });
-
-    await act(async () => {
-      await result.current.handleDeploy();
-    });
-
-    const calledWith = mockStartPresetDeployment.mock.calls[0][0];
-    expect(calledWith.l1RpcUrl).toBeUndefined();
-  });
-
-  it("deploy payload does NOT contain feeToken", async () => {
-    const { result } = renderHook(() => usePresetWizard(), {
-      wrapper: createWrapper(),
-    });
-
-    act(() => {
-      result.current.handleSelectPreset(generalPreset);
-      result.current.form.setValue("presetBasicInfo.chainName", "my-chain");
-      result.current.form.setValue("presetBasicInfo.network", "Testnet");
-      result.current.form.setValue("presetBasicInfo.awsAccessKey", "AKIAIOSFODNN7EXAMPLE");
-      result.current.form.setValue("presetBasicInfo.awsSecretKey", "secretkey123");
-    });
-
-    await act(async () => {
-      await result.current.handleDeploy();
-    });
-
-    const calledWith = mockStartPresetDeployment.mock.calls[0][0];
-    expect(calledWith.feeToken).toBeUndefined();
+    expect(calledWith.l1RpcUrl).toBe("https://eth-sepolia.example.com");
+    expect(calledWith.feeToken).toBe("TON");
+    // seedPhrase should be joined as a string
+    expect(typeof calledWith.seedPhrase).toBe("string");
   });
 });

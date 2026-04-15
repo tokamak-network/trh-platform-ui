@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, Rocket } from "lucide-react";
 import {
   PresetSelectionStep,
   BasicInfoStep,
+  ConfigReview,
 } from "@/features/rollup/components/preset";
 import { FormProvider } from "react-hook-form";
 
@@ -24,7 +25,10 @@ function PresetWizardContent() {
     goToNextStep,
     goToPreviousStep,
     selectedPresetId,
+    presetDetail,
+    setOverrides,
     handleSelectPreset,
+    network,
   } = usePresetWizard();
 
   const { resetState } = useRollupCreationContext();
@@ -50,6 +54,20 @@ function PresetWizardContent() {
           <FormProvider {...form}>
             <BasicInfoStep />
           </FormProvider>
+        );
+      case 3:
+        return (
+          <div className="space-y-6">
+            {presetDetail && (
+              <ConfigReview
+                preset={presetDetail}
+                network={network}
+                onOverridesChange={setOverrides}
+                feeToken={form.watch("presetBasicInfo.feeToken")}
+                infraProvider={form.watch("presetBasicInfo.infraProvider")}
+              />
+            )}
+          </div>
         );
       default:
         return null;
