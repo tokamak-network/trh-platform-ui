@@ -136,14 +136,14 @@ export function RollupItem({
   const canStop = stack.status === ThanosStackStatus.DEPLOYING;
   // const canStop = false;
 
-  // Disable destroy when stack is in-flight or mutation running
+  // Disable destroy when stack is in-flight or mutation running.
+  // PENDING is allowed: no infra exists yet, so the user can cancel a mistaken creation.
+  // TERMINATED is excluded: the button is hidden entirely (see render below).
   const isDestroyDisabled =
     [
       ThanosStackStatus.DEPLOYING,
       ThanosStackStatus.UPDATING,
       ThanosStackStatus.TERMINATING,
-      ThanosStackStatus.TERMINATED,
-      ThanosStackStatus.PENDING,
     ].includes(stack.status) || deleteRollupMutation.isPending;
 
   const handleClick = () => {
@@ -405,13 +405,15 @@ export function RollupItem({
                 </>
               )}
 
-              <>
+              {stack.status !== ThanosStackStatus.TERMINATED && (
+                <>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label="Destroy Rollup"
                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isDestroyDisabled}
                         onClick={handleDeleteClick}
@@ -482,6 +484,7 @@ export function RollupItem({
                   </AlertDialogContent>
                 </AlertDialog>
               </>
+              )}
             </div>
           )}
         </div>
