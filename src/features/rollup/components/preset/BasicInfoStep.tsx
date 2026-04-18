@@ -61,6 +61,12 @@ export function BasicInfoStep() {
     }
   }, [network, setValue]);
 
+  useEffect(() => {
+    if (infraProvider === "local" && network === "Mainnet") {
+      setValue("presetBasicInfo.network", "Testnet", { shouldValidate: true });
+    }
+  }, [infraProvider, network, setValue]);
+
   return (
     <div className="space-y-6">
       {/* Infrastructure Provider */}
@@ -155,22 +161,29 @@ export function BasicInfoStep() {
               </Label>
               <Select
                 value={network}
-                onValueChange={(val) =>
-                  setValue("presetBasicInfo.network", val as "Testnet" | "Mainnet", {
+                onValueChange={(val) => {
+                  const next = val as "Testnet" | "Mainnet";
+                  if (infraProvider === "local" && next === "Mainnet") return;
+                  setValue("presetBasicInfo.network", next, {
                     shouldValidate: true,
-                  })
-                }
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select network" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Testnet">Testnet (Sepolia)</SelectItem>
-                  <SelectItem value="Mainnet" disabled={infraProvider === "local"}>
-                    Mainnet (Ethereum){infraProvider === "local" ? " — not available for local" : ""}
-                  </SelectItem>
+                  {infraProvider !== "local" && (
+                    <SelectItem value="Mainnet">Mainnet (Ethereum)</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
+              {infraProvider === "local" && (
+                <p className="text-xs text-gray-500">
+                  Mainnet is not available for local deployments.
+                </p>
+              )}
               {errors.presetBasicInfo?.network && (
                 <p className="text-xs text-red-500">
                   {errors.presetBasicInfo.network.message}
