@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { RollupItem } from '../RollupItem';
 import { ThanosStack, ThanosStackStatus } from '../../schemas/thanos';
+import { RollupType } from '../../schemas/rollup';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -27,7 +28,7 @@ function makeStack(status: ThanosStackStatus): ThanosStack {
     status,
     config: {
       network: 'testnet',
-      type: 'optimistic-rollup' as any,
+      type: RollupType.OPTIMISTIC_ROLLUP,
       l1RpcUrl: '',
       awsRegion: '',
       chainName: 'Test Chain',
