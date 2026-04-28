@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Settings2, Info, Monitor, ShieldCheck } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
-import { hasFaultProofSupport } from "../../schemas/preset";
+import { hasAASupport, hasFaultProofSupport } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
@@ -95,8 +95,7 @@ export function ConfigReview({
   // AA predeploys (EntryPoint, MultiTokenPaymaster, SimplePriceOracle) are deployed for
   // Gaming and Full presets to support smart wallet (ERC-4337) functionality.
   // This is independent of the fee token selection.
-  const AA_PRESETS = ["gaming", "full"];
-  const isAAPreset = AA_PRESETS.includes(preset.id);
+  const isAAPreset = hasAASupport(preset);
   const isFaultProofPreset = hasFaultProofSupport(preset);
 
   const isNonTonFeeToken = feeToken != null && feeToken !== "TON";
