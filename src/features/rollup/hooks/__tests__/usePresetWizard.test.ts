@@ -131,3 +131,60 @@ describe("usePresetWizard — deploy payload", () => {
     expect(typeof calledWith.seedPhrase).toBe("string");
   });
 });
+
+// ─── enableFaultProof propagation ────────────────────────────────────────────
+
+async function deployWithPreset(presetIndex: number) {
+  const preset = MOCK_PRESETS[presetIndex];
+  const { result } = renderHook(() => usePresetWizard(), {
+    wrapper: createWrapper(),
+  });
+
+  act(() => { result.current.handleSelectPreset(preset); });
+  act(() => {
+    result.current.form.setValue("presetBasicInfo.chainName", "test-chain");
+    result.current.form.setValue("presetBasicInfo.network", "Testnet");
+    result.current.form.setValue("presetBasicInfo.infraProvider", "aws");
+    result.current.form.setValue("presetBasicInfo.awsAccessKey", "AKIAIOSFODNN7EXAMPLE");
+    result.current.form.setValue("presetBasicInfo.awsSecretKey", "secretkey123");
+    result.current.form.setValue("presetBasicInfo.awsRegion", "us-east-1");
+    result.current.form.setValue("presetBasicInfo.l1RpcUrl", "https://eth-sepolia.example.com");
+    result.current.form.setValue("presetBasicInfo.l1BeaconUrl", "https://beacon-sepolia.example.com");
+    result.current.form.setValue("presetBasicInfo.seedPhrase", Array(12).fill("word"));
+    result.current.form.setValue("presetBasicInfo.feeToken", "TON");
+  });
+
+  await act(async () => { await result.current.goToNextStep(); }); // step 1→2
+  await act(async () => {
+    result.current.form.clearErrors();
+    await result.current.goToNextStep(); // step 2→3
+  });
+  await act(async () => { await result.current.goToNextStep(); }); // step 3→deploy
+
+  return mockStartPresetDeployment.mock.calls[0]?.[0];
+}
+
+describe("usePresetWizard — enableFaultProof in deploy payload", () => {
+  beforeEach(() => { mockStartPresetDeployment.mockClear(); });
+
+  it("sends enableFaultProof: true when Full preset is selected", async () => {
+    const fullPresetIndex = MOCK_PRESETS.findIndex((p) => p.id === "full");
+    const payload = await deployWithPreset(fullPresetIndex);
+    expect(payload).toBeDefined();
+    expect(payload.enableFaultProof).toBe(true);
+  });
+
+  it("sends enableFaultProof: false when General preset is selected", async () => {
+    const generalPresetIndex = MOCK_PRESETS.findIndex((p) => p.id === "general");
+    const payload = await deployWithPreset(generalPresetIndex);
+    expect(payload).toBeDefined();
+    expect(payload.enableFaultProof).toBe(false);
+  });
+
+  it("sends enableFaultProof: false when Gaming preset is selected", async () => {
+    const gamingPresetIndex = MOCK_PRESETS.findIndex((p) => p.id === "gaming");
+    const payload = await deployWithPreset(gamingPresetIndex);
+    expect(payload).toBeDefined();
+    expect(payload.enableFaultProof).toBe(false);
+  });
+});
