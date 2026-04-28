@@ -10,7 +10,7 @@ import { useRollupCreationContext } from "../context/RollupCreationContext";
 import { usePresetDetailQuery } from "../api/queries";
 import { toast } from "react-hot-toast";
 import type { PresetSummary, PresetDetail, PresetFieldOverride } from "../schemas/preset";
-import { getPresetUIMetadata } from "../schemas/preset";
+import { getPresetUIMetadata, hasFaultProofSupport } from "../schemas/preset";
 import { presetBasicInfoSchema } from "../schemas/create-rollup";
 
 export const PRESET_STEPS = [
@@ -65,6 +65,7 @@ export function usePresetWizard() {
   });
 
   const selectedPresetId = state.selectedPreset?.id ?? null;
+  const enableFaultProof = state.selectedPreset ? hasFaultProofSupport(state.selectedPreset) : false;
 
   const { data: presetDetail } = usePresetDetailQuery(selectedPresetId ?? undefined);
 
@@ -108,6 +109,7 @@ export function usePresetWizard() {
         l1BeaconUrl: basicInfo.l1BeaconUrl,
         reuseDeployment: basicInfo.network === "Mainnet" ? (basicInfo.reuseDeployment ?? true) : undefined,
         overrides: overrides.length > 0 ? overrides : undefined,
+        enableFaultProof,
       });
 
       toast.success("Deployment initiated!", { id: "preset-deploy" });
@@ -123,7 +125,7 @@ export function usePresetWizard() {
             : "Failed to initiate deployment";
       toast.error(message, { id: "preset-deploy" });
     }
-  }, [form, selectedPresetId, overrides, setPendingDeploymentId, router]);
+  }, [form, selectedPresetId, enableFaultProof, overrides, setPendingDeploymentId, router]);
 
   const goToNextStep = useCallback(async () => {
     if (state.currentStep === 1) {

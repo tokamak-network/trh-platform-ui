@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info, Monitor } from "lucide-react";
+import { Settings2, Info, Monitor, ShieldCheck } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
+import { hasFaultProofSupport } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
@@ -96,6 +97,7 @@ export function ConfigReview({
   // This is independent of the fee token selection.
   const AA_PRESETS = ["gaming", "full"];
   const isAAPreset = AA_PRESETS.includes(preset.id);
+  const isFaultProofPreset = hasFaultProofSupport(preset);
 
   const isNonTonFeeToken = feeToken != null && feeToken !== "TON";
 
@@ -116,6 +118,23 @@ export function ConfigReview({
         </Card>
       )}
 
+
+      {/* Fault Proof notice — Full preset only */}
+      {isFaultProofPreset && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-orange-700 text-sm">
+              <ShieldCheck className="h-4 w-4" />
+              Fault Proof Enabled
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm text-orange-700">
+              This preset deploys <strong>DisputeGameFactory</strong> and activates <strong>op-challenger</strong> for on-chain dispute resolution. Fault proof requires additional S3 prestate storage and increases deployment time by ~10 minutes.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Non-TON native fee token notice — General/DeFi presets with non-TON token */}
       {!isAAPreset && isNonTonFeeToken && (

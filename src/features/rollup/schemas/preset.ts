@@ -56,6 +56,7 @@ export interface PresetUIMetadata {
   accentBg: string;      // bg Tailwind class (subtle)
   dotColor: string;      // Tailwind bg class for dot indicators
   aaEnabled: boolean;    // whether Smart Account section shows
+  faultProofEnabled: boolean; // whether Fault Proof infrastructure is deployed
 }
 
 const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
@@ -70,6 +71,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-blue-50",
     dotColor: "bg-blue-500",
     aaEnabled: false,
+    faultProofEnabled: false,
   },
   defi: {
     key: "defi",
@@ -82,6 +84,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-green-50",
     dotColor: "bg-green-600",
     aaEnabled: false,
+    faultProofEnabled: false,
   },
   gaming: {
     key: "gaming",
@@ -94,6 +97,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-purple-50",
     dotColor: "bg-purple-600",
     aaEnabled: true,
+    faultProofEnabled: false,
   },
   full: {
     key: "full",
@@ -106,6 +110,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-orange-50",
     dotColor: "bg-orange-500",
     aaEnabled: true,
+    faultProofEnabled: true,
   },
 };
 
@@ -120,6 +125,7 @@ const DEFAULT_UI_METADATA: PresetUIMetadata = {
   accentBg: "bg-gray-50",
   dotColor: "bg-gray-400",
   aaEnabled: false,
+  faultProofEnabled: false,
 };
 
 export function getPresetUIMetadata(id: string): PresetUIMetadata {
@@ -151,6 +157,7 @@ export const deployWithPresetRequestSchema = z.object({
   feeToken: feeTokenSchema,
   reuseDeployment: z.boolean().optional(),
   overrides: z.array(presetFieldOverrideSchema).optional(),
+  enableFaultProof: z.boolean().optional(),
 });
 export type DeployWithPresetRequest = z.infer<typeof deployWithPresetRequestSchema>;
 
@@ -265,6 +272,11 @@ export const AA_SERVICE_METADATA = {
 // Returns true if the preset's UI metadata declares AA support
 export function hasAASupport(preset: PresetSummary): boolean {
   return getPresetUIMetadata(preset.id).aaEnabled;
+}
+
+// Returns true if the preset deploys Fault Proof infrastructure (DisputeGameFactory, op-challenger)
+export function hasFaultProofSupport(preset: PresetSummary): boolean {
+  return getPresetUIMetadata(preset.id).faultProofEnabled;
 }
 
 // Returns ordered list of enabled module keys
