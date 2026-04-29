@@ -174,17 +174,17 @@ describe("usePresetWizard — enableFaultProof in deploy payload", () => {
     expect(payload.enableFaultProof).toBe(true);
   });
 
-  it("sends enableFaultProof: false when General preset is selected", async () => {
+  it("sends enableFaultProof: true when General preset is selected", async () => {
     const generalPresetIndex = MOCK_PRESETS.findIndex((p) => p.id === "general");
     const payload = await deployWithPreset(generalPresetIndex);
     expect(payload).toBeDefined();
-    expect(payload.enableFaultProof).toBe(false);
+    expect(payload.enableFaultProof).toBe(true);
   });
 
-  it("sends enableFaultProof: false when Gaming preset is selected", async () => {
+  it("sends enableFaultProof: true when Gaming preset is selected", async () => {
     const gamingPresetIndex = MOCK_PRESETS.findIndex((p) => p.id === "gaming");
     const payload = await deployWithPreset(gamingPresetIndex);
     expect(payload).toBeDefined();
-    expect(payload.enableFaultProof).toBe(false);
+    expect(payload.enableFaultProof).toBe(true);
   });
 });

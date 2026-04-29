@@ -114,16 +114,16 @@ describe("hasFaultProofSupport", () => {
     expect(hasFaultProofSupport(byId("full"))).toBe(true);
   });
 
-  it("returns false for general preset", () => {
-    expect(hasFaultProofSupport(byId("general"))).toBe(false);
+  it("returns true for general preset", () => {
+    expect(hasFaultProofSupport(byId("general"))).toBe(true);
   });
 
-  it("returns false for defi preset", () => {
-    expect(hasFaultProofSupport(byId("defi"))).toBe(false);
+  it("returns true for defi preset", () => {
+    expect(hasFaultProofSupport(byId("defi"))).toBe(true);
   });
 
-  it("returns false for gaming preset", () => {
-    expect(hasFaultProofSupport(byId("gaming"))).toBe(false);
+  it("returns true for gaming preset", () => {
+    expect(hasFaultProofSupport(byId("gaming"))).toBe(true);
   });
 
   it("returns false for unknown preset id (default fallback)", () => {

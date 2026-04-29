@@ -71,7 +71,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-blue-50",
     dotColor: "bg-blue-500",
     aaEnabled: false,
-    faultProofEnabled: false,
+    faultProofEnabled: true,
   },
   defi: {
     key: "defi",
@@ -84,7 +84,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-green-50",
     dotColor: "bg-green-600",
     aaEnabled: false,
-    faultProofEnabled: false,
+    faultProofEnabled: true,
   },
   gaming: {
     key: "gaming",
@@ -97,7 +97,7 @@ const PRESET_UI_METADATA: Record<string, PresetUIMetadata> = {
     accentBg: "bg-purple-50",
     dotColor: "bg-purple-600",
     aaEnabled: true,
-    faultProofEnabled: false,
+    faultProofEnabled: true,
   },
   full: {
     key: "full",
