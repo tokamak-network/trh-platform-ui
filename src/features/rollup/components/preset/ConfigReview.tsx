@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info, Monitor, ShieldCheck } from "lucide-react";
+import { Settings2, Info, Monitor } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
-import { hasAASupport, hasFaultProofSupport } from "../../schemas/preset";
+import { hasAASupport } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
@@ -96,7 +96,6 @@ export function ConfigReview({
   // Gaming and Full presets to support smart wallet (ERC-4337) functionality.
   // This is independent of the fee token selection.
   const isAAPreset = hasAASupport(preset);
-  const isFaultProofPreset = hasFaultProofSupport(preset);
 
   const isNonTonFeeToken = feeToken != null && feeToken !== "TON";
 
@@ -114,24 +113,6 @@ export function ConfigReview({
               L2 nodes will run on your machine via Docker Compose. L1 contracts deploy to Sepolia.
             </p>
           </CardHeader>
-        </Card>
-      )}
-
-
-      {/* Fault Proof notice — Full preset only */}
-      {isFaultProofPreset && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-orange-700 text-sm">
-              <ShieldCheck className="h-4 w-4" />
-              Fault Proof Enabled
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-sm text-orange-700">
-              This preset deploys <strong>DisputeGameFactory</strong> and activates <strong>op-challenger</strong> for on-chain dispute resolution. Fault proof requires additional S3 prestate storage and increases deployment time by ~10 minutes.
-            </p>
-          </CardContent>
         </Card>
       )}
 
