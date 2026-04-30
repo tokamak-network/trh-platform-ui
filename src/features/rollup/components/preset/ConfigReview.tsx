@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Settings2, Info, Monitor } from "lucide-react";
+import { Settings2, Info, Monitor, Zap } from "lucide-react";
 import type { PresetDetail, PresetFieldOverride } from "../../schemas/preset";
-import { hasAASupport } from "../../schemas/preset";
 
 interface ConfigReviewProps {
   preset: PresetDetail;
@@ -92,11 +91,6 @@ export function ConfigReview({
   const isMainnet = network === "Mainnet";
   const MAINNET_CHALLENGE_PERIOD = 6048000;
 
-  // AA predeploys (EntryPoint, MultiTokenPaymaster, SimplePriceOracle) are deployed for
-  // Gaming and Full presets to support smart wallet (ERC-4337) functionality.
-  // This is independent of the fee token selection.
-  const isAAPreset = hasAASupport(preset);
-
   const isNonTonFeeToken = feeToken != null && feeToken !== "TON";
 
   return (
@@ -116,21 +110,14 @@ export function ConfigReview({
         </Card>
       )}
 
-      {/* Non-TON native fee token notice — General/DeFi presets with non-TON token */}
-      {!isAAPreset && isNonTonFeeToken && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-amber-700 text-sm">
-              <Info className="h-4 w-4" />
-              {feeToken} as Native L2 Gas Token
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-sm text-amber-700">
-              <strong>{feeToken}</strong>{" "}will be set as the native L2 gas token at genesis. All users pay transaction fees directly in <strong>{feeToken}</strong> — no paymaster or token conversion is required.
-            </p>
-          </CardContent>
-        </Card>
+      {/* AA paymaster notice — any preset with non-TON fee token */}
+      {isNonTonFeeToken && (
+        <Alert className="border-purple-200 bg-purple-50">
+          <Zap className="h-4 w-4 text-purple-600" />
+          <AlertDescription className="text-sm text-purple-700">
+            <p><strong>Account Abstraction Enabled</strong> — Using a non-TON fee token enables Account Abstraction. TON will be pre-deposited to fund the EntryPoint on your behalf. Your admin account must maintain a <strong>minimum TON balance</strong> to cover this deposit.</p>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Preset summary */}
