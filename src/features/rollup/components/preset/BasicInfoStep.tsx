@@ -49,9 +49,7 @@ export function BasicInfoStep() {
   const { state: rollupState } = useRollupCreationContext();
   const selectedPresetId = rollupState.selectedPreset?.id ?? null;
 
-  const isAAPreset = selectedPresetId ? ["gaming", "full"].includes(selectedPresetId) : false;
-  const showAANotice = isAAPreset && !!feeToken && feeToken !== "TON";
-  const showNativeGasNotice = !isAAPreset && !!feeToken && feeToken !== "TON";
+  const showAANotice = !!feeToken && feeToken !== "TON";
 
   const TESTNET_DEFAULT_BEACON_URL = "https://ethereum-sepolia-beacon-api.publicnode.com";
 
@@ -226,14 +224,6 @@ export function BasicInfoStep() {
               <Zap className="h-4 w-4 text-purple-600" />
               <AlertDescription className="text-sm text-purple-700">
                 <p><strong>Account Abstraction Enabled</strong> — Using a non-TON fee token enables Account Abstraction. TON will be pre-deposited to fund the EntryPoint on your behalf. Your admin account must maintain a <strong>minimum TON balance</strong> to cover this deposit.</p>
-              </AlertDescription>
-            </Alert>
-          )}
-          {showNativeGasNotice && (
-            <Alert className="border-amber-200 bg-amber-50">
-              <Info className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-sm text-amber-700">
-                <p><strong>{feeToken}</strong> will be set as the native L2 gas token at genesis. All users pay transaction fees directly in <strong>{feeToken}</strong> — no paymaster or token conversion required.</p>
               </AlertDescription>
             </Alert>
           )}

@@ -32,7 +32,6 @@ export function RollupDetailTabs({
 
   const effectivePreset = stack?.config.presetId ?? stack?.config.preset ?? "";
   const isAAChainData =
-    ["gaming", "full"].includes(effectivePreset) &&
     !!stack?.config.feeToken &&
     stack.config.feeToken !== "TON";
 
