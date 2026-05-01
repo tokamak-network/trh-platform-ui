@@ -131,6 +131,7 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     "uninstall-block-explorer": "Uninstall Block Explorer",
     "install-monitoring": "Install Monitoring Dashboard",
     "uninstall-monitoring": "Uninstall Monitoring Dashboard",
+    "install-drb": "Install DRB Nodes",
     "register-candidate": "Staking/DAO Candidate Registration",
   };
 
