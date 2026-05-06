@@ -5,6 +5,7 @@ import {
   installBridgeIntegration,
   installUptimeIntegration,
   installBlockExplorerIntegration,
+  updateBlockExplorerIntegration,
   installMonitoringIntegration,
   registerDaoCandidateIntegration,
   uninstallMonitoringIntegration,
@@ -138,6 +139,37 @@ export const useInstallBlockExplorerMutation = createMutationHook<
   invalidateQueries: (variables) => {
     queryClient.invalidateQueries({
       queryKey: integrationKeys.list(variables.stackId),
+    });
+  },
+});
+
+export interface UpdateBlockExplorerVariables {
+  stackId: string;
+  coinmarketcapKey: string;
+  coinmarketcapTokenId: string;
+  walletConnectId: string;
+}
+
+export const useUpdateBlockExplorerMutation = createMutationHook<
+  void,
+  UpdateBlockExplorerVariables
+>({
+  mutationFn: (variables) =>
+    updateBlockExplorerIntegration(variables.stackId, {
+      coinmarketcapKey: variables.coinmarketcapKey,
+      coinmarketcapTokenId: variables.coinmarketcapTokenId,
+      walletConnectId: variables.walletConnectId,
+    }),
+  toastId: "update-block-explorer",
+  loadingMessage: "Updating Block Explorer...",
+  successMessage: "Block Explorer update initiated",
+  errorMessage: "Failed to update Block Explorer",
+  invalidateQueries: (variables) => {
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.list(variables.stackId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: integrationKeys.blockExplorerConfig(variables.stackId),
     });
   },
 });

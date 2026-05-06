@@ -49,6 +49,35 @@ export const installBlockExplorerIntegration = async (
   await apiPost(`stacks/thanos/${stackId}/integrations/block-explorer`, body);
 };
 
+export interface BlockExplorerConfig {
+  coinmarketcapKey: string;
+  coinmarketcapTokenId: string;
+  walletConnectId: string;
+  url?: string;
+}
+
+export const getBlockExplorerConfig = async (
+  stackId: string
+): Promise<BlockExplorerConfig> => {
+  const response = await apiGet<BlockExplorerConfig>(
+    `stacks/thanos/${stackId}/integrations/block-explorer/config`
+  );
+  return response.data;
+};
+
+export interface UpdateBlockExplorerRequestBody {
+  coinmarketcapKey: string;
+  coinmarketcapTokenId: string;
+  walletConnectId: string;
+}
+
+export const updateBlockExplorerIntegration = async (
+  stackId: string,
+  body: UpdateBlockExplorerRequestBody
+): Promise<void> => {
+  await apiPut(`stacks/thanos/${stackId}/integrations/block-explorer`, body);
+};
+
 export interface InstallMonitoringRequestBody {
   grafanaPassword: string;
   loggingEnabled: boolean;

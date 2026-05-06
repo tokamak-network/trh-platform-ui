@@ -160,7 +160,7 @@ export function IntegrationCard({ integration, stackId }: IntegrationCardProps) 
       case "system-pulse":
         return <UptimeCard {...commonProps} />;
       case "block-explorer":
-        return <BlockExplorerCard {...commonProps} />;
+        return <BlockExplorerCard {...commonProps} stackId={stackId} />;
       case "monitoring":
         return <MonitoringCard {...commonProps} stackId={stackId} />;
       case "register-candidate":
