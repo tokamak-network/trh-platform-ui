@@ -44,7 +44,7 @@ export function BasicInfoStep() {
 
   const network = watch("presetBasicInfo.network");
   const feeToken = watch("presetBasicInfo.feeToken");
-  const infraProvider = watch("presetBasicInfo.infraProvider") ?? "aws";
+  const infraProvider = watch("presetBasicInfo.infraProvider");
 
   const { state: rollupState } = useRollupCreationContext();
   const selectedPresetId = rollupState.selectedPreset?.id ?? null;
@@ -77,6 +77,11 @@ export function BasicInfoStep() {
           <p className="text-sm text-gray-500">
             Choose where your L2 nodes will run. Local Docker runs on your machine; AWS deploys to the cloud.
           </p>
+          {!infraProvider && (
+            <p className="text-xs text-amber-600 mt-1">
+              Please choose one to continue.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
