@@ -9,6 +9,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { formatDate } from "../../../utils/dateUtils";
 import { downloadThanosRollupConfig } from "../../../services/rollupService";
 import { useRegisterMetadataDAOQuery } from "../../../api/queries";
+import { DeploymentProgressCard } from "../DeploymentProgressCard";
 import toast from "react-hot-toast";
 
 export function OverviewTab({ stack }: RollupDetailTabProps) {
@@ -57,6 +58,7 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
 
   return (
     <TabsContent value="overview" className="space-y-6">
+      <DeploymentProgressCard stackId={stack.id} />
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 to-blue-100">
           <CardHeader>

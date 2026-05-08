@@ -27,28 +27,13 @@ import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { LogDialog } from "../LogDialog";
 import { downloadThanosDeploymentLogs } from "@/features/rollup/services/rollupService";
+import { formatDuration } from "@/features/rollup/utils/durationUtils";
 import toast from "react-hot-toast";
 
 const formatDateTime = (iso?: string) => {
   if (!iso) return "-";
   const d = new Date(iso);
   return d.toLocaleString();
-};
-
-const formatDuration = (start?: string, end?: string, now: number = Date.now()) => {
-  if (!start) return "-";
-  const startMs = new Date(start).getTime();
-  const endMs = end ? new Date(end).getTime() : now;
-  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs)
-    return "-";
-  const totalSeconds = Math.floor((endMs - startMs) / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours > 0) return `${hours}h ${mins}m`;
-  if (minutes > 0) return `${minutes}m ${seconds}s`;
-  return `${seconds}s`;
 };
 
 const StatusBadge = ({ status }: { status: ThanosDeployment["status"] }) => {
