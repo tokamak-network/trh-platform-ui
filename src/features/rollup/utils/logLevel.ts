@@ -6,7 +6,8 @@ export function classifyLogLevel(message: string): LogLevel {
   // Try JSON format first (Go structured logs)
   try {
     const parsed = JSON.parse(message);
-    const lvl = ((parsed.level ?? parsed.lvl) as string | undefined)?.toLowerCase() ?? '';
+    const levelValue = parsed.level ?? parsed.lvl;
+    const lvl = typeof levelValue === 'string' ? levelValue.toLowerCase() : '';
     if (lvl === 'error' || lvl === 'err' || lvl === 'fatal' || lvl === 'panic') return 'error';
     if (lvl === 'warn' || lvl === 'warning') return 'warn';
     if (lvl === 'info' || lvl === 'debug') return 'info';

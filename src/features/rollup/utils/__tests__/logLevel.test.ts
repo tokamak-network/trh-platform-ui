@@ -30,6 +30,10 @@ describe('classifyLogLevel', () => {
     it('returns info for level:debug (treated as info in UI)', () => {
       expect(classifyLogLevel(JSON.stringify({ level: 'debug', msg: 'trace' }))).toBe('info');
     });
+
+    it('handles non-string level gracefully (falls back to default)', () => {
+      expect(classifyLogLevel(JSON.stringify({ level: 123 }))).toBe('default');
+    });
   });
 
   describe('plain text format', () => {
