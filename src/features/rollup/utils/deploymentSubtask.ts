@@ -4,6 +4,11 @@ export interface SubtaskMatch {
   label: string;
 }
 
+export interface StepProgress {
+  current: number;
+  total: number;
+}
+
 const ANSI_RE = /\x1b\[[0-9;]*[A-Za-z]/g;
 
 function stripAndParse(message: string): string {
@@ -95,6 +100,22 @@ export function extractCurrentSubtask(logs: ThanosDeploymentLog[]): SubtaskMatch
       if (m) {
         return { label: truncate(format(m)) };
       }
+    }
+  }
+  return null;
+}
+
+const STEP_PROGRESS_RE = /\bstep\s+(\d+)\s*\/\s*(\d+)/i;
+
+// logs must be in ASC order (oldest first, newest last)
+export function extractStepProgress(logs: ThanosDeploymentLog[]): StepProgress | null {
+  for (let i = logs.length - 1; i >= 0; i--) {
+    const text = stripAndParse(logs[i].message);
+    const m = text.match(STEP_PROGRESS_RE);
+    if (m) {
+      const current = parseInt(m[1], 10);
+      const total = parseInt(m[2], 10);
+      if (total > 0) return { current, total };
     }
   }
   return null;

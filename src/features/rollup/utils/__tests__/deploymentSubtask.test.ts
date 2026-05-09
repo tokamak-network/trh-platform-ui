@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractCurrentSubtask } from '../deploymentSubtask';
+import { extractCurrentSubtask, extractStepProgress } from '../deploymentSubtask';
 import { ThanosDeploymentLog } from '@/features/rollup/schemas/thanos-deployments';
 
 function makeLogs(messages: string[]): ThanosDeploymentLog[] {
@@ -153,5 +153,51 @@ describe('extractCurrentSubtask', () => {
     const result = extractCurrentSubtask(makeLogs([longMsg]));
     expect(result!.label.length).toBe(80);
     expect(result!.label.endsWith('…')).toBe(true);
+  });
+});
+
+describe('extractStepProgress', () => {
+  it('returns null for empty logs', () => {
+    expect(extractStepProgress([])).toBeNull();
+  });
+
+  it('returns null when no step pattern present', () => {
+    expect(extractStepProgress(makeLogs(['random line', 'another line']))).toBeNull();
+  });
+
+  it('parses "[deployer] Step X/Y:" format', () => {
+    const result = extractStepProgress(
+      makeLogs(['[deployer] Step 12/51: Deploying L2OutputOracle'])
+    );
+    expect(result).toEqual({ current: 12, total: 51 });
+  });
+
+  it('parses "step X/Y complete" format (trh-sdk)', () => {
+    const result = extractStepProgress(makeLogs(['step 3/12 complete']));
+    expect(result).toEqual({ current: 3, total: 12 });
+  });
+
+  it('returns the latest (newest) step count by scanning from end', () => {
+    const result = extractStepProgress(
+      makeLogs([
+        '[deployer] Step 1/26: Deploying SystemConfig',
+        '[deployer] Step 2/26: Deploying L1CrossDomainMessenger',
+      ])
+    );
+    expect(result).toEqual({ current: 2, total: 26 });
+  });
+
+  it('parses JSON log messages', () => {
+    const jsonMsg = JSON.stringify({ level: 'info', msg: 'step 13/51 complete' });
+    const result = extractStepProgress(makeLogs([jsonMsg]));
+    expect(result).toEqual({ current: 13, total: 51 });
+  });
+
+  it('returns null when total is 0 (guards against divide-by-zero)', () => {
+    expect(extractStepProgress(makeLogs(['step 0/0']))).toBeNull();
+  });
+
+  it('is case-insensitive', () => {
+    expect(extractStepProgress(makeLogs(['STEP 5/10 done']))).toEqual({ current: 5, total: 10 });
   });
 });
