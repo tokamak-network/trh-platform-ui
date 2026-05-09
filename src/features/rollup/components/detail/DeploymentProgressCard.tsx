@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { formatDuration } from "@/features/rollup/utils/durationUtils";
-import { ActiveStepPill } from "@/features/rollup/components/detail/ActiveStepPill";
+import { ActiveStepProgress } from "@/features/rollup/components/detail/ActiveStepProgress";
 
 interface DeploymentProgressCardProps {
   stackId?: string;
@@ -48,9 +48,9 @@ export function DeploymentProgressCard({ stackId }: DeploymentProgressCardProps)
             <div className="text-4xl font-semibold tabular-nums text-slate-900 mb-3">
               {wallClock}
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-4 mt-1">
               {activeRows.map((d) => (
-                <ActiveStepPill key={d.id} deployment={d} />
+                <ActiveStepProgress key={d.id} deployment={d} stackId={stackId ?? ''} />
               ))}
             </div>
           </div>
