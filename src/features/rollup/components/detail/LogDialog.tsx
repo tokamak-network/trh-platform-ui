@@ -109,6 +109,7 @@ export function LogDialog({
   const leveledLogs = React.useMemo(
     () =>
       logs.map((log) => ({
+        id: log.id,
         ...parseMessageText(log),
         level: classifyLogLevel(log.message),
       })),
@@ -292,14 +293,14 @@ export function LogDialog({
                 className="rounded-md border bg-slate-950 flex-1 min-h-0 overflow-y-auto"
               >
                 <div className="p-3 space-y-0.5">
-                  {filteredLogs.map((log, i) => {
+                  {filteredLogs.map((log) => {
                     const dt = new Date(log.timestamp);
                     const ts = isNaN(dt.getTime())
                       ? log.timestamp
                       : dt.toLocaleTimeString();
                     return (
                       <div
-                        key={i}
+                        key={log.id}
                         data-level={log.level}
                         className={cn(
                           'text-xs font-mono whitespace-pre-wrap break-words leading-relaxed',
