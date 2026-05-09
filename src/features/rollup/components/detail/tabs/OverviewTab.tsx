@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, CheckCircle, Download, Link, Network, Zap } from "lucide-react";
+import { Copy, CheckCircle, Download, Network, Zap } from "lucide-react";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { TabsContent } from "@/components/ui/tabs";
 import { formatDate } from "../../../utils/dateUtils";
 import { downloadThanosRollupConfig } from "../../../services/rollupService";
 import { useRegisterMetadataDAOQuery } from "../../../api/queries";
 import { DeploymentProgressCard } from "../DeploymentProgressCard";
+import { QuickLinks } from "../QuickLinks";
 import toast from "react-hot-toast";
 
 export function OverviewTab({ stack }: RollupDetailTabProps) {
@@ -37,9 +38,6 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
     l2ChainId: stack.metadata?.l2ChainId?.toString() || "Not available",
     rpcUrl: stack.metadata?.l2RpcUrl || "Not available",
     created: formatDate(stack.created_at),
-    explorerUrl: stack.metadata?.explorerUrl || "#",
-    bridgeUrl: stack.metadata?.bridgeUrl || "#",
-    grafanaUrl: stack.metadata?.grafanaUrl || "#",
     layer1: stack.metadata?.layer1 || "Not available",
     layer2: stack.metadata?.layer2 || "Not available",
     metadataPrUrl: metadataData?.info?.pr_link || "#",
@@ -119,70 +117,7 @@ export function OverviewTab({ stack }: RollupDetailTabProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {(() => {
-              const links = [
-                { key: "explorer", label: "Block Explorer", icon: "🔭", url: rollup.explorerUrl },
-                { key: "bridge",   label: "Token Bridge",   icon: "🌉", url: rollup.bridgeUrl },
-                { key: "grafana",  label: "Grafana Dashboard", icon: "📊", url: rollup.grafanaUrl },
-                { key: "pr",       label: "Metadata PR",    icon: "🔀", url: rollup.metadataPrUrl },
-              ].filter((l) => l.url !== "#");
-
-              if (links.length === 0) {
-                return <p className="text-center py-4 text-sm text-slate-500">No external links available for this rollup</p>;
-              }
-
-              return (
-                <div className="grid grid-cols-2 gap-3">
-                  {links.map((link) => (
-                    <div
-                      key={link.key}
-                      className="group relative rounded-xl border border-white/80 bg-white/60 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-                    >
-                      {/* Card face */}
-                      <div className="text-2xl mb-2">{link.icon}</div>
-                      <p className="text-xs font-bold text-slate-700 leading-tight">{link.label}</p>
-
-                      {/* Hover overlay — full URL + actions */}
-                      <div className="absolute inset-0 rounded-xl bg-white/98 border border-cyan-200 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex flex-col justify-between p-3 shadow-lg">
-                        <div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{link.label}</p>
-                          <p className="text-[11px] font-mono text-slate-700 break-all leading-relaxed">{link.url}</p>
-                        </div>
-                        <div className="flex gap-1.5 mt-2">
-                          <button
-                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(link.url);
-                              setCopiedItem(link.key);
-                              setTimeout(() => setCopiedItem(null), 2000);
-                            }}
-                          >
-                            {copiedItem === link.key ? (
-                              <CheckCircle className="w-3 h-3 text-green-500" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                            {copiedItem === link.key ? "Copied!" : "Copy"}
-                          </button>
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold text-white transition-colors"
-                            style={{ background: "linear-gradient(135deg,#06b6d4,#0891b2)" }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Link className="w-3 h-3" />
-                            Open
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
+            <QuickLinks stack={stack} metadataPrUrl={rollup.metadataPrUrl} />
 
             <Button
               variant="outline"

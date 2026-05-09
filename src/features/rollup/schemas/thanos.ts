@@ -16,6 +16,11 @@ export interface ThanosStackMetadata {
   grafanaUrl?: string;
   explorerUrl?: string;
   rollupConfigUrl?: string;
+  monitoringUrl?: string;
+  crossTradeUrl?: string;
+  uptimeServiceUrl?: string;
+  l2L1CrossTradeUrl?: string;
+  l2L2CrossTradeUrl?: string;
 }
 
 export interface ApiResponse {
