@@ -5,31 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
-import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { formatDuration } from "@/features/rollup/utils/durationUtils";
-
-const STEP_SHORT_NAMES: Record<string, string> = {
-  "deploy-l1-contracts": "L1 Contracts",
-  "deploy-aws-infra": "Infrastructure",
-  "destroy-aws-infra": "Destroy Infrastructure",
-  "install-bridge": "Bridge",
-  "uninstall-bridge": "Bridge",
-  "install-block-explorer": "Block Explorer",
-  "uninstall-block-explorer": "Block Explorer",
-  "install-monitoring": "Monitoring",
-  "uninstall-monitoring": "Monitoring",
-  "install-drb": "DRB Nodes",
-  "register-candidate": "DAO Registration",
-};
-
-const getStepShortName = (d: ThanosDeployment): string => {
-  if (d.step === "deploy-aws-infra" && d.config) {
-    const provider = d.config.infraProvider as string | undefined;
-    if (provider === "local") return "Local Infrastructure";
-    if (provider === "aws") return "AWS Infrastructure";
-  }
-  return STEP_SHORT_NAMES[d.step] ?? d.step.replace(/-/g, " ");
-};
+import { ActiveStepPill } from "@/features/rollup/components/detail/ActiveStepPill";
 
 interface DeploymentProgressCardProps {
   stackId?: string;
@@ -71,15 +48,9 @@ export function DeploymentProgressCard({ stackId }: DeploymentProgressCardProps)
             <div className="text-4xl font-semibold tabular-nums text-slate-900 mb-3">
               {wallClock}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {activeRows.map((d) => (
-                <span
-                  key={d.id}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  {getStepShortName(d)}
-                </span>
+                <ActiveStepPill key={d.id} deployment={d} />
               ))}
             </div>
           </div>
