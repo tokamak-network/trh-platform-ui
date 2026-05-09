@@ -33,6 +33,11 @@ vi.mock("../../services/presetService", () => ({
   getPresetDetail: vi.fn(),
 }));
 
+const mockInvalidateThanosStacks = vi.fn();
+vi.mock("../useThanosStack", () => ({
+  invalidateThanosStacks: () => mockInvalidateThanosStacks(),
+}));
+
 // ─── Test wrapper ─────────────────────────────────────────────────────────────
 
 function createWrapper() {
@@ -186,5 +191,19 @@ describe("usePresetWizard — enableFaultProof in deploy payload", () => {
     const payload = await deployWithPreset(gamingPresetIndex);
     expect(payload).toBeDefined();
     expect(payload.enableFaultProof).toBe(true);
+  });
+});
+
+// ─── cache invalidation ───────────────────────────────────────────────────────
+
+describe("usePresetWizard — cache invalidation on deploy", () => {
+  beforeEach(() => {
+    mockStartPresetDeployment.mockClear();
+    mockInvalidateThanosStacks.mockClear();
+  });
+
+  it("invalidates thanosStacks cache before navigating to /rollup", async () => {
+    await deployWithPreset(0);
+    expect(mockInvalidateThanosStacks).toHaveBeenCalledOnce();
   });
 });

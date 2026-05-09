@@ -8,6 +8,7 @@ import { Layers, FileText, CheckCircle } from "lucide-react";
 import { z } from "zod";
 import { useRollupCreationContext } from "../context/RollupCreationContext";
 import { usePresetDetailQuery } from "../api/queries";
+import { invalidateThanosStacks } from "./useThanosStack";
 import { toast } from "react-hot-toast";
 import type { PresetSummary, PresetDetail, PresetFieldOverride } from "../schemas/preset";
 import { getPresetUIMetadata, hasFaultProofSupport } from "../schemas/preset";
@@ -114,6 +115,7 @@ export function usePresetWizard() {
 
       toast.success("Deployment initiated!", { id: "preset-deploy" });
       setPendingDeploymentId(result.deploymentId);
+      invalidateThanosStacks();
       resetState();
       router.push("/rollup");
     } catch (error) {
