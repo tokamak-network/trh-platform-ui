@@ -16,7 +16,7 @@ export function classifyLogLevel(message: string): LogLevel {
   }
 
   const text = message.replace(ANSI_RE, '').toLowerCase();
-  if (/\b(error|err|failed|panic|fatal)\b/.test(text)) return 'error';
+  if (/\b(error|err|panic|fatal)\b/.test(text)) return 'error';
   if (/\b(warn|warning)\b/.test(text)) return 'warn';
   if (/\binfo:/.test(text) || /\[info\]/.test(text)) return 'info';
   return 'default';
