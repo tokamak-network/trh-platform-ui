@@ -106,17 +106,44 @@ export function extractCurrentSubtask(logs: ThanosDeploymentLog[]): SubtaskMatch
 }
 
 const STEP_PROGRESS_RE = /\bstep\s+(\d+)\s*\/\s*(\d+)/i;
+const PHASE_RE = /===\s*Phase\s*(\d+)\/(\d+)/i;
+const STAGE_RE = /===\s*STAGE\s*([AB])\b/i;
+const STAGE_MAP: Record<string, number> = { A: 1, B: 2 };
 
 // logs must be in ASC order (oldest first, newest last)
+// Priority: step N/M > Phase N/M > STAGE A/B (step is most precise)
 export function extractStepProgress(logs: ThanosDeploymentLog[]): StepProgress | null {
+  let phaseResult: StepProgress | null = null;
+  let stageResult: StepProgress | null = null;
+
   for (let i = logs.length - 1; i >= 0; i--) {
     const text = stripAndParse(logs[i].message);
-    const m = text.match(STEP_PROGRESS_RE);
-    if (m) {
-      const current = parseInt(m[1], 10);
-      const total = parseInt(m[2], 10);
+
+    const stepM = text.match(STEP_PROGRESS_RE);
+    if (stepM) {
+      const current = parseInt(stepM[1], 10);
+      const total = parseInt(stepM[2], 10);
       if (total > 0) return { current, total };
     }
+
+    if (phaseResult === null) {
+      const phaseM = text.match(PHASE_RE);
+      if (phaseM) {
+        const current = parseInt(phaseM[1], 10);
+        const total = parseInt(phaseM[2], 10);
+        if (total > 0) phaseResult = { current, total };
+      }
+    }
+
+    if (stageResult === null) {
+      const stageM = text.match(STAGE_RE);
+      if (stageM) {
+        const key = stageM[1].toUpperCase();
+        const current = STAGE_MAP[key];
+        if (current !== undefined) stageResult = { current, total: 2 };
+      }
+    }
   }
-  return null;
+
+  return phaseResult ?? stageResult ?? null;
 }

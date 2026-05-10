@@ -200,4 +200,38 @@ describe('extractStepProgress', () => {
   it('is case-insensitive', () => {
     expect(extractStepProgress(makeLogs(['STEP 5/10 done']))).toEqual({ current: 5, total: 10 });
   });
+
+  it('parses "Phase N/M" header (CrossTrade local deploy)', () => {
+    const result = extractStepProgress(
+      makeLogs(['=== Phase 2/2: Deploying L2toL2CrossTradeL2 pair (l2Nonce=11) ==='])
+    );
+    expect(result).toEqual({ current: 2, total: 2 });
+  });
+
+  it('parses "Phase N/M" — phase 1 of 2', () => {
+    const result = extractStepProgress(
+      makeLogs(['=== Phase 1/2: Deploying L2CrossTrade pair ==='])
+    );
+    expect(result).toEqual({ current: 1, total: 2 });
+  });
+
+  it('parses STAGE A → step 1/2', () => {
+    const result = extractStepProgress(makeLogs(['=== STAGE A - vpc/eks/efs ===']));
+    expect(result).toEqual({ current: 1, total: 2 });
+  });
+
+  it('parses STAGE B → step 2/2', () => {
+    const result = extractStepProgress(makeLogs(['=== STAGE B ===']));
+    expect(result).toEqual({ current: 2, total: 2 });
+  });
+
+  it('prefers step N/M over Phase N/M when both present (step wins as it is more precise)', () => {
+    const result = extractStepProgress(
+      makeLogs([
+        '=== Phase 1/2: Deploying L2CrossTrade pair ===',
+        '[deployer] Step 5/20: SomeContract',
+      ])
+    );
+    expect(result).toEqual({ current: 5, total: 20 });
+  });
 });
