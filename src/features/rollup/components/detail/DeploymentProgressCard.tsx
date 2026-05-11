@@ -100,7 +100,7 @@ function DeploymentProgressCardInner({
   const { data: logs = [] } = useThanosDeploymentLogsQuery(
     primaryStep.stack_id,
     primaryStep.id,
-    { limit: 100, refetchIntervalMs: 5000 }
+    { limit: 5000, refetchIntervalMs: 5000 }
   );
 
   const stepProgress = React.useMemo(() => extractStepProgress(logs), [logs]);

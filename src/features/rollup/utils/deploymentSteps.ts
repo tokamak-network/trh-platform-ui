@@ -3,6 +3,7 @@ export type DeploymentCategory = 'core' | 'integration';
 const CORE_STEPS = new Set([
   'deploy-l1-contracts',
   'deploy-aws-infra',
+  'deploy-local-infra',
 ]);
 
 const INTEGRATION_STEPS = new Set([
