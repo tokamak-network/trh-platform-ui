@@ -193,6 +193,17 @@ describe('extractStepProgress', () => {
     expect(result).toEqual({ current: 13, total: 51 });
   });
 
+  it('parses JSON-wrapped "[deployer] Step N/M:" format (zap logger output from deploy-local-infra)', () => {
+    const jsonMsg = JSON.stringify({
+      level: 'info',
+      msg: '[deployer] Step 4/8: Initializing SystemConfig',
+      timestamp: '2026-05-11T10:00:00.000Z',
+      caller: 'local_network.go:207',
+    });
+    const result = extractStepProgress(makeLogs([jsonMsg]));
+    expect(result).toEqual({ current: 4, total: 8 });
+  });
+
   it('returns null when total is 0 (guards against divide-by-zero)', () => {
     expect(extractStepProgress(makeLogs(['step 0/0']))).toBeNull();
   });
