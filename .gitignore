@@ -45,3 +45,6 @@ next-env.d.ts
 # Superpowers / review artifacts
 docs/superpowers/
 docs/codex-review/
+
+# Sensitive import files
+*.secret.json

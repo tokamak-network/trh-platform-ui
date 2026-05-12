@@ -4,6 +4,7 @@ import React from "react";
 import { useSearchParams } from "next/navigation";
 import { ConfigurationTabs } from "./ConfigurationTabs";
 import { ConfigurationTab } from "../schemas";
+import { ConfigurationImportButton } from "../import/ConfigurationImportButton";
 
 export function ConfigurationManagement() {
   const searchParams = useSearchParams();
@@ -20,6 +21,7 @@ export function ConfigurationManagement() {
             platform
           </p>
         </div>
+        <ConfigurationImportButton />
       </div>
 
       {/* Configuration Tabs */}
