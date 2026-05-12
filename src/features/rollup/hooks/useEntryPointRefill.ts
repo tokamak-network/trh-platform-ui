@@ -46,7 +46,21 @@ async function fetchRefillData(stack: ThanosStack): Promise<EntryPointRefillData
 
   if (!rpcUrl) throw new Error("No L2 RPC URL in stack metadata");
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const chainId = stack.metadata?.l2ChainId;
+  try {
+    return await _fetchRefillData(rpcUrl, adminHex, chainId);
+  } catch (e) {
+    console.error("[EntryPointRefill] fetch failed", { rpcUrl, error: e });
+    throw e;
+  }
+}
+
+async function _fetchRefillData(rpcUrl: string, adminHex: string | null, chainId?: number): Promise<EntryPointRefillData> {
+
+  // Pass chainId explicitly to skip eth_chainId auto-detection on every call (ethers.js v6).
+  // Use `new ethers.Network` (not Network.from) — custom L2 chains aren't in ethers' built-in list.
+  const network = chainId ? new ethers.Network("", chainId) : undefined;
+  const provider = new ethers.JsonRpcProvider(rpcUrl, network, network ? { staticNetwork: network } : undefined);
 
   // Parallel: EntryPoint balance + admin balance + recent logs
   const [epBalanceWei, adminBalanceWei, latestBlock] = await Promise.all([

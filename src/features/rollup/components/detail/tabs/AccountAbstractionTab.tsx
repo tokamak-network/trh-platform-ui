@@ -184,7 +184,7 @@ export function AccountAbstractionTab({ stack }: RollupDetailTabProps) {
                 <div className="h-4 bg-gray-100 rounded w-1/2" />
               </div>
             ) : refill.isError ? (
-              <p className="text-sm text-red-500">Failed to load balance data</p>
+              <p className="text-sm text-red-500">Failed to load balance data: {refill.error instanceof Error ? refill.error.message : "Unknown"}</p>
             ) : rd ? (
               <div className="space-y-4">
                 {/* Balance display */}
