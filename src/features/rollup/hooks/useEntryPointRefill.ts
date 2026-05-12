@@ -7,7 +7,7 @@ import { ThanosStack, ThanosStackStatus } from "../schemas/thanos";
 // EntryPoint predeploy address (fixed across all chains)
 const ENTRYPOINT_ADDRESS = "0x4200000000000000000000000000000000000063";
 
-// Thresholds (in TON / ETH — the L2 native gas token)
+// Thresholds (in TON — the L2 native gas token)
 export const REFILL_TRIGGER_THRESHOLD = 0.5;  // TON
 export const REFILL_AMOUNT = 5;               // TON
 export const WARN_THRESHOLD = 1.0;            // TON
@@ -20,7 +20,7 @@ export type RefillStatus = "healthy" | "warning" | "critical" | "unknown";
 export interface RefillEvent {
   blockNumber: number;
   transactionHash: string;
-  amount: string;      // formatted ETH string
+  amount: string;      // formatted TON string
   timestamp?: number;  // unix seconds
 }
 
