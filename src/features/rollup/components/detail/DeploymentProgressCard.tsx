@@ -9,6 +9,7 @@ import { formatDuration, formatEtaMs } from "@/features/rollup/utils/durationUti
 import { classifyLogLevel } from "@/features/rollup/utils/logLevel";
 import { categorizeStep } from "@/features/rollup/utils/deploymentSteps";
 import { extractStepProgress } from "@/features/rollup/utils/deploymentSubtask";
+import { computeVelocity, computePhaseMetrics, InProgressEntry } from "@/features/rollup/utils/deploymentProgress";
 import { LogDialog } from "@/features/rollup/components/detail/LogDialog";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import toast from "react-hot-toast";
@@ -82,48 +83,74 @@ function MetricBox({
   );
 }
 
-interface DeploymentProgressCardInnerProps {
-  primaryStep: ThanosDeployment;
-  sessionStartMs: number;
+interface PhaseProgressCardProps {
+  phaseRows: ThanosDeployment[];
   now: number;
   isIntegrationPhase: boolean;
   stackId: string;
 }
 
-function DeploymentProgressCardInner({
-  primaryStep,
-  sessionStartMs,
-  now,
-  isIntegrationPhase,
-  stackId,
-}: DeploymentProgressCardInnerProps) {
-  const { data: logs = [] } = useThanosDeploymentLogsQuery(
-    primaryStep.stack_id,
-    primaryStep.id,
-    { limit: 5000, refetchIntervalMs: 5000 }
+function PhaseProgressCard({ phaseRows, now, isIntegrationPhase, stackId }: PhaseProgressCardProps) {
+  const inProgressRows = phaseRows.filter((r) => r.status === 'InProgress');
+  const row0 = inProgressRows[0];
+  const row1 = inProgressRows[1]; // parallel case (l1-contracts + aws-infra)
+
+  // Fetch logs for up to 2 parallel InProgress rows; query is disabled when id is undefined
+  const { data: logs0 = [] } = useThanosDeploymentLogsQuery(
+    row0?.stack_id, row0?.id, { limit: 5000, refetchIntervalMs: 5000 }
+  );
+  const { data: logs1 = [] } = useThanosDeploymentLogsQuery(
+    row1?.stack_id, row1?.id, { limit: 5000, refetchIntervalMs: 5000 }
   );
 
-  const stepProgress = React.useMemo(() => extractStepProgress(logs), [logs]);
+  const entries = React.useMemo<InProgressEntry[]>(() => {
+    const result: InProgressEntry[] = [];
+    if (row0) {
+      result.push({
+        row: row0,
+        logProgress: extractStepProgress(logs0),
+        velocity: computeVelocity(logs0),
+      });
+    }
+    if (row1) {
+      result.push({
+        row: row1,
+        logProgress: extractStepProgress(logs1),
+        velocity: computeVelocity(logs1),
+      });
+    }
+    return result;
+  }, [row0, row1, logs0, logs1]);
 
-  const elapsedMs = now - sessionStartMs;
-  const pct = stepProgress && stepProgress.total > 0
-    ? stepProgress.current / stepProgress.total
-    : null;
-  const etaMs = pct && pct > 0 ? Math.round(elapsedMs / pct) - elapsedMs : null;
-  const etaAbsolute = etaMs != null
-    ? new Date(now + etaMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : null;
-
-  const wallClock = formatDuration(new Date(sessionStartMs).toISOString(), undefined, now);
-  const progressPct = pct != null ? Math.round(pct * 100) : null;
-
-  const stepLabel = primaryStep.step
-    .replace(/^(deploy-|install-)/, '')
-    .replace(/-/g, ' ');
+  const metrics = React.useMemo(
+    () => computePhaseMetrics(phaseRows, entries, now),
+    [phaseRows, entries, now]
+  );
 
   const accent = isIntegrationPhase
     ? { bar: 'bg-emerald-500', spinner: 'text-emerald-600', label: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', card: 'from-emerald-50 to-green-100' }
     : { bar: 'bg-blue-500', spinner: 'text-blue-600', label: 'text-blue-700', badge: 'bg-blue-100 text-blue-700 border-blue-200', card: 'from-blue-50 to-indigo-100' };
+
+  const sessionStartMs = Math.min(...phaseRows.map((r) => new Date(r.started_at).getTime()));
+  const wallClock = formatDuration(new Date(sessionStartMs).toISOString(), undefined, now);
+  const progressPct = metrics.progress != null ? Math.round(metrics.progress * 100) : null;
+
+  const stepRangeLabel = metrics.inProgressCount > 1
+    ? `Step ${metrics.stepIndex}–${metrics.stepIndex + metrics.inProgressCount - 1}/${metrics.stepTotal}`
+    : `Step ${metrics.stepIndex}/${metrics.stepTotal}`;
+
+  const inProgressLabels = inProgressRows
+    .map((r) => r.step.replace(/^(deploy-|install-)/, '').replace(/-/g, ' '))
+    .join(', ');
+
+  const substepHint = metrics.substep
+    ? `step ${metrics.substep.current} / ${metrics.substep.total}`
+    : 'no step data';
+
+  const substepSuffix =
+    metrics.inProgressCount === 1 && metrics.substep
+      ? ` (${metrics.substep.current}/${metrics.substep.total})`
+      : '';
 
   return (
     <Card className={`border-0 shadow-xl bg-gradient-to-br ${accent.card}`}>
@@ -148,30 +175,36 @@ function DeploymentProgressCardInner({
           </p>
         )}
 
-        {/* Metrics */}
+        {/* Phase metrics */}
         <div className="grid grid-cols-3 gap-2 my-3">
           <MetricBox label="Elapsed" value={wallClock} />
           <MetricBox
             label="ETA"
-            value={etaMs != null ? formatEtaMs(etaMs) : '—'}
-            hint={etaAbsolute ?? 'calculating…'}
-            muted={etaMs == null}
+            value={metrics.etaMs != null ? formatEtaMs(metrics.etaMs) : '—'}
+            hint={
+              metrics.etaMs != null
+                ? new Date(now + metrics.etaMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'calculating…'
+            }
+            muted={metrics.etaMs == null}
           />
           <MetricBox
             label="Progress"
             value={progressPct != null ? `${progressPct}%` : '—'}
-            hint={stepProgress ? `step ${stepProgress.current} / ${stepProgress.total}` : 'no step data'}
+            hint={substepHint}
             muted={progressPct == null}
           />
         </div>
 
-        {/* Progress bar */}
+        {/* Secondary step line */}
+        <p className="text-[10px] text-slate-500 mb-2 truncate">
+          {stepRangeLabel} · <span className="capitalize">{inProgressLabels}</span>
+          {substepSuffix}
+        </p>
+
+        {/* Progress bar (only when phase-level progress is available) */}
         {progressPct != null && (
           <div className="mb-3">
-            <div className="flex justify-between text-[10px] font-medium text-slate-500 mb-1">
-              <span className="capitalize">{stepLabel}</span>
-              <span>{progressPct}%</span>
-            </div>
             <div className="h-1.5 rounded-full bg-white/50 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${accent.bar}`}
@@ -181,8 +214,8 @@ function DeploymentProgressCardInner({
           </div>
         )}
 
-        {/* Error / Logs */}
-        <ActivityLine deployment={primaryStep} stackId={stackId} />
+        {/* Error / Logs for primary row */}
+        <ActivityLine deployment={metrics.primaryRow} stackId={stackId} />
       </CardContent>
     </Card>
   );
@@ -234,17 +267,9 @@ export function DeploymentProgressCard({ stackId }: DeploymentProgressCardProps)
 
   if (!phase) return null;
 
-  const sessionStartMs = Math.min(
-    ...activeRows.map((d) => new Date(d.started_at).getTime())
-  );
-  const primaryStep = activeRows.reduce((a, b) =>
-    new Date(a.started_at) <= new Date(b.started_at) ? a : b
-  );
-
   return (
-    <DeploymentProgressCardInner
-      primaryStep={primaryStep}
-      sessionStartMs={sessionStartMs}
+    <PhaseProgressCard
+      phaseRows={activeRows}
       now={now}
       isIntegrationPhase={phase === 'integration'}
       stackId={stackId ?? ''}
