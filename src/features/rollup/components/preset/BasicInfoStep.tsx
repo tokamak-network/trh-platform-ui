@@ -10,17 +10,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, Info, Cloud, Monitor, Zap } from "lucide-react";
-import { useEffect } from "react";
+import { AlertTriangle, AlertCircle, ExternalLink, Info, Cloud, Monitor, Zap } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import type { CreateRollupFormData } from "../../schemas/create-rollup";
 import { FEE_TOKEN_OPTIONS } from "../../schemas/preset";
 import { useRollupCreationContext } from "../../context/RollupCreationContext";
 import { AccountSetup } from "../steps/AccountSetup";
 import { getDesktopBridge, DesktopAwsKeyInput } from "../steps/AwsConfig";
-import { useState } from "react";
+import { RpcUrlSelector } from "@/components/molecules/RpcUrlSelector";
+import { useRpcUrls } from "@/features/configuration/rpc-management/hooks/useRpcUrls";
+import { useAwsCredentials } from "@/features/configuration/aws-credentials/hooks/useAwsCredentials";
 
 const AWS_REGIONS = [
   { value: "us-east-1", label: "US East (N. Virginia)" },
@@ -51,12 +53,20 @@ export function BasicInfoStep() {
 
   const showAANotice = !!feeToken && feeToken !== "TON";
 
+  const { rpcUrls } = useRpcUrls();
+  const { awsCredentials, isLoading: isLoadingCredentials } = useAwsCredentials();
+
   const TESTNET_DEFAULT_BEACON_URL = "https://ethereum-sepolia-beacon-api.publicnode.com";
 
+  const prevNetworkRef = useRef(network);
   useEffect(() => {
     if (network === "Testnet") {
       setValue("presetBasicInfo.l1BeaconUrl", TESTNET_DEFAULT_BEACON_URL);
+    } else if (network === "Mainnet" && prevNetworkRef.current === "Testnet") {
+      // Clear testnet default when switching to Mainnet so user selects a Mainnet beacon URL
+      setValue("presetBasicInfo.l1BeaconUrl", "");
     }
+    prevNetworkRef.current = network;
   }, [network, setValue]);
 
   useEffect(() => {
@@ -273,41 +283,35 @@ export function BasicInfoStep() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className={`grid grid-cols-1 ${network === "Mainnet" ? "md:grid-cols-2" : ""} gap-4`}>
-            <div className="space-y-2">
-              <Label htmlFor="l1RpcUrl">
-                L1 RPC URL <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="l1RpcUrl"
-                placeholder={
-                  network === "Mainnet"
-                    ? "https://eth-mainnet.g.alchemy.com/v2/..."
-                    : "https://eth-sepolia.g.alchemy.com/v2/..."
-                }
-                {...register("presetBasicInfo.l1RpcUrl")}
-              />
-              {errors.presetBasicInfo?.l1RpcUrl && (
-                <p className="text-xs text-red-500">
-                  {errors.presetBasicInfo.l1RpcUrl.message}
-                </p>
-              )}
-            </div>
+            <RpcUrlSelector
+              id="l1RpcUrl"
+              label="L1 RPC URL"
+              required
+              placeholder={
+                network === "Mainnet"
+                  ? "https://eth-mainnet.g.alchemy.com/v2/..."
+                  : "https://eth-sepolia.g.alchemy.com/v2/..."
+              }
+              value={watch("presetBasicInfo.l1RpcUrl") ?? ""}
+              onChange={(val) => setValue("presetBasicInfo.l1RpcUrl", val, { shouldValidate: true })}
+              rpcUrls={rpcUrls}
+              urlType="ExecutionLayer"
+              network={network}
+              error={errors.presetBasicInfo?.l1RpcUrl?.message}
+            />
             {network === "Mainnet" && (
-              <div className="space-y-2">
-                <Label htmlFor="l1BeaconUrl">
-                  L1 Beacon URL <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="l1BeaconUrl"
-                  placeholder="https://eth-mainnet.g.alchemy.com/v2/..."
-                  {...register("presetBasicInfo.l1BeaconUrl")}
-                />
-                {errors.presetBasicInfo?.l1BeaconUrl && (
-                  <p className="text-xs text-red-500">
-                    {errors.presetBasicInfo.l1BeaconUrl.message}
-                  </p>
-                )}
-              </div>
+              <RpcUrlSelector
+                id="l1BeaconUrl"
+                label="L1 Beacon URL"
+                required
+                placeholder="https://eth-mainnet.g.alchemy.com/v2/..."
+                value={watch("presetBasicInfo.l1BeaconUrl") ?? ""}
+                onChange={(val) => setValue("presetBasicInfo.l1BeaconUrl", val, { shouldValidate: true })}
+                rpcUrls={rpcUrls}
+                urlType="BeaconChain"
+                network={network}
+                error={errors.presetBasicInfo?.l1BeaconUrl?.message}
+              />
             )}
           </div>
         </CardContent>
@@ -319,7 +323,12 @@ export function BasicInfoStep() {
       {/* AWS Configuration */}
       {infraProvider === "aws" && (
         getDesktopBridge() ? (
-          <PresetDesktopAwsConfig setValue={setValue} register={register} errors={errors} />
+          <PresetDesktopAwsConfig
+            setValue={setValue}
+            register={register}
+            errors={errors}
+            awsCredentials={awsCredentials}
+          />
         ) : (
           <Card>
             <CardHeader>
@@ -330,65 +339,91 @@ export function BasicInfoStep() {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="awsAccessKey">
-                    Access Key ID <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="awsAccessKey"
-                    placeholder="AKIA..."
-                    {...register("presetBasicInfo.awsAccessKey")}
-                  />
-                  {errors.presetBasicInfo?.awsAccessKey && (
-                    <p className="text-xs text-red-500">
-                      {errors.presetBasicInfo.awsAccessKey.message}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="awsSecretKey">
-                    Secret Access Key <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="awsSecretKey"
-                    type="password"
-                    placeholder="Enter secret key"
-                    {...register("presetBasicInfo.awsSecretKey")}
-                  />
-                  {errors.presetBasicInfo?.awsSecretKey && (
-                    <p className="text-xs text-red-500">
-                      {errors.presetBasicInfo.awsSecretKey.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="awsRegion">
-                  Region <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  onValueChange={(val) =>
-                    setValue("presetBasicInfo.awsRegion", val, { shouldValidate: true })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select AWS region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AWS_REGIONS.map((region) => (
-                      <SelectItem key={region.value} value={region.value}>
-                        {region.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.presetBasicInfo?.awsRegion && (
-                  <p className="text-xs text-red-500">
-                    {errors.presetBasicInfo.awsRegion.message}
-                  </p>
-                )}
-              </div>
+              {awsCredentials && awsCredentials.length > 0 ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>
+                      AWS Credentials <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={
+                        awsCredentials.find(
+                          (c) => c.accessKeyId === watch("presetBasicInfo.awsAccessKey")
+                        )?.id ?? ""
+                      }
+                      onValueChange={(credId) => {
+                        const cred = awsCredentials.find((c) => c.id === credId);
+                        if (cred) {
+                          setValue("presetBasicInfo.awsAccessKey", cred.accessKeyId, { shouldValidate: true });
+                          setValue("presetBasicInfo.awsSecretKey", cred.secretAccessKey, { shouldValidate: true });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isLoadingCredentials ? "Loading..." : "Select saved credentials"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {awsCredentials.map((cred) => (
+                          <SelectItem key={cred.id} value={cred.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{cred.name}</span>
+                              <span className="text-xs text-muted-foreground">{cred.accessKeyId}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.presetBasicInfo?.awsAccessKey && (
+                      <p className="text-xs text-red-500">
+                        {errors.presetBasicInfo.awsAccessKey.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="awsRegion">
+                      Region <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={watch("presetBasicInfo.awsRegion") ?? ""}
+                      onValueChange={(val) =>
+                        setValue("presetBasicInfo.awsRegion", val, { shouldValidate: true })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select AWS region" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AWS_REGIONS.map((region) => (
+                          <SelectItem key={region.value} value={region.value}>
+                            {region.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.presetBasicInfo?.awsRegion && (
+                      <p className="text-xs text-red-500">
+                        {errors.presetBasicInfo.awsRegion.message}
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No AWS credentials found</AlertTitle>
+                  <AlertDescription className="flex items-center justify-between">
+                    <span>Please add AWS credentials in the Configuration section first.</span>
+                    <a
+                      href="/configuration"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                    >
+                      Go to Configuration <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         )
@@ -407,20 +442,96 @@ export function BasicInfoStep() {
   );
 }
 
+import type { AWSCredential } from "@/features/configuration/schemas";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function PresetDesktopAwsConfig({ setValue, register, errors }: { setValue: any; register: any; errors: any }) {
+function PresetDesktopAwsConfig({ setValue, register, errors, awsCredentials }: { setValue: any; register: any; errors: any; awsCredentials: AWSCredential[] }) {
   const [appliedRegion, setAppliedRegion] = useState<string | null>(null);
+  const [useManual, setUseManual] = useState(false);
+  const [selectedCredId, setSelectedCredId] = useState<string>("");
+
+  const applyAndFinish = (accessKeyId: string, secretAccessKey: string, region: string) => {
+    setValue("presetBasicInfo.awsAccessKey", accessKeyId);
+    setValue("presetBasicInfo.awsSecretKey", secretAccessKey);
+    setValue("presetBasicInfo.awsRegion", region, { shouldValidate: true });
+    setAppliedRegion(region);
+  };
 
   if (appliedRegion) {
     const regionLabel = AWS_REGIONS.find((r) => r.value === appliedRegion)?.label ?? appliedRegion;
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
             <p className="text-sm text-green-800 font-medium">
               AWS credentials configured. Region: {regionLabel}
             </p>
+            <button
+              type="button"
+              className="text-xs text-green-700 underline"
+              onClick={() => { setAppliedRegion(null); setSelectedCredId(""); setUseManual(false); }}
+            >
+              Change
+            </button>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (awsCredentials.length > 0 && !useManual) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>AWS Configuration</CardTitle>
+          <p className="text-sm text-gray-500">Select saved credentials or enter manually.</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Saved Credentials</Label>
+            <Select value={selectedCredId} onValueChange={setSelectedCredId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select saved credentials" />
+              </SelectTrigger>
+              <SelectContent>
+                {awsCredentials.map((cred) => (
+                  <SelectItem key={cred.id} value={cred.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{cred.name}</span>
+                      <span className="text-xs text-muted-foreground">{cred.accessKeyId}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedCredId && (
+            <div className="space-y-2">
+              <Label>Region</Label>
+              <Select
+                onValueChange={(region) => {
+                  const cred = awsCredentials.find((c) => c.id === selectedCredId);
+                  if (cred) applyAndFinish(cred.accessKeyId, cred.secretAccessKey, region);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select region" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AWS_REGIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <button
+            type="button"
+            className="text-xs text-blue-600 underline"
+            onClick={() => setUseManual(true)}
+          >
+            Enter credentials manually instead
+          </button>
         </CardContent>
       </Card>
     );
@@ -429,12 +540,8 @@ function PresetDesktopAwsConfig({ setValue, register, errors }: { setValue: any;
   return (
     <DesktopAwsKeyInput
       onComplete={(creds) => {
-        setValue("presetBasicInfo.awsAccessKey", creds.accessKeyId);
-        setValue("presetBasicInfo.awsSecretKey", creds.secretAccessKey);
-        // Extract region from source (format: "manual:<region>")
         const region = creds.source.startsWith("manual:") ? creds.source.slice(7) : "us-east-1";
-        setValue("presetBasicInfo.awsRegion", region, { shouldValidate: true });
-        setAppliedRegion(region);
+        applyAndFinish(creds.accessKeyId, creds.secretAccessKey, region);
       }}
     />
   );
