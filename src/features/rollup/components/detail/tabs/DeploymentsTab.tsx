@@ -26,8 +26,10 @@ import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { LogDialog } from "../LogDialog";
+import { PhaseTimeline } from "../PhaseTimeline";
 import { downloadThanosDeploymentLogs } from "@/features/rollup/services/rollupService";
 import { formatDuration } from "@/features/rollup/utils/durationUtils";
+import { groupIntoSessions } from "@/features/rollup/utils/sessionGrouping";
 import toast from "react-hot-toast";
 
 const formatDateTime = (iso?: string) => {
@@ -106,6 +108,8 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     });
   }, [deployments]);
 
+  const sessions = React.useMemo(() => groupIntoSessions(deployments), [deployments]);
+
   const StepnameMap: Record<string, string> = {
     "deploy-l1-contracts": "Deploy L1 Contracts",
     "deploy-aws-infra": "Deploy Infrastructure",
@@ -159,6 +163,9 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
 
   return (
     <div className="space-y-6">
+      {sessions.length > 0 && stackId && (
+        <PhaseTimeline sessions={sessions} stackId={stackId} now={now} />
+      )}
       <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-gray-100">
         <CardHeader className="flex items-center justify-between">
           <CardTitle className="text-slate-800">Deployment history</CardTitle>
