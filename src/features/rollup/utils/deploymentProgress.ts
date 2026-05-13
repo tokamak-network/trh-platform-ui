@@ -1,11 +1,14 @@
 import { ThanosDeployment, ThanosDeploymentLog } from '../schemas/thanos-deployments';
 import { StepProgress } from './deploymentSubtask';
 
-// Only for steps that actually emit "step N/M" log lines — verified from Go source
-// deploy-aws-infra: Stage A (5 steps) + Stage B (13 non-FP baseline) = 18
-// deploy-local-infra: 7 steps non-FP baseline
+// Stage B substep totals from trh-sdk [deployer] Step N/M log messages.
+// deploy-l1-contracts: tokamak-deployer emits 35 steps (deploy-contracts subcommand).
+// deploy-aws-infra (FP): 16 trh-sdk Stage B steps — steps 15-16 are "Waiting for L2 genesis
+//   block" and "Submitting anchor state to L1", which cover the ~19-min anchor state tail.
+// deploy-local-infra: 7 steps (non-FP local Docker preset).
 const STEP_SUBSTEP_TOTAL: Record<string, number> = {
-  'deploy-aws-infra': 18,
+  'deploy-l1-contracts': 35,
+  'deploy-aws-infra': 16,
   'deploy-local-infra': 7,
 };
 
