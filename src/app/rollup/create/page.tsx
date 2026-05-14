@@ -5,8 +5,12 @@ import { AuthenticatedLayout } from "@/components/layout";
 import { CreateRollupStepper } from "@/features/rollup/components/CreateRollupStepper";
 import { usePresetWizard } from "@/features/rollup/hooks/usePresetWizard";
 import { useRollupCreationContext } from "@/features/rollup/context/RollupCreationContext";
+import { useThanosStack } from "@/features/rollup/hooks/useThanosStack";
+import { ThanosStackStatus } from "@/features/rollup/schemas/thanos";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertTriangle } from "lucide-react";
 import { ChevronLeft, ChevronRight, Rocket } from "lucide-react";
 import {
   PresetSelectionStep,
@@ -32,6 +36,15 @@ function PresetWizardContent() {
   } = usePresetWizard();
 
   const { resetState } = useRollupCreationContext();
+  const { stacks } = useThanosStack();
+
+  // Block new deployments while any non-LocalDevnet stack is Pending or Deploying
+  // to prevent L1 nonce conflicts from concurrent use of the same admin key.
+  const isDeploymentInProgress = stacks.some(
+    (s) =>
+      (s.status === ThanosStackStatus.PENDING || s.status === ThanosStackStatus.DEPLOYING) &&
+      s.network !== "LocalDevnet"
+  );
 
   useEffect(() => {
     resetState();
@@ -58,6 +71,19 @@ function PresetWizardContent() {
       case 3:
         return (
           <div className="space-y-6">
+            {isDeploymentInProgress && (
+              <div className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-800">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-500" />
+                <div>
+                  <p className="font-medium">Deployment in progress</p>
+                  <p className="text-sm">
+                    Another stack is currently deploying. Starting a second deployment
+                    would cause L1 nonce conflicts on the same admin key. Wait for the
+                    active deployment to finish before proceeding.
+                  </p>
+                </div>
+              </div>
+            )}
             {presetDetail && (
               <ConfigReview
                 preset={presetDetail}
@@ -113,18 +139,39 @@ function PresetWizardContent() {
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <Button
-                  onClick={goToNextStep}
-                  disabled={currentStep === 1 && !selectedPresetId}
-                  className="flex items-center gap-2"
-                >
-                  {isLastStep ? "Deploy Rollup" : "Next"}
-                  {isLastStep ? (
-                    <Rocket className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </Button>
+                {isLastStep && isDeploymentInProgress ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            disabled
+                            className="flex items-center gap-2 pointer-events-none"
+                          >
+                            Deploy Rollup
+                            <Rocket className="h-4 w-4" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Another deployment is in progress — wait for it to complete.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <Button
+                    onClick={goToNextStep}
+                    disabled={currentStep === 1 && !selectedPresetId}
+                    className="flex items-center gap-2"
+                  >
+                    {isLastStep ? "Deploy Rollup" : "Next"}
+                    {isLastStep ? (
+                      <Rocket className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </footer>
