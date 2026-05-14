@@ -131,8 +131,14 @@ function PhaseProgressCard({ phaseRows, now, isIntegrationPhase, stackId }: Phas
     ? { bar: 'bg-emerald-500', spinner: 'text-emerald-600', label: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', card: 'from-emerald-50 to-green-100' }
     : { bar: 'bg-blue-500', spinner: 'text-blue-600', label: 'text-blue-700', badge: 'bg-blue-100 text-blue-700 border-blue-200', card: 'from-blue-50 to-indigo-100' };
 
-  const sessionStartMs = Math.min(...phaseRows.map((r) => new Date(r.started_at).getTime()));
-  const wallClock = formatDuration(new Date(sessionStartMs).toISOString(), undefined, now);
+  const sessionStartMs = phaseRows.reduce((min, r) => {
+    if (!r.started_at) return min;
+    const t = new Date(r.started_at).getTime();
+    return t < min ? t : min;
+  }, Infinity);
+  const wallClock = isFinite(sessionStartMs)
+    ? formatDuration(new Date(sessionStartMs).toISOString(), undefined, now)
+    : '—';
   const progressPct = metrics.progress != null ? Math.round(metrics.progress * 100) : null;
 
   const stepRangeLabel = metrics.inProgressCount > 1

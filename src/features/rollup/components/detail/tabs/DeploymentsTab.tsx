@@ -20,16 +20,16 @@ import {
   FileText,
   Download,
   Pause,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
 import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { LogDialog } from "../LogDialog";
-import { PhaseTimeline } from "../PhaseTimeline";
 import { downloadThanosDeploymentLogs } from "@/features/rollup/services/rollupService";
 import { formatDuration } from "@/features/rollup/utils/durationUtils";
-import { groupIntoSessions } from "@/features/rollup/utils/sessionGrouping";
 import toast from "react-hot-toast";
 
 const formatDateTime = (iso?: string) => {
@@ -74,8 +74,177 @@ const StatusBadge = ({ status }: { status: ThanosDeployment["status"] }) => {
   );
 };
 
+const APP_GROUPS: { id: string; label: string; steps: string[] }[] = [
+  {
+    id: "infrastructure",
+    label: "Infrastructure",
+    steps: ["deploy-aws-infra", "destroy-aws-infra"],
+  },
+  {
+    id: "l1-contracts",
+    label: "L1 Contracts",
+    steps: ["deploy-l1-contracts"],
+  },
+  {
+    id: "bridge",
+    label: "Bridge",
+    steps: ["install-bridge", "uninstall-bridge", "install-cross-trade-bridge"],
+  },
+  {
+    id: "block-explorer",
+    label: "Block Explorer",
+    steps: ["install-block-explorer", "uninstall-block-explorer"],
+  },
+  {
+    id: "monitoring",
+    label: "Monitoring Dashboard",
+    steps: ["install-monitoring", "uninstall-monitoring"],
+  },
+  {
+    id: "drb",
+    label: "DRB Nodes",
+    steps: ["install-drb"],
+  },
+  {
+    id: "staking",
+    label: "Staking / DAO",
+    steps: ["register-candidate"],
+  },
+  {
+    id: "system-pulse",
+    label: "System Pulse",
+    steps: ["install-system-pulse"],
+  },
+];
+
+interface AppHistoryCardProps {
+  label: string;
+  deployments: ThanosDeployment[];
+  now: number;
+  getStepDisplayName: (d: ThanosDeployment) => string;
+  onView: (d: ThanosDeployment) => void;
+  onLogs: (d: ThanosDeployment) => void;
+  onDownload: (d: ThanosDeployment) => void;
+}
+
+function AppHistoryCard({
+  label,
+  deployments,
+  now,
+  getStepDisplayName,
+  onView,
+  onLogs,
+  onDownload,
+}: AppHistoryCardProps) {
+  const [expanded, setExpanded] = React.useState(true);
+
+  const sorted = React.useMemo(
+    () =>
+      [...deployments].sort((a, b) => {
+        const aTime = new Date(a.finished_at ?? a.started_at).getTime();
+        const bTime = new Date(b.finished_at ?? b.started_at).getTime();
+        return bTime - aTime;
+      }),
+    [deployments],
+  );
+
+  return (
+    <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-gray-100">
+      <CardHeader
+        className="flex flex-row items-center justify-between cursor-pointer select-none pb-3"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <CardTitle className="text-slate-800 text-base flex items-center gap-2">
+          {expanded ? (
+            <ChevronDown className="w-4 h-4 text-slate-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-slate-500" />
+          )}
+          {label}
+        </CardTitle>
+        <Badge variant="outline" className="text-xs font-normal text-slate-600">
+          {deployments.length}
+        </Badge>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="pt-0">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-600">
+                  <th className="py-2 pr-4 font-medium">Name</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 font-medium">Started</th>
+                  <th className="py-2 pr-4 font-medium">Duration</th>
+                  <th className="py-2 pr-4"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((d) => {
+                  const duration =
+                    d.status === "Success" || d.status === "Failed"
+                      ? formatDuration(d.started_at, d.finished_at)
+                      : formatDuration(d.started_at, undefined, now);
+                  return (
+                    <tr key={d.id} className="border-t border-slate-200/60">
+                      <td className="py-3 pr-4 font-medium text-slate-800 capitalize">
+                        {getStepDisplayName(d)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <StatusBadge status={d.status} />
+                      </td>
+                      <td className="py-3 pr-4 text-slate-700">
+                        {formatDateTime(d.started_at)}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-700">{duration}</td>
+                      <td className="py-3 pr-0 space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="inline-flex items-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onView(d);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" /> View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="inline-flex items-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onLogs(d);
+                          }}
+                        >
+                          <FileText className="w-4 h-4 mr-2" /> Logs
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="inline-flex items-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownload(d);
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 export function DeploymentsTab({ stack }: RollupDetailTabProps) {
-  // Hooks must be called unconditionally
   const stackId = stack?.id;
   const {
     data: deployments = [],
@@ -83,32 +252,22 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     isError,
     refetch,
   } = useThanosDeploymentsQuery(stackId);
-  const [open, setOpen] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
 
   React.useEffect(() => {
     const hasActive = deployments.some(
-      (d) => d.status === "InProgress" || d.status === "Pending"
+      (d) => d.status === "InProgress" || d.status === "Pending",
     );
     if (!hasActive) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [deployments]);
+
+  const [open, setOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<ThanosDeployment | null>(null);
   const [logsOpen, setLogsOpen] = React.useState(false);
   const [logsSelected, setLogsSelected] =
     React.useState<ThanosDeployment | null>(null);
-
-  // Sort deployments by last activity (finished_at if present, otherwise started_at)
-  const sortedDeployments = React.useMemo(() => {
-    return [...deployments].sort((a, b) => {
-      const aTime = new Date(a.finished_at ?? a.started_at).getTime();
-      const bTime = new Date(b.finished_at ?? b.started_at).getTime();
-      return bTime - aTime;
-    });
-  }, [deployments]);
-
-  const sessions = React.useMemo(() => groupIntoSessions(deployments), [deployments]);
 
   const StepnameMap: Record<string, string> = {
     "deploy-l1-contracts": "Deploy L1 Contracts",
@@ -138,6 +297,11 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     return StepnameMap[deployment.step] || deployment.step.replace(/-/g, " ");
   };
 
+  const ungroupedDeployments = React.useMemo(() => {
+    const known = new Set(APP_GROUPS.flatMap((g) => g.steps));
+    return deployments.filter((d) => !known.has(d.step));
+  }, [deployments]);
+
   if (!stack) return null;
 
   const handleView = (deployment: ThanosDeployment) => {
@@ -152,7 +316,6 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
 
   const handleDownload = async (deployment: ThanosDeployment) => {
     if (!stackId) return;
-
     try {
       await downloadThanosDeploymentLogs(stackId, deployment.id);
     } catch (error) {
@@ -162,105 +325,65 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {sessions.length > 0 && stackId && (
-        <PhaseTimeline sessions={sessions} stackId={stackId} now={now} />
-      )}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-gray-100">
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle className="text-slate-800">Deployment history</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10 text-slate-600">
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading
-              deployment history...
-            </div>
-          ) : isError ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-10">
-              <div className="text-red-600 inline-flex items-center">
-                <AlertCircle className="w-5 h-5 mr-2" /> Failed to load
-                deployment history
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                className="inline-flex items-center"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" /> Retry
-              </Button>
-            </div>
-          ) : deployments.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-slate-600">
-              No deployments found
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-600">
-                    <th className="py-2 pr-4 font-medium">Name</th>
-                    <th className="py-2 pr-4 font-medium">Status</th>
-                    <th className="py-2 pr-4 font-medium">Started</th>
-                    <th className="py-2 pr-4 font-medium">Duration</th>
-                    <th className="py-2 pr-4"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedDeployments.map((d) => {
-                    const name = d.step.replace(/-/g, " ");
-                    const duration =
-                      d.status === "Success" || d.status === "Failed"
-                        ? formatDuration(d.started_at, d.finished_at)
-                        : formatDuration(d.started_at, undefined, now);
-                    return (
-                      <tr key={d.id} className="border-t border-slate-200/60">
-                        <td className="py-3 pr-4 font-medium text-slate-800 capitalize">
-                          {getStepDisplayName(d)}
-                        </td>
-                        <td className="py-3 pr-4">
-                          <StatusBadge status={d.status} />
-                        </td>
-                        <td className="py-3 pr-4 text-slate-700">
-                          {formatDateTime(d.started_at)}
-                        </td>
-                        <td className="py-3 pr-4 text-slate-700">{duration}</td>
-                        <td className="py-3 pr-0 space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="inline-flex items-center"
-                            onClick={() => handleView(d)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" /> View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="inline-flex items-center"
-                            onClick={() => handleLogs(d)}
-                          >
-                            <FileText className="w-4 h-4 mr-2" /> Logs
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="inline-flex items-center"
-                            onClick={() => handleDownload(d)}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+    <div className="space-y-4">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10 text-slate-600">
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading
+          deployment history...
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-10">
+          <div className="text-red-600 inline-flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" /> Failed to load
+            deployment history
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="inline-flex items-center"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" /> Retry
+          </Button>
+        </div>
+      ) : deployments.length === 0 ? (
+        <div className="flex items-center justify-center py-10 text-slate-600">
+          No deployments found
+        </div>
+      ) : (
+        <>
+          {APP_GROUPS.map((group) => {
+            const groupDeployments = deployments.filter((d) =>
+              group.steps.includes(d.step),
+            );
+            if (groupDeployments.length === 0) return null;
+            return (
+              <AppHistoryCard
+                key={group.id}
+                label={group.label}
+                deployments={groupDeployments}
+                now={now}
+                getStepDisplayName={getStepDisplayName}
+                onView={handleView}
+                onLogs={handleLogs}
+                onDownload={handleDownload}
+              />
+            );
+          })}
+          {ungroupedDeployments.length > 0 && (
+            <AppHistoryCard
+              label="Other"
+              deployments={ungroupedDeployments}
+              now={now}
+              getStepDisplayName={getStepDisplayName}
+              onView={handleView}
+              onLogs={handleLogs}
+              onDownload={handleDownload}
+            />
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
