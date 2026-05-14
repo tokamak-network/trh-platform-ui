@@ -1,4 +1,5 @@
 import * as React from "react";
+import toast from "react-hot-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +114,18 @@ export function RollupItem({
   className = "",
 }: RollupItemProps) {
   const statusInfo = statusConfig[stack.status];
+  const prevStatusRef = React.useRef(stack.status);
+  React.useEffect(() => {
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = stack.status;
+    if (
+      prev === ThanosStackStatus.DEPLOYING &&
+      stack.status === ThanosStackStatus.FAILED_TO_DEPLOY
+    ) {
+      toast.error(`Deployment failed: ${stack.config.chainName}`);
+    }
+  }, [stack.status, stack.config.chainName]);
+
   const deleteRollupMutation = useDeleteRollupMutation();
   const resumeRollupMutation = useResumeRollupMutation();
   const stopRollupMutation = useStopRollupMutation();
