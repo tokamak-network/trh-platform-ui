@@ -7,11 +7,11 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { useThanosDeploymentsQuery, useThanosDeploymentLogsQuery } from "@/features/rollup/api/queries";
 import { formatDuration, formatEtaMs } from "@/features/rollup/utils/durationUtils";
 import { classifyLogLevel } from "@/features/rollup/utils/logLevel";
-import { categorizeStep } from "@/features/rollup/utils/deploymentSteps";
+import { categorizeStep, getStepDisplayName } from "@/features/rollup/utils/deploymentSteps";
 import { extractStepProgress } from "@/features/rollup/utils/deploymentSubtask";
 import { computeVelocity, computePhaseMetrics, InProgressEntry } from "@/features/rollup/utils/deploymentProgress";
 import { LogDialog } from "@/features/rollup/components/detail/LogDialog";
-import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
+import { ThanosDeployment, ThanosDeploymentLog } from "@/features/rollup/schemas/thanos-deployments";
 import toast from "react-hot-toast";
 
 function parseFirstErrorText(raw: string): string {
@@ -24,33 +24,35 @@ function parseFirstErrorText(raw: string): string {
   }
 }
 
-function ActivityLine({ deployment, stackId }: { deployment: ThanosDeployment; stackId: string }) {
+function ActivityLine({
+  deployment,
+  stackId,
+  logs,
+}: {
+  deployment: ThanosDeployment;
+  stackId: string;
+  logs: ThanosDeploymentLog[];
+}) {
   const [logOpen, setLogOpen] = React.useState(false);
 
-  const { data: logs = [] } = useThanosDeploymentLogsQuery(
-    deployment.stack_id,
-    deployment.id,
-    { limit: 100, refetchIntervalMs: 5000 }
-  );
-
-  const firstError = React.useMemo(
-    () => logs.find((l) => classifyLogLevel(l.message) === 'error'),
+  const lastError = React.useMemo(
+    () => logs.slice().reverse().find((l) => classifyLogLevel(l.message) === 'error'),
     [logs]
   );
 
   return (
     <>
       <div className="flex items-center gap-2 flex-wrap">
-        {firstError && (
+        {lastError && (
           <span className="flex items-center gap-1 text-xs text-red-600 italic truncate max-w-[300px]">
             <AlertCircle className="w-3 h-3 shrink-0" />
-            {parseFirstErrorText(firstError.message).slice(0, 100)}
+            {parseFirstErrorText(lastError.message).slice(0, 100)}
           </span>
         )}
         <button
           onClick={() => setLogOpen(true)}
           className={`text-xs px-2 py-0.5 rounded border transition-colors shrink-0 ${
-            firstError
+            lastError
               ? 'border-red-300 text-red-600 hover:bg-red-50'
               : 'border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
@@ -67,15 +69,13 @@ function MetricBox({
   label,
   value,
   hint,
-  muted = false,
 }: {
   label: string;
   value: string;
   hint?: string;
-  muted?: boolean;
 }) {
   return (
-    <div className={`rounded-xl bg-white/60 backdrop-blur-sm px-3 py-2.5 transition-opacity ${muted ? 'opacity-40' : ''}`}>
+    <div className="rounded-xl bg-white/60 backdrop-blur-sm px-3 py-2.5">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
       <p className="text-xl font-bold tabular-nums text-slate-900 leading-tight">{value}</p>
       {hint && <p className="text-[10px] text-slate-400 mt-0.5">{hint}</p>}
@@ -146,17 +146,12 @@ function PhaseProgressCard({ phaseRows, now, isIntegrationPhase, stackId }: Phas
     : `Step ${metrics.stepIndex}/${metrics.stepTotal}`;
 
   const inProgressLabels = inProgressRows
-    .map((r) => r.step.replace(/^(deploy-|install-)/, '').replace(/-/g, ' '))
+    .map((r) => getStepDisplayName(r.step))
     .join(', ');
 
   const substepHint = metrics.substep
     ? `step ${metrics.substep.current} / ${metrics.substep.total}`
-    : 'no step data';
-
-  const substepSuffix =
-    metrics.inProgressCount === 1 && metrics.substep
-      ? ` (${metrics.substep.current}/${metrics.substep.total})`
-      : '';
+    : undefined;
 
   return (
     <Card className={`border-0 shadow-xl bg-gradient-to-br ${accent.card}`}>
@@ -182,30 +177,27 @@ function PhaseProgressCard({ phaseRows, now, isIntegrationPhase, stackId }: Phas
         )}
 
         {/* Phase metrics */}
-        <div className="grid grid-cols-3 gap-2 my-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2 my-3">
           <MetricBox label="Elapsed" value={wallClock} />
-          <MetricBox
-            label="ETA"
-            value={metrics.etaMs != null ? formatEtaMs(metrics.etaMs) : '—'}
-            hint={
-              metrics.etaMs != null
-                ? new Date(now + metrics.etaMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : 'calculating…'
-            }
-            muted={metrics.etaMs == null}
-          />
-          <MetricBox
-            label="Progress"
-            value={progressPct != null ? `${progressPct}%` : '—'}
-            hint={substepHint}
-            muted={progressPct == null}
-          />
+          {metrics.etaMs != null && (
+            <MetricBox
+              label="ETA"
+              value={formatEtaMs(metrics.etaMs)}
+              hint={new Date(now + metrics.etaMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            />
+          )}
+          {progressPct != null && (
+            <MetricBox
+              label="Progress"
+              value={`${progressPct}%`}
+              hint={substepHint}
+            />
+          )}
         </div>
 
         {/* Secondary step line */}
         <p className="text-[10px] text-slate-500 mb-2 truncate">
-          {stepRangeLabel} · <span className="capitalize">{inProgressLabels}</span>
-          {substepSuffix}
+          {stepRangeLabel} · {inProgressLabels}
         </p>
 
         {/* Progress bar (only when phase-level progress is available) */}
@@ -221,7 +213,7 @@ function PhaseProgressCard({ phaseRows, now, isIntegrationPhase, stackId }: Phas
         )}
 
         {/* Error / Logs for primary row */}
-        <ActivityLine deployment={metrics.primaryRow} stackId={stackId} />
+        <ActivityLine deployment={metrics.primaryRow} stackId={stackId} logs={logs0} />
       </CardContent>
     </Card>
   );
@@ -235,41 +227,47 @@ export function DeploymentProgressCard({ stackId }: DeploymentProgressCardProps)
   const { data: deployments = [] } = useThanosDeploymentsQuery(stackId);
   const [now, setNow] = React.useState(Date.now());
 
-  const active = React.useMemo(
-    () => deployments.filter((d) => d.status === "InProgress" || d.status === "Pending"),
+  const corePhaseRows = React.useMemo(
+    () => deployments.filter(
+      (d) => categorizeStep(d.step) === 'core' &&
+      (d.status === 'InProgress' || d.status === 'Pending' || d.status === 'Success')
+    ),
     [deployments]
   );
-  const coreActive = React.useMemo(
-    () => active.filter((d) => categorizeStep(d.step) === 'core'),
-    [active]
-  );
-  const integrationActive = React.useMemo(
-    () => active.filter((d) => categorizeStep(d.step) === 'integration'),
-    [active]
+
+  const integPhaseRows = React.useMemo(
+    () => deployments.filter(
+      (d) => categorizeStep(d.step) === 'integration' &&
+      (d.status === 'InProgress' || d.status === 'Pending' || d.status === 'Success')
+    ),
+    [deployments]
   );
 
   const phase: 'core' | 'integration' | null =
-    coreActive.length > 0 ? 'core'
-    : integrationActive.length > 0 ? 'integration'
+    corePhaseRows.some((d) => d.status === 'InProgress') ? 'core'
+    : integPhaseRows.some((d) => d.status === 'InProgress') ? 'integration'
     : null;
 
-  const activeRows = phase === 'core' ? coreActive : integrationActive;
+  const activeRows = phase === 'core' ? corePhaseRows : integPhaseRows;
 
-  const prevCoreCountRef = React.useRef(coreActive.length);
+  const prevCoreInProgressRef = React.useRef(
+    corePhaseRows.filter((d) => d.status === 'InProgress').length
+  );
   React.useEffect(() => {
-    const wasCore = prevCoreCountRef.current > 0;
-    const noCoreNow = coreActive.length === 0;
-    if (wasCore && noCoreNow && integrationActive.length > 0) {
+    const coreInProgress = corePhaseRows.filter((d) => d.status === 'InProgress').length;
+    const integInProgress = integPhaseRows.filter((d) => d.status === 'InProgress').length;
+    const wasCore = prevCoreInProgressRef.current > 0;
+    if (wasCore && coreInProgress === 0 && integInProgress > 0) {
       toast.success('Chain deployed. Integrations will continue installing in the background.');
     }
-    prevCoreCountRef.current = coreActive.length;
-  }, [coreActive.length, integrationActive.length]);
+    prevCoreInProgressRef.current = coreInProgress;
+  }, [corePhaseRows, integPhaseRows]);
 
   React.useEffect(() => {
-    if (activeRows.length === 0) return;
+    if (phase === null) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [activeRows.length]);
+  }, [phase]);
 
   if (!phase) return null;
 
