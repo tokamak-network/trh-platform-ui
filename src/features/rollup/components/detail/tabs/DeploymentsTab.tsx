@@ -25,7 +25,10 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RollupDetailTabProps } from "../../../schemas/detail-tabs";
-import { useThanosDeploymentsQuery } from "@/features/rollup/api/queries";
+import {
+  useThanosDeploymentsQuery,
+  usePresetDetailQuery,
+} from "@/features/rollup/api/queries";
 import { ThanosDeployment } from "@/features/rollup/schemas/thanos-deployments";
 import { LogDialog } from "../LogDialog";
 import { downloadThanosDeploymentLogs } from "@/features/rollup/services/rollupService";
@@ -74,6 +77,8 @@ const StatusBadge = ({ status }: { status: ThanosDeployment["status"] }) => {
   );
 };
 
+// Non-integration step groups (L1 Contracts, Infrastructure).
+// The integration group is handled separately via INTEGRATION_CARDS.
 const APP_GROUPS: { id: string; label: string; steps: string[] }[] = [
   {
     id: "l1-contracts",
@@ -90,21 +95,56 @@ const APP_GROUPS: { id: string; label: string; steps: string[] }[] = [
       "destroy-chain",
     ],
   },
+];
+
+interface IntegrationCardDef {
+  id: string;
+  label: string;
+  // Key in preset.modules for placeholder visibility. undefined = show only when hasHistory.
+  moduleKey?: string;
+  steps: string[];
+}
+
+const INTEGRATION_CARDS: IntegrationCardDef[] = [
   {
-    id: "integration",
-    label: "Integration",
+    id: "bridge",
+    label: "Bridge",
+    moduleKey: "bridge",
+    steps: ["install-bridge", "uninstall-bridge"],
+  },
+  {
+    id: "block-explorer",
+    label: "Block Explorer",
+    moduleKey: "blockExplorer",
     steps: [
-      "install-bridge",
-      "uninstall-bridge",
       "install-block-explorer",
       "uninstall-block-explorer",
       "update-block-explorer",
-      "install-monitoring",
-      "uninstall-monitoring",
-      "install-system-pulse",
-      "uninstall-system-pulse",
-      "install-drb",
-      "uninstall-drb",
+    ],
+  },
+  {
+    id: "monitoring",
+    label: "Monitoring Dashboard",
+    moduleKey: "monitoring",
+    steps: ["install-monitoring", "uninstall-monitoring"],
+  },
+  {
+    id: "system-pulse",
+    label: "System Pulse",
+    moduleKey: "uptimeService",
+    steps: ["install-system-pulse", "uninstall-system-pulse"],
+  },
+  {
+    id: "drb",
+    label: "DRB Nodes",
+    moduleKey: "drb",
+    steps: ["install-drb", "uninstall-drb"],
+  },
+  {
+    id: "cross-trade",
+    label: "Cross-Trade",
+    moduleKey: "crossTrade",
+    steps: [
       "install-cross-trade-bridge",
       "uninstall-cross-trade-bridge",
       "install-cross-trade-l2-l1",
@@ -115,11 +155,69 @@ const APP_GROUPS: { id: string; label: string; steps: string[] }[] = [
       "register-tokens-l2-l2",
       "deploy-new-l2-chain-l2-l1",
       "deploy-new-l2-chain-l2-l2",
-      "register-candidate",
-      "register-metadata-dao",
     ],
   },
+  {
+    id: "register-candidate",
+    label: "Staking / DAO Candidate",
+    // registerCandidate lives in ChainDefaults, not Modules — show only when hasHistory
+    moduleKey: undefined,
+    steps: ["register-candidate"],
+  },
+  {
+    id: "register-metadata-dao",
+    label: "DAO Metadata",
+    moduleKey: undefined,
+    steps: ["register-metadata-dao"],
+  },
 ];
+
+type CardStatusPill =
+  | "active"
+  | "in-progress"
+  | "failed"
+  | "stopped"
+  | "uninstalled";
+
+function deriveCardStatus(
+  sorted: ThanosDeployment[],
+): CardStatusPill | null {
+  if (sorted.length === 0) return null;
+  const latest = sorted[0];
+  if (latest.status === "InProgress" || latest.status === "Pending")
+    return "in-progress";
+  if (latest.status === "Success") {
+    return latest.step.startsWith("uninstall-") ? "uninstalled" : "active";
+  }
+  if (latest.status === "Failed") return "failed";
+  if (latest.status === "Stopped" || latest.status === "Cancelled")
+    return "stopped";
+  return null;
+}
+
+function CardStatusPillBadge({ pill }: { pill: CardStatusPill }) {
+  const styles: Record<CardStatusPill, string> = {
+    active: "bg-green-50 text-green-700 border-green-200",
+    "in-progress": "bg-blue-50 text-blue-700 border-blue-200",
+    failed: "bg-red-50 text-red-700 border-red-200",
+    stopped: "bg-orange-50 text-orange-700 border-orange-200",
+    uninstalled: "bg-gray-50 text-gray-600 border-gray-200",
+  };
+  const labels: Record<CardStatusPill, string> = {
+    active: "Active",
+    "in-progress": "In Progress",
+    failed: "Failed",
+    stopped: "Stopped",
+    uninstalled: "Uninstalled",
+  };
+  return (
+    <span
+      className={`text-xs px-2 py-0.5 rounded-full font-medium border ${styles[pill]}`}
+    >
+      {labels[pill]}
+    </span>
+  );
+}
 
 interface AppHistoryCardProps {
   label: string;
@@ -129,6 +227,7 @@ interface AppHistoryCardProps {
   onView: (d: ThanosDeployment) => void;
   onLogs: (d: ThanosDeployment) => void;
   onDownload: (d: ThanosDeployment) => void;
+  showStatusPill?: boolean;
 }
 
 function AppHistoryCard({
@@ -139,6 +238,7 @@ function AppHistoryCard({
   onView,
   onLogs,
   onDownload,
+  showStatusPill = false,
 }: AppHistoryCardProps) {
   const [expanded, setExpanded] = React.useState(true);
 
@@ -150,6 +250,11 @@ function AppHistoryCard({
         return bTime - aTime;
       }),
     [deployments],
+  );
+
+  const statusPill = React.useMemo(
+    () => (showStatusPill ? deriveCardStatus(sorted) : null),
+    [showStatusPill, sorted],
   );
 
   return (
@@ -165,6 +270,7 @@ function AppHistoryCard({
             <ChevronRight className="w-4 h-4 text-slate-500" />
           )}
           {label}
+          {statusPill && <CardStatusPillBadge pill={statusPill} />}
         </CardTitle>
         <Badge variant="outline" className="text-xs font-normal text-slate-600">
           {deployments.length}
@@ -248,6 +354,48 @@ function AppHistoryCard({
   );
 }
 
+interface NotInstalledCardProps {
+  label: string;
+  presetName?: string;
+}
+
+function NotInstalledCard({ label, presetName }: NotInstalledCardProps) {
+  const [expanded, setExpanded] = React.useState(false);
+  return (
+    <Card className="border-0 shadow-sm bg-gradient-to-br from-slate-50 to-gray-50">
+      <CardHeader
+        className="flex flex-row items-center justify-between cursor-pointer select-none pb-3"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <CardTitle className="text-slate-500 text-base flex items-center gap-2">
+          {expanded ? (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          )}
+          {label}
+        </CardTitle>
+        <Badge
+          variant="outline"
+          className="text-xs font-normal bg-gray-50 text-gray-500 border-gray-200"
+        >
+          Not Installed
+        </Badge>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="pt-0 pb-4">
+          <p className="text-sm text-slate-500">
+            No deployment attempts yet
+            {presetName
+              ? ` — this integration is expected by the ${presetName} preset.`
+              : "."}
+          </p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 export function DeploymentsTab({ stack }: RollupDetailTabProps) {
   const stackId = stack?.id;
   const {
@@ -257,6 +405,11 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     refetch,
   } = useThanosDeploymentsQuery(stackId);
   const [now, setNow] = React.useState(Date.now());
+
+  const effectivePreset =
+    stack?.config.presetId ?? stack?.config.preset ?? undefined;
+  const { data: presetDetail, isLoading: isPresetLoading } =
+    usePresetDetailQuery(effectivePreset);
 
   React.useEffect(() => {
     const hasActive = deployments.some(
@@ -318,10 +471,44 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
     return StepnameMap[deployment.step] || deployment.step.replace(/-/g, " ");
   };
 
+  // Per-integration card data: deployments + show decision per card
+  const integrationCardData = React.useMemo(() => {
+    return INTEGRATION_CARDS.map((card) => {
+      const cardDeployments = deployments.filter((d) =>
+        card.steps.includes(d.step),
+      );
+      const hasHistory = cardDeployments.length > 0;
+      const isExpectedByPreset =
+        !isPresetLoading &&
+        card.moduleKey !== undefined &&
+        presetDetail?.modules?.[card.moduleKey] === true;
+      return { card, deployments: cardDeployments, hasHistory, isExpectedByPreset };
+    });
+  }, [deployments, presetDetail, isPresetLoading]);
+
+  // Steps not in APP_GROUPS or INTEGRATION_CARDS → fallback "Other" card
   const ungroupedDeployments = React.useMemo(() => {
-    const known = new Set(APP_GROUPS.flatMap((g) => g.steps));
-    return deployments.filter((d) => !known.has(d.step));
+    const knownSteps = new Set([
+      ...APP_GROUPS.flatMap((g) => g.steps),
+      ...INTEGRATION_CARDS.flatMap((c) => c.steps),
+    ]);
+    return deployments.filter((d) => !knownSteps.has(d.step));
   }, [deployments]);
+
+  const hasIntegrationCards = React.useMemo(
+    () =>
+      integrationCardData.some(
+        ({ hasHistory, isExpectedByPreset }) => hasHistory || isExpectedByPreset,
+      ),
+    [integrationCardData],
+  );
+
+  const hasAnythingToShow = React.useMemo(() => {
+    const hasGroupData = APP_GROUPS.some((g) =>
+      deployments.some((d) => g.steps.includes(d.step)),
+    );
+    return hasGroupData || hasIntegrationCards || ungroupedDeployments.length > 0;
+  }, [deployments, hasIntegrationCards, ungroupedDeployments]);
 
   if (!stack) return null;
 
@@ -367,12 +554,13 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
             <RefreshCw className="w-4 h-4 mr-2" /> Retry
           </Button>
         </div>
-      ) : deployments.length === 0 ? (
+      ) : !hasAnythingToShow ? (
         <div className="flex items-center justify-center py-10 text-slate-600">
           No deployments found
         </div>
       ) : (
         <>
+          {/* L1 Contracts + Infrastructure */}
           {APP_GROUPS.map((group) => {
             const groupDeployments = deployments.filter((d) =>
               group.steps.includes(d.step),
@@ -391,6 +579,51 @@ export function DeploymentsTab({ stack }: RollupDetailTabProps) {
               />
             );
           })}
+
+          {/* Integrations section */}
+          {hasIntegrationCards && (
+            <>
+              <div className="flex items-center gap-2 pt-2">
+                <div className="h-px bg-slate-200 flex-1" />
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Integrations
+                </span>
+                <div className="h-px bg-slate-200 flex-1" />
+              </div>
+
+              {integrationCardData.map(
+                ({ card, deployments: cardDeps, hasHistory, isExpectedByPreset }) => {
+                  if (hasHistory) {
+                    return (
+                      <AppHistoryCard
+                        key={card.id}
+                        label={card.label}
+                        deployments={cardDeps}
+                        now={now}
+                        getStepDisplayName={getStepDisplayName}
+                        onView={handleView}
+                        onLogs={handleLogs}
+                        onDownload={handleDownload}
+                        showStatusPill
+                      />
+                    );
+                  }
+                  if (isExpectedByPreset) {
+                    return (
+                      <NotInstalledCard
+                        key={card.id}
+                        label={card.label}
+                        presetName={presetDetail?.name}
+                      />
+                    );
+                  }
+                  return null;
+                },
+              )}
+            </>
+          )}
+
+          {/* Fallback for unmapped steps */}
           {ungroupedDeployments.length > 0 && (
             <AppHistoryCard
               label="Other"
